@@ -1,0 +1,400 @@
+// ============================================
+// BANK / PAYMENT METHODS PAGE - SERVER-SIDE PAGINATION
+// ============================================
+
+import { bankURLphp } from "../apis/api.js";
+import { getItemsData, updateItem, addItemToAPI } from "../apis/master_api.js";
+import { showNotification } from "./notification.js";
+
+// Bank / payment data storage
+let bankData = [];
+let paginationInfo = {
+    page: 1,
+    per_page: 10,
+    total: 0,
+    total_pages: 1
+};
+
+let editingItemId = null;
+
+// ============================================
+// LOAD BANK DATA WITH SERVER-SIDE PAGINATION
+// ============================================
+async function loadBankData(page = 1, perPage = 10) {
+    // Modify the URL to include pagination parameters
+    const url = `${bankURLphp}?page=${page}&per_page=${perPage}`;
+    const data = await getItemsData(url);
+
+    console.log("Server response:", data);
+
+    // Store the paginated data
+    bankData = data.accounts || [];
+
+    // Store pagination metadata
+    paginationInfo = {
+        page: data.page || 1,
+        per_page: data.per_page || 10,
+        total: data.total || 0,
+        total_pages: data.total_pages || 1
+    };
+
+    console.log("Bank/Payment methods loaded:", bankData);
+    console.log("Pagination info:", paginationInfo);
+}
+
+// ============================================
+// RENDER BANK TABLE WITH PAGINATION
+// ============================================
+export async function renderbankTable() {
+    await loadBankData(paginationInfo.page, paginationInfo.per_page);
+    return generateBankTableHTML();
+}
+
+// Generate table HTML using server-side pagination
+function generateBankTableHTML() {
+    let tableRows = "";
+
+    // Use the data directly from the server (already paginated)
+    bankData.forEach((item) => {
+        tableRows += `
+            <tr>
+                <td>${item.type}</td>
+                <td>${item.name}</td>
+                <td>${item.details}</td>
+                <td>${item.starting_balance}</td>
+                <td style="width: 150px;">
+                    <div style="display: flex; align-items: center; justify-content: center;">
+                        <label class="toggle-switch">
+                            <input type="checkbox"
+                                   onchange="toggleBankStatus('${item.id}', '${item.status}')"
+                                   ${item.status === "active" ? "checked" : ""}>
+                            <span class="slider"></span>
+                        </label>
+                        <span class="status-text" style="margin-left: 10px; font-weight: 500; min-width: 60px;">
+                        </span>
+                    </div>
+                </td>
+                <td>
+                    <button class="btn-icon btn-edit" onclick="editBankAccount('${item.id}')" title="Edit">
+                        <i class="icon-edit">✎</i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+
+    // Calculate display range
+    const start = (paginationInfo.page - 1) * paginationInfo.per_page;
+    const end = Math.min(start + bankData.length, paginationInfo.total);
+
+    return `
+        <div class="content-card">
+            <div class="items-header">
+                <h2>Bank / Payment Methods</h2>
+                <button class="btn-add" onclick="openBankForm()">Add Account</button>
+            </div>
+            
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Name</th>
+                            <th>Details</th>
+                            <th>Starting Balance</th>
+                            <th>Status</th>
+                            <th>Edit</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${tableRows || '<tr><td colspan="6" style="text-align: center;">No accounts found</td></tr>'}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="pagination">
+                <div class="pagination-info">
+                    Showing ${paginationInfo.total === 0 ? 0 : start + 1} to ${end} of ${paginationInfo.total} entries
+                </div>
+                <div class="pagination-controls">
+                    <button onclick="changeBankPage('prev')" ${paginationInfo.page === 1 ? "disabled" : ""}>Previous</button>
+                    <span class="page-number">Page ${paginationInfo.page} of ${paginationInfo.total_pages}</span>
+                    <button onclick="changeBankPage('next')" ${paginationInfo.page >= paginationInfo.total_pages ? "disabled" : ""}>Next</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bank / Payment Form Modal -->
+        <div id="itemsFormModal" class="modal">
+            <div class="modal-content modal-responsive">
+                <div class="modal-header">
+                    <h3 id="formTitle">Add New Account</h3>
+                    <button class="close-btn" onclick="closeBankForm()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="itemsForm" onsubmit="submitBankForm(event)" class="form-responsive">
+                        <input type="hidden" id="itemId">
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="accountType">Account Type <span class="required">*</span></label>
+                                <select id="accountType" required>
+                                    <option value="">Select type</option>
+                                    <option value="bank">Bank</option>
+                                    <option value="upi">UPI</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="accountName">Bank Name <span class="required">*</span></label>
+                                <input type="text" id="accountName" required placeholder="e.g., Owner GPay, Cash Counter">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="accountDetails">Account Name <span class="required">*</span></label>
+                                <input type="text" id="accountDetails" required placeholder="e.g., 98765xxxx@ybl or A/C number">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="startingBalance">Current Balance <span class="required">*</span></label>
+                                <input type="number" id="startingBalance" step="0.01" min="0" value="0" required placeholder="0.00">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="itemStatus">Status</label>
+                                <div style="display: flex; align-items: center; padding: 10px 0;">
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="itemStatus" checked>
+                                        <span class="slider"></span>
+                                    </label>
+                                    <span id="statusText" style="margin-left: 10px; font-weight: 500;">Active</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="button" class="btn-cancel" onclick="closeBankForm()">Cancel</button>
+                            <button type="submit" class="btn-submit">Save</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// ============================================
+// PAGINATION FUNCTIONS (SERVER-SIDE)
+// ============================================
+async function changeBankPage(direction) {
+    let newPage = paginationInfo.page;
+
+    if (direction === "next" && paginationInfo.page < paginationInfo.total_pages) {
+        newPage++;
+    } else if (direction === "prev" && paginationInfo.page > 1) {
+        newPage--;
+    } else {
+        return;
+    }
+
+    // Fetch new page from server
+    await loadBankData(newPage, paginationInfo.per_page);
+
+    // Re-render the table
+    const mainContent = document.getElementById("mainContent");
+    if (mainContent) {
+        mainContent.innerHTML = generateBankTableHTML();
+    }
+}
+
+async function changeBankPerPage(value) {
+    const newPerPage = parseInt(value, 10) || 10;
+
+    // Reset to page 1 when changing items per page
+    await loadBankData(1, newPerPage);
+
+    const mainContent = document.getElementById("mainContent");
+    if (mainContent) {
+        mainContent.innerHTML = generateBankTableHTML();
+    }
+}
+
+// ============================================
+// FORM FUNCTIONS
+// ============================================
+function openBankForm() {
+    editingItemId = null;
+    document.getElementById("formTitle").textContent = "Add New Account";
+    document.getElementById("itemsForm").reset();
+    document.getElementById("itemId").value = "";
+
+    const statusCheckbox = document.getElementById("itemStatus");
+    statusCheckbox.checked = true;
+    document.getElementById("statusText").textContent = "Active";
+
+    document.getElementById("accountType").value = "";
+    document.getElementById("startingBalance").value = 0;
+
+    const modal = document.getElementById("itemsFormModal");
+    modal.style.display = "flex";
+    setTimeout(() => {
+        modal.classList.add("show");
+    }, 10);
+}
+
+function closeBankForm() {
+    const modal = document.getElementById("itemsFormModal");
+    modal.classList.remove("show");
+    setTimeout(() => {
+        modal.style.display = "none";
+    }, 300);
+    editingItemId = null;
+}
+
+async function editBankAccount(id) {
+    editingItemId = id;
+
+    // Find in current page data
+    let item = bankData.find((i) => String(i.id) === String(id));
+
+    // If not found in current page, fetch all accounts to find it
+    if (!item) {
+        const allDataUrl = `${bankURLphp}?page=1&per_page=1000`; // Fetch all
+        const allData = await getItemsData(allDataUrl);
+        item = (allData.accounts || []).find((i) => String(i.id) === String(id));
+    }
+
+    if (!item) {
+        console.error("Account not found for edit:", id);
+        showNotification("Account not found!", "error");
+        return;
+    }
+
+    document.getElementById("formTitle").textContent = "Update Account";
+    document.getElementById("itemId").value = item.id;
+    document.getElementById("accountType").value =
+        item.type === "bank" || item.type === "upi" ? item.type : "";
+    document.getElementById("accountName").value = item.name || "";
+    document.getElementById("accountDetails").value = item.details || "";
+    document.getElementById("startingBalance").value = item.starting_balance ?? 0;
+
+    const statusCheckbox = document.getElementById("itemStatus");
+    const statusText = document.getElementById("statusText");
+    statusCheckbox.checked = item.status === "active";
+    statusText.textContent = item.status === "active" ? "Active" : "Inactive";
+
+    statusCheckbox.onchange = function () {
+        statusText.textContent = this.checked ? "Active" : "Inactive";
+    };
+
+    const modal = document.getElementById("itemsFormModal");
+    modal.style.display = "flex";
+    setTimeout(() => {
+        modal.classList.add("show");
+    }, 10);
+}
+
+async function submitBankForm(event) {
+    event.preventDefault();
+    const statusCheckbox = document.getElementById("itemStatus");
+
+    const formData = {
+        type: document.getElementById("accountType").value,
+        name: document.getElementById("accountName").value,
+        details: document.getElementById("accountDetails").value,
+        starting_balance: parseFloat(document.getElementById("startingBalance").value) || 0,
+        status: statusCheckbox.checked ? "active" : "inactive",
+    };
+
+    const mainContent = document.getElementById("mainContent");
+
+    if (editingItemId) {
+        const confirmed = await showConfirm(
+            "Are you sure you want to update this account?",
+            "warning"
+        );
+        if (!confirmed) return;
+
+        // Update existing account
+        const result = await updateItem(bankURLphp, editingItemId, formData);
+        if (result) {
+            showNotification("Account updated successfully!", "success");
+        } else {
+            showNotification("Error updating account!", "error");
+        }
+
+        closeBankForm();
+        if (mainContent) {
+            await loadBankData(paginationInfo.page, paginationInfo.per_page);
+            mainContent.innerHTML = generateBankTableHTML();
+        }
+    } else {
+        const confirmed = await showConfirm(
+            "Are you sure you want to add this account?",
+            "warning"
+        );
+        if (!confirmed) return;
+
+        // Add new account
+        const result = await addItemToAPI(bankURLphp, formData);
+        if (result) {
+            showNotification("Account added successfully!", "success");
+            closeBankForm();
+
+            if (mainContent) {
+                // Reload current page to reflect new total
+                await loadBankData(paginationInfo.page, paginationInfo.per_page);
+                mainContent.innerHTML = generateBankTableHTML();
+            }
+        } else {
+            showNotification("Error adding account!", "error");
+        }
+    }
+}
+
+async function toggleBankStatus(id, currentStatus) {
+    const confirmed = await showConfirm(
+        `Are you sure you want to change this account's status to ${currentStatus === "active" ? "inactive" : "active"}?`,
+        "warning"
+    );
+    if (!confirmed) return;
+
+    const newStatus = currentStatus === "active" ? "inactive" : "active";
+    const result = await updateItem(bankURLphp, id, { status: newStatus });
+
+    if (result) {
+        const mainContent = document.getElementById("mainContent");
+        if (mainContent) {
+            await loadBankData(paginationInfo.page, paginationInfo.per_page);
+            mainContent.innerHTML = generateBankTableHTML();
+            showNotification(`Account status changed to ${newStatus}!`, "success");
+        }
+    } else {
+        showNotification("Error updating account status!", "error");
+    }
+}
+
+// Close modal when clicking outside
+window.addEventListener("click", function (event) {
+    const modal = document.getElementById("itemsFormModal");
+    if (event.target === modal) {
+        closeBankForm();
+    }
+});
+
+// ============================================
+// MAKE FUNCTIONS GLOBALLY ACCESSIBLE
+// ============================================
+window.editBankAccount = editBankAccount;
+window.toggleBankStatus = toggleBankStatus;
+window.openBankForm = openBankForm;
+window.closeBankForm = closeBankForm;
+window.submitBankForm = submitBankForm;
+window.changeBankPage = changeBankPage;
+window.changeBankPerPage = changeBankPerPage;
+window.showNotification = showNotification;
+window.generateBankTableHTML = generateBankTableHTML;

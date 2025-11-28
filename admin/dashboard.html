@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SAINATH - Dashboard</title>
+    <!-- Link to external CSS files -->
+    <link rel="stylesheet" href="./css/dashboard.css">
+    <link rel="stylesheet" href="./css/items.css">
+    <link rel="stylesheet" href="./css/client.css">
+    <link rel="stylesheet" href="./css/inventory.css">
+</head>
+
+<body>
+    <!-- ============================================
+         DASHBOARD PAGE
+         ============================================ -->
+    <div id="dashboardPage" class="dashboard">
+        <!-- Navbar / Header -->
+        <nav class="navbar">
+            <div class="navbar-content">
+                <!-- Hamburger Menu Button -->
+                <button class="hamburger-menu" onclick="toggleSidebar()">
+                    <div class="hamburger-icon">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </button>
+
+                <!-- Logo -->
+                <img class="navbar-logo" src="images/logo.png" alt="SAINATH Logo">
+                <!-- User Menu with Avatar -->
+                <div class="user-menu">
+                    <button class="user-icon-btn" onclick="toggleUserMenu()">
+                        <div class="user-icon" id="userAvatar"></div>
+                    </button>
+                    <!-- User Dropdown Menu -->
+                    <div id="userDropdown" class="user-dropdown hidden">
+                        <button onclick="navigateTo('profile')">Profile</button>
+                        <button class="logout-btn" onclick="logout()">Logout</button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Sidebar Navigation -->
+        <aside id="sidebar" class="sidebar">
+            <div class="sidebar-inner">
+                <!-- Top brand + close -->
+                <div class="sidebar-header">
+                    <div class="sidebar-brand">
+                        <div class="sidebar-icon">S</div>
+                        <div class="sidebar-text">
+                            <span class="sidebar-title">Sainath</span>
+                            <span class="sidebar-subtitle">Dashboard</span>
+                        </div>
+                    </div>
+
+                    <!-- Close button (for mobile) -->
+                    <button id="sidebarCloseBtn" class="sidebar-close-btn" aria-label="Close sidebar">
+                        ✕
+                    </button>
+                </div>
+
+                <!-- Scrollable menu area -->
+                <div class="sidebar-menu">
+                    <button class="menu-item active" onclick="navigateTo('home')">
+                        <span class="menu-icon">🏠</span>
+                        <span class="menu-label">Home</span>
+                    </button>
+
+                    <button class="menu-item" onclick="toggleSubmenu()">
+                        <span class="menu-icon">🧰</span>
+                        <span class="menu-label">Master</span>
+                        <span class="chevron">›</span>
+                    </button>
+
+                    <div id="masterSubmenu" class="submenu">
+                        <button class="menu-item submenu-item" onclick="navigateTo('items')">
+                            <span class="submenu-dot"></span>
+                            <span class="menu-label">Items</span>
+                        </button>
+                        <button class="menu-item submenu-item" onclick="navigateTo('user')">
+                            <span class="submenu-dot"></span>
+                            <span class="menu-label">User</span>
+                        </button>
+                        <button class="menu-item submenu-item" onclick="navigateTo('shop')">
+                            <span class="submenu-dot"></span>
+                            <span class="menu-label">Shop</span>
+                        </button>
+                        <button class="menu-item submenu-item" onclick="navigateTo('staff')">
+                            <span class="submenu-dot"></span>
+                            <span class="menu-label">Staff</span>
+                        </button>
+                        <!-- <button class="menu-item submenu-item" onclick="navigateTo('row_matireal')">
+                            <span class="submenu-dot"></span>
+                            <span class="menu-label">Row Material</span>
+                        </button> -->
+                        <button class="menu-item submenu-item" onclick="navigateTo('bank')">
+                            <span class="submenu-dot"></span>
+                            <span class="menu-label">Bank / UPI</span>
+                        </button>
+                    </div>
+                    <!-- Inventory main button just toggles submenu -->
+                    <button class="menu-item" onclick="toggleInventorySubmenu()">
+                        <span class="menu-icon">📦</span>
+                        <span class="menu-label">Inventory</span>
+                        <span class="chevron">›</span>
+                    </button>
+
+                    <!-- Inventory submenu -->
+                    <div id="inventorySubmenu" class="submenu">
+                        <button class="menu-item submenu-item" onclick="navigateTo('inventory_staff')">
+                            <span class="submenu-dot"></span>
+                            <span class="menu-label">Staff</span>
+                        </button>
+
+                        <button class="menu-item submenu-item" onclick="navigateTo('inventory_orders')">
+                            <span class="submenu-dot"></span>
+                            <span class="menu-label">Orders</span>
+                        </button>
+                    </div>
+
+
+                </div>
+            </div>
+        </aside>
+
+
+        <!-- Overlay for mobile (when sidebar is open) -->
+        <div id="overlay" class="overlay" onclick="closeSidebar()"></div>
+
+        <!-- Main Content Area -->
+        <main id="mainContent" class="main-content">
+            <!-- Content will be loaded here dynamically by JavaScript -->
+            <div class="content-card">
+                <h2>Welcome to Dashboard</h2>
+                <p>Loading...</p>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Placeholder functions to prevent errors before modules load -->
+    <script>
+        window.toggleSidebar = function () { console.error('toggleSidebar not loaded'); };
+        window.closeSidebar = function () { console.error('closeSidebar not loaded'); };
+        window.toggleSubmenu = function () { console.error('toggleSubmenu not loaded'); };
+        window.toggleUserMenu = function () { console.error('toggleUserMenu not loaded'); };
+        window.logout = function () { console.error('logout not loaded'); };
+        window.navigateTo = function () { console.error('navigateTo not loaded'); };
+        window.toggleItemStatus = function () { console.error('toggleItemStatus not loaded'); };
+        window.openItemsForm = function () { console.error('openItemsForm not loaded'); };
+        window.closeItemsForm = function () { console.error('closeItemsForm not loaded'); };
+        window.editItems = function () { console.error('editItems not loaded'); };
+        window.deleteItems = function () { console.error('deleteItems not loaded'); };
+        window.submitItemsForm = function () { console.error('submitItemsForm not loaded'); };
+        window.changeItemsPage = function () { console.error('changeItemsPage not loaded'); };
+        window.openclientForm = function () { console.error('openclientForm not loaded'); };
+        window.closeclientForm = function () { console.error('closeclientForm not loaded'); };
+        window.editclient = function () { console.error('editclient not loaded'); };
+        window.deleteclient = function () { console.error('deleteclient not loaded'); };
+        window.submitclientForm = function () { console.error('submitclientForm not loaded'); };
+        window.changeclientPage = function () { console.error('changeclientPage not loaded'); };
+        window.toggleclienttatus = function () { console.error('toggleclienttatus not loaded'); };
+    </script>
+
+    <!-- Link to external JavaScript files -->
+    <script type="module" src="js/dashboard.js"></script>
+    <script type="module" src="js/home.js"></script>
+    <script type="module" src="js/client.js"></script>
+    <script type="module" src="js/items.js"></script>
+    <script type="module" src="js/staff.js"></script>
+    <script type="module" src="js/bank.js"></script>
+    <script type="module" src="js/inventory_orders.js"></script>
+</body>
+
+</html>

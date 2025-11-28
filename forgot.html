@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="./Admin/css/styles.css">
+</head>
+
+<body>
+    <div id="forgotPage" class="auth-page">
+        <div class="auth-card">
+            <div class="auth-logo">
+                <h1>SAINATH</h1>
+                <p>Reset your password</p>
+            </div>
+
+            <div id="forgotMessage" class="message hidden"></div>
+
+            <form id="forgotForm">
+                <div class="form-group">
+                    <label for="forgotEmail">Email Address</label>
+                    <input type="email" id="forgotEmail" placeholder="Enter your email" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="newPassword">New Password</label>
+                    <input type="password" id="newPassword" placeholder="Enter new password" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="confirmNewPassword">Confirm New Password</label>
+                    <input type="password" id="confirmNewPassword" placeholder="Confirm new password" required>
+                </div>
+
+                <button type="submit" class="submit-btn">Reset Password</button>
+            </form>
+
+            <div class="auth-footer">
+                <a href="index.html" class="link-button">← Back to Login</a>
+            </div>
+        </div>
+    </div>
+    <script type="module" src="./Admin/js/auth.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SAINATH - Login</title>
+    <link rel="stylesheet" href="./admin/css/styles.css">
+</head>
+
+<body>
+    <div id="loginPage" class="auth-page">
+        <div class="auth-card">
+            <div class="auth-logo">
+                <img class="h1" src="admin/images/logo.png" alt="">
+            </div>
+
+            <div id="loginMessage" class="message hidden"></div>
+
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="loginMobile">Mobile Number</label>
+                    <input type="text" id="loginMobile" placeholder="Enter your mobile number" maxlength="10" required>
+                </div>
+
+
+                <div class="form-group">
+                    <label for="loginPassword">Password</label>
+                    <div class="password-input-wrapper">
+                        <input type="password" id="loginPassword" placeholder="Enter your password" required>
+                        <button type="button" class="password-toggle-btn" onclick="togglePassword(event)">
+                            <span class="eye-icon" id="eyeIcon">👀</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="form-options">
+                    <div class="remember-me">
+                        <input type="checkbox" id="rememberMe">
+                        <label for="rememberMe" style="margin: 0; font-weight: normal;">Remember me</label>
+                    </div>
+                    <a href="./forgot.html" class="link-button">Forgot Password?</a>
+                </div>
+
+                <button type="submit" class="submit-btn">Login</button>
+            </form>
+
+        </div>
+    </div>
+    <div id="popupContainer" class="popup-container">
+        <div id="popupBox" class="popup-box">
+            <div id="popupIcon" class="popup-icon">✔</div>
+            <div id="popupMessage" class="popup-message">Message here</div>
+        </div>
+    </div>
+    <script>
+        // --------------------------------------------------------------------------------------------
+        // if user is already logged in, redirect to proper dashboard
+        function checkUserLogin() {
+            console.log("checkUserLogin");
+
+            let rememberedUser = localStorage.getItem('rememberedUser');
+            log("remember user from local :", rememberedUser);
+            if (rememberedUser) {
+                try {
+                    let userData = JSON.parse(rememberedUser);
+                    if (userData && userData.mobile && userData.role && userData.id) {
+                        console.log("Remembered user found:", userData);
+
+                        if (userData.role === 'admin') {
+                            window.location.href = "./admin/dashboard.html";
+                        } else {
+                            window.location.href = "./client/dashboard.html";
+                            // window.location.href = "./admin/dashboard.html";
+                        }
+                        return;
+                    }
+                } catch (error) {
+                    console.error("Error parsing remembered user:", error);
+                }
+            }
+            console.log("No remembered user found");
+        }
+
+        checkUserLogin();
+
+        function togglePassword(e) {
+            e.preventDefault();
+            let pass = document.getElementById("loginPassword");
+            let eyeIcon = document.getElementById("eyeIcon");
+
+            if (pass.type === "password") {
+                pass.type = "text";
+                eyeIcon.textContent = "👁️‍🗨️";
+            } else {
+                pass.type = "password";
+                eyeIcon.textContent = "👀";
+            }
+        }
+    </script>
+
+    <script type="module" src="./admin/js/auth.js"></script>
+</body>
+
+</html>

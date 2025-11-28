@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orders Inventory - Sainath</title>
+    <link rel="stylesheet" href="css/inventory.css">
+</head>
+
+<body>
+    <div class="inv-wrapper">
+
+        <!-- Page Header with Title and Filters in One Row -->
+        <div class="inv-orders-header">
+            <div class="inv-orders-title-section">
+                <h1>Orders</h1>
+                <p class="inv-subtitle">View and filter all client orders</p>
+            </div>
+
+            <!-- Filters on the right side -->
+            <div class="inv-orders-filters-inline">
+                <div class="inv-filter-group">
+                    <label for="ordDateFilter">📅 Date</label>
+                    <input type="date" id="ordDateFilter">
+                </div>
+
+                <div class="inv-filter-group">
+                    <label for="ordClientFilter">👤 Client</label>
+                    <select id="ordClientFilter">
+                        <option value="all">All Clients</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Orders Table -->
+        <div class="inv-orders-table-card">
+            <div class="table-header">
+                <h3>Orders List</h3>
+                <p class="table-subtitle">Filtered by selected date and client</p>
+            </div>
+
+            <div class="inv-table-wrapper">
+                <table class="inv-data-table inv-orders-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Client</th>
+                            <th>Delivery</th>
+                            <th>Total Amount</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ordTableBody">
+                        <!-- JS will render rows here -->
+                    </tbody>
+                </table>
+
+                <div id="ordEmptyState" class="inv-empty-state">
+                    <div class="inv-empty-icon">📦</div>
+                    <h3>No Orders Found</h3>
+                    <p>Try changing the date or client filter</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Page JS -->
+    <script type="module" src="./js/inventory_orders.js"></script>
+</body>
+
+</html>
