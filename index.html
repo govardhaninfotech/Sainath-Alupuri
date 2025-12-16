@@ -43,7 +43,6 @@
 
                 <button type="submit" class="submit-btn">Login</button>
             </form>
-
         </div>
     </div>
     <div id="popupContainer" class="popup-container">
@@ -58,12 +57,19 @@
         function checkUserLogin() {
             console.log("checkUserLogin");
 
+            // Check localStorage first (if remember me was checked)
             let rememberedUser = localStorage.getItem('rememberedUser');
-            log("remember user from local :", rememberedUser);
+
+            // If not in localStorage, check sessionStorage (if remember me was NOT checked)
+            if (!rememberedUser) {
+                rememberedUser = sessionStorage.getItem('rememberedUser');
+            }
+
+            console.log("remember user from storage :", rememberedUser);
             if (rememberedUser) {
                 try {
                     let userData = JSON.parse(rememberedUser);
-                    if (userData && userData.mobile && userData.role && userData.id) {
+                    if (userData && userData.role && userData.id) {
                         console.log("Remembered user found:", userData);
 
                         if (userData.role === 'admin') {

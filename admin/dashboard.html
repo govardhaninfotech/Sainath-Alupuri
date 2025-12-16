@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="./css/items.css">
     <link rel="stylesheet" href="./css/client.css">
     <link rel="stylesheet" href="./css/inventory.css">
+    <link rel="stylesheet" href="./css/inventory_orders.css">
 </head>
 
 <body>
@@ -30,7 +31,7 @@
                 </button>
 
                 <!-- Logo -->
-                <img class="navbar-logo" src="images/logo.png" alt="SAINATH Logo">
+                <img class="navbar-logo" src="images/logo.jpg" alt="SAINATH Logo">
                 <!-- User Menu with Avatar -->
                 <div class="user-menu">
                     <button class="user-icon-btn" onclick="toggleUserMenu()">
@@ -82,13 +83,13 @@
                             <span class="submenu-dot"></span>
                             <span class="menu-label">Items</span>
                         </button>
-                        <button class="menu-item submenu-item" onclick="navigateTo('user')">
-                            <span class="submenu-dot"></span>
-                            <span class="menu-label">User</span>
-                        </button>
-                        <button class="menu-item submenu-item" onclick="navigateTo('shop')">
+                        <!-- <button class="menu-item submenu-item" onclick="navigateTo('shop')">
                             <span class="submenu-dot"></span>
                             <span class="menu-label">Shop</span>
+                        </button> -->
+                        <button class="menu-item submenu-item" onclick="navigateTo('user')">
+                            <span class="submenu-dot"></span>
+                            <span class="menu-label">Clients</span>
                         </button>
                         <button class="menu-item submenu-item" onclick="navigateTo('staff')">
                             <span class="submenu-dot"></span>
@@ -101,6 +102,10 @@
                         <button class="menu-item submenu-item" onclick="navigateTo('bank')">
                             <span class="submenu-dot"></span>
                             <span class="menu-label">Bank / UPI</span>
+                        </button>
+                        <button class="menu-item submenu-item" onclick="navigateTo('expense_category')">
+                            <span class="submenu-dot"></span>
+                            <span class="menu-label">Expense Categories</span>
                         </button>
                     </div>
                     <!-- Inventory main button just toggles submenu -->
@@ -121,9 +126,16 @@
                             <span class="submenu-dot"></span>
                             <span class="menu-label">Orders</span>
                         </button>
+
+                        <button class="menu-item submenu-item" onclick="navigateTo('inventory_staff_attendance')">
+                            <span class="submenu-dot"></span>
+                            <span class="menu-label">Staff Attendance</span>
+                        </button>
+                        <button class="menu-item submenu-item" onclick="navigateTo('expances')">
+                            <span class="submenu-dot"></span>
+                            <span class="menu-label">Expances</span>
+                        </button>
                     </div>
-
-
                 </div>
             </div>
         </aside>

@@ -1,0 +1,471 @@
+/* ============================================
+   INVENTORY ORDERS - SEPARATE CSS FILE
+   ============================================ */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #f5f7fa 0%, #f0f2f5 100%);
+    min-height: 100vh;
+    padding: 20px;
+}
+
+/* Wrapper */
+.inv-wrapper {
+    max-width: 1800px;
+    margin: 0 auto;
+}
+
+/* ============================================
+   PAGE HEADER
+   ============================================ */
+.inv-page-header {
+    margin-bottom: 24px;
+}
+
+.inv-page-header h1 {
+    font-size: 32px;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 6px;
+}
+
+.inv-subtitle {
+    font-size: 15px;
+    color: #6b7280;
+    font-weight: 400;
+}
+
+/* ============================================
+   ORDERS PAGE - SPECIFIC STYLES
+   ============================================ */
+
+/* Orders Header with Filters in One Row */
+.inv-orders-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 30px;
+    margin-bottom: 28px;
+    padding: 28px 24px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 14px;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+    flex-wrap: wrap;
+}
+
+.inv-orders-title-section {
+    flex: 1;
+    min-width: 250px;
+}
+
+.inv-orders-title-section h1 {
+    font-size: 32px;
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 6px;
+}
+
+.inv-orders-title-section .inv-subtitle {
+    font-size: 15px;
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 400;
+}
+
+/* Inline Filters */
+.inv-orders-filters-inline {
+    display: flex;
+    gap: 20px;
+    align-items: flex-end;
+    flex: 1;
+    min-width: 300px;
+    justify-content: flex-end;
+}
+
+.inv-orders-filters-inline .ord-filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 0;
+    min-width: 200px;
+}
+
+.inv-orders-filters-inline .ord-filter-group label {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.95);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.inv-orders-filters-inline .ord-filter-group input,
+.inv-orders-filters-inline .ord-filter-group select {
+    width: 100%;
+    padding: 11px 14px;
+    border: 1.5px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    font-size: 14px;
+    background: rgba(255, 255, 255, 0.95);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: #374151;
+    appearance: none;
+    background-image: linear-gradient(45deg, transparent 50%, #667eea 50%),
+        linear-gradient(135deg, #667eea 50%, transparent 50%);
+    background-position: calc(100% - 14px) calc(50% - 2px),
+        calc(100% - 10px) calc(50% - 2px);
+    background-size: 4px 4px, 4px 4px;
+    background-repeat: no-repeat;
+    padding-right: 32px;
+}
+
+.inv-orders-filters-inline .ord-filter-group input:focus,
+.inv-orders-filters-inline .ord-filter-group select:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.8);
+    background: white;
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
+}
+
+.inv-orders-filters-inline .ord-filter-group input:hover,
+.inv-orders-filters-inline .ord-filter-group select:hover {
+    border-color: rgba(255, 255, 255, 0.6);
+    background: white;
+}
+
+/* Orders Table Card */
+.inv-orders-table-card {
+    background: white;
+    border-radius: 14px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 500px;
+}
+
+.inv-orders-table-card .ord-table-header {
+    padding: 24px;
+    background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+    border-bottom: 2px solid #e5e7eb;
+}
+
+.inv-orders-table-card .ord-table-header h3 {
+    font-size: 18px;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 4px;
+}
+
+.inv-orders-table-card .ord-table-subtitle {
+    font-size: 13px;
+    color: #9ca3af;
+    margin: 0;
+}
+
+/* Orders Table */
+.ord-data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.ord-orders-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.ord-orders-table thead {
+    background: #f9fafb;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.ord-orders-table th {
+    padding: 14px 16px;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #6b7280;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+.ord-orders-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 14px;
+    color: #374151;
+}
+
+.ord-orders-table tbody tr {
+    transition: all 0.2s ease;
+}
+
+.ord-orders-table tbody tr:hover {
+    background: #f9fafb;
+}
+
+.ord-orders-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Order Number Column */
+.ord-orders-table td:first-child {
+    font-weight: 600;
+    color: #667eea;
+    text-align: center;
+    width: 60px;
+    background: #f9fafb;
+}
+
+/* Status Column */
+.ord-orders-table td:last-child {
+    text-align: center;
+}
+
+/* Table Wrapper */
+.inv-orders-table-card .ord-table-wrapper {
+    flex: 1;
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: 600px;
+    position: relative;
+}
+
+/* ============================================
+   STATUS BADGES
+   ============================================ */
+.inv-status-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.inv-status-pending {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.inv-status-delivered {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.inv-status-accepted {
+    background: #dbeafe;
+    color: #0c4a6e;
+}
+
+.inv-status-processing {
+    background: #f3e8ff;
+    color: #581c87;
+}
+
+.inv-status-cancelled {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+/* Empty State */
+.ord-empty-state {
+    display: none;
+    text-align: center;
+    padding: 80px 20px;
+    color: #9ca3af;
+}
+
+.ord-empty-state.show {
+    display: block;
+}
+
+.ord-empty-icon {
+    font-size: 56px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.ord-empty-state h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #6b7280;
+    margin-bottom: 8px;
+}
+
+.ord-empty-state p {
+    font-size: 14px;
+    color: #9ca3af;
+}
+
+/* ============================================
+   RESPONSIVE - ORDERS PAGE
+   ============================================ */
+
+@media (max-width: 1024px) {
+    .inv-orders-header {
+        /* flex-direction: column; */
+        align-items: stretch;
+        gap: 20px;
+        padding: 24px 20px;
+    }
+
+    .inv-orders-title-section {
+        min-width: auto;
+    }
+
+    .inv-orders-filters-inline {
+        flex-direction: column;
+        justify-content: flex-start;
+        min-width: auto;
+    }
+
+    .inv-orders-filters-inline .inv-filter-group {
+        min-width: auto;
+    }
+
+    .inv-orders-filters-inline .inv-filter-group input,
+    .inv-orders-filters-inline .inv-filter-group select {
+        width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .inv-orders-header {
+        padding: 20px 16px;
+    }
+
+    .inv-orders-title-section h1 {
+        font-size: 26px;
+    }
+
+    .inv-orders-title-section .inv-subtitle {
+        font-size: 13px;
+    }
+
+    .inv-orders-filters-inline {
+        gap: 16px;
+    }
+
+    .inv-orders-filters-inline .ord-filter-group {
+        margin-bottom: 0;
+    }
+
+    .inv-orders-filters-inline .ord-filter-group label {
+        font-size: 12px;
+    }
+
+    .inv-orders-filters-inline .ord-filter-group input,
+    .inv-orders-filters-inline .ord-filter-group select {
+        padding: 10px 12px;
+        font-size: 13px;
+    }
+
+    .inv-orders-table-card {
+        min-height: 400px;
+    }
+
+    .inv-orders-table-card .ord-table-header {
+        padding: 18px;
+    }
+
+    .inv-orders-table-card .ord-table-header h3 {
+        font-size: 16px;
+    }
+
+    .inv-orders-table-card .ord-table-subtitle {
+        font-size: 12px;
+    }
+
+    .ord-orders-table th,
+    .ord-orders-table td {
+        padding: 12px 14px;
+        font-size: 13px;
+    }
+
+    .ord-table-wrapper {
+        max-height: 500px;
+    }
+}
+
+@media (max-width: 480px) {
+    .inv-orders-header {
+        padding: 18px 12px;
+        gap: 16px;
+    }
+
+    .inv-orders-title-section h1 {
+        font-size: 22px;
+    }
+
+    .inv-orders-title-section .inv-subtitle {
+        font-size: 12px;
+    }
+
+    .inv-orders-filters-inline {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .inv-orders-filters-inline .ord-filter-group {
+        margin-bottom: 0;
+    }
+
+    .inv-orders-filters-inline .ord-filter-group label {
+        font-size: 11px;
+    }
+
+    .inv-orders-filters-inline .ord-filter-group input,
+    .inv-orders-filters-inline .ord-filter-group select {
+        padding: 9px 11px;
+        font-size: 12px;
+    }
+
+    .inv-orders-table-card {
+        min-height: 350px;
+        border-radius: 10px;
+    }
+
+    .inv-orders-table-card .ord-table-header {
+        padding: 14px 12px;
+    }
+
+    .inv-orders-table-card .ord-table-header h3 {
+        font-size: 15px;
+    }
+
+    .inv-orders-table-card .ord-table-subtitle {
+        font-size: 11px;
+    }
+
+    .ord-orders-table th,
+    .ord-orders-table td {
+        padding: 10px 10px;
+        font-size: 12px;
+    }
+
+    .ord-orders-table th:first-child,
+    .ord-orders-table td:first-child {
+        width: 50px;
+        padding: 10px 6px;
+    }
+
+    .ord-table-wrapper {
+        max-height: 400px;
+    }
+
+    .inv-status-badge {
+        padding: 5px 10px;
+        font-size: 11px;
+    }
+}

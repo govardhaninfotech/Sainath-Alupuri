@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Inventory - Sainath</title>
+    <link rel="stylesheet" href="css/inventory.css">
+</head>
+
+<body>
+    <div class="inv-wrapper">
+        <!-- Page Header -->
+        <div class="inv-page-header">
+            <h1>Staff Expense Management</h1>
+            <p class="inv-subtitle">Track and manage staff expenses efficiently</p>
+        </div>
+
+        <!-- Main Grid Layout -->
+        <div class="inv-staff-layout">
+
+            <!-- TOP LEFT: Filters -->
+            <div class="inv-left-panel">
+                <div class="inv-filters-card">
+                    <h3 class="card-title">
+                        <span class="card-title-icon">🔍</span>
+                        Staff & Month Selection
+                    </h3>
+
+                    <div class="inv-filter-group">
+                        <label for="invStaffSelect">👤 Staff Selection</label>
+                        <select id="invStaffSelect"></select>
+                    </div>
+
+                    <div class="inv-filter-group">
+                        <label for="invMonthSelect">📅 Month Selection</label>
+                        <select id="invMonthSelect"></select>
+                    </div>
+
+                    <div class="inv-filter-group">
+                        <label for="invStatusSelect">🎯 Status Selection</label>
+                        <select id="invStatusSelect">
+                            <option value="all">All</option>
+                            <option value="active">Active</option>
+                            <option value="deactive">Inactive</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TOP RIGHT: Balance & Salary Cards -->
+            <div class="inv-right-panel">
+                <div class="inv-summary-cards">
+                    <div class="inv-summary-card balance-card">
+                        <div class="summary-icon">⚖️</div>
+                        <div class="summary-content">
+                            <p class="summary-label">Balance</p>
+                            <h2 id="invFinalBalance" class="summary-value">₹0</h2>
+                        </div>
+                    </div>
+
+                    <div class="inv-summary-card salary-card">
+                        <div class="summary-icon">💰</div>
+                        <div class="summary-content">
+                            <p class="summary-label">Salary</p>
+                            <h2 class="summary-value">₹<span id="invStaffSalary">0</span></h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BOTTOM LEFT: Form -->
+            <div class="inv-form-card">
+                <h3 class="card-title">
+                    <span class="card-title-icon">➕</span>
+                    Add New Expense
+                </h3>
+                <form class="inv-form">
+                    <div class="inv-form-group">
+                        <label for="invExpenseAmount">Amount <span class="required">*</span></label>
+                        <div class="inv-input-wrapper">
+                            <span class="inv-currency">₹</span>
+                            <input type="number" id="invExpenseAmount" placeholder="0.00" min="0" step="0.01" required>
+                        </div>
+                    </div>
+
+                    <div class="inv-form-group">
+                        <label for="invExpenseDate">Date <span class="required">*</span></label>
+                        <input type="date" id="invExpenseDate" required>
+                    </div>
+
+                    <div class="inv-form-group">
+                        <label for="invExpenseNote">Notes <span class="optional">(Optional)</span></label>
+                        <textarea id="invExpenseNote" placeholder="Add expense notes or description..."
+                            rows="3"></textarea>
+                    </div>
+
+                    <button type="button" id="invSubmitExpense" class="inv-submit-btn">
+                        💾 Save Expense
+                    </button>
+                </form>
+            </div>
+
+            <!-- BOTTOM RIGHT: Expense Table (Large) -->
+            <div class="inv-center-panel">
+                <div class="inv-table-card">
+                    <div class="table-header">
+                        <h3>📋 Expense Display</h3>
+                        <p class="table-subtitle">All recorded expenses with complete details</p>
+                    </div>
+
+                    <div class="inv-table-wrapper">
+                        <table class="inv-data-table">
+                            <thead>
+                                <tr>
+                                    <th class="row-number">#</th>
+                                    <th>Date</th>
+                                    <th>Amount</th>
+                                    <th>Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody id="invExpenseList">
+                                <!-- JS fills rows here -->
+                            </tbody>
+                        </table>
+                        <div id="invEmptyState" class="inv-empty-state">
+                            <div class="inv-empty-icon">📋</div>
+                            <h3>No Expenses Yet</h3>
+                            <p>Add your first expense using the form on the left</p>
+                        </div>
+                    </div>
+
+                    <!-- Total Expenses Display -->
+                    <div class="total-expenses">
+                        <p class="total-label">💵 Total Expenses</p>
+                        <h3 id="invTotalExpense" class="total-value">₹0.00</h3>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script type="module" src="./js/inventory.js"></script>
+</body>
+
+</html>

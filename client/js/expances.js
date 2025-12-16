@@ -2,7 +2,7 @@
 // USER PAGE - CRUD OPERATIONS WITH PAGINATION
 // ============================================
 
-import { userURLphp } from "../apis/api.js";
+import { userURLphp, shopURLphp } from "../apis/api.js";
 import {
     getItemsData,
     updateItem,
@@ -13,10 +13,12 @@ import { showNotification, showConfirm } from "./notification.js";
 import {
     validateRequiredField,
     validateIndianMobile,
+    validatePassword,
     validateUniqueMobile,
     validateForm,
     setupEscKeyHandler
 } from "./validation.js";
+
 // User Data Storage
 let userData = [];
 
@@ -28,10 +30,14 @@ let userTotalPages = 1;    // API "total_pages"
 
 let editingUserId = null;
 
+// Shop data (for dropdown + mapping shop_id → shop_name)
+let shopData = [];
+let shopDataLoaded = false;
+
 // ============================================
 // LOAD USER DATA FROM API (SERVER PAGINATION)
 // ============================================
-function loadUserData() {
+function loadExpanceData() {
     // Build URL with query params for server-side pagination
     const url = `${userURLphp}?page=${currentUserPage}&per_page=${userPerPage}`;
 
@@ -47,12 +53,73 @@ function loadUserData() {
     });
 }
 
+// ============================================
+// LOAD SHOP DATA (FOR DROPDOWN + TABLE DISPLAY)
+// ============================================
+// LOAD SHOP DATA (FOR DROPDOWN + TABLE DISPLAY)
+function loadShopData() {
+    if (shopDataLoaded && shopData.length > 0) return Promise.resolve(shopData);
+
+    const url = `${shopURLphp}?page=1&per_page=1000`;
+    return getItemsData(url).then(data => {
+        const allShops = data.shops || [];
+
+        // ✅ KEEP ALL SHOPS (do NOT filter here)
+        shopData = allShops;
+        shopDataLoaded = true;
+
+        return shopData;
+    }).catch(error => {
+        console.error("Error loading shop data:", error);
+        showNotification("Error loading shops!", "error");
+        return [];
+    });
+}
+
+
+// Helper: get shop_name from shop_id
+function getShopCodeById(shopId) {
+    if (!shopId) return "";
+    const shop = shopData.find(s => String(s.id) === String(shopId));
+    console.log("shop male 6", shopData);
+
+    if (shop) return shop.shop_name || "";
+    return "";
+}
+
+
+// Populate the Shop Code dropdown in the form
+function populateShopDropdown(selectedShopIdOrCode = "") {
+    const select = document.getElementById("userShopId");
+    if (!select) return Promise.resolve();
+
+    return loadShopData().then(shops => {
+
+        // ✅ Filter ONLY for dropdown
+        const availableShops = shops.filter(
+            shop => shop.status === "active" && shop.user_id === "null"
+        );
+
+        select.innerHTML = `<option value="">Select shop code</option>`;
+
+        availableShops.forEach(shop => {
+            const option = document.createElement("option");
+            option.value = shop.id;
+            option.textContent = shop.shop_name;
+            select.appendChild(option);
+        });
+
+        if (selectedShopIdOrCode) {
+            select.value = String(selectedShopIdOrCode);
+        }
+    });
+}
 
 // ============================================
 // RENDER USER TABLE WITH PAGINATION
 // ============================================
-export function renderuserTable() {
-    return loadUserData().then(() => generateTableHTML());
+export function renderInventoryExpancesPage() {
+    return loadExpanceData().then(() => loadShopData()).then(() => generateTableHTML());
 }
 
 // Generate table HTML (no client-side slicing now)
@@ -78,13 +145,13 @@ function generateTableHTML() {
             <tr>
                 <td>${user.name}</td>
                 <td>${user.mobile}</td>
-                <td>${user.shop_code}</td>
+                <td>${getShopCodeById(user.shop_id)}</td>
                
                 <td style="width: 150px;">
                     <div style="display: flex; align-items: center; justify-content: center;">
                         <label class="toggle-switch">
                             <input type="checkbox"
-                                   onchange="toggleUserStatus('${user.id}', '${user.status}')"
+                                   onchange="toggleExpanceStatus('${user.id}', '${user.status}')"
                                    ${user.status === 'active' ? 'checked' : ''}>
                             <span class="slider"></span>
                         </label>
@@ -93,7 +160,7 @@ function generateTableHTML() {
                     </div>
                 </td>
                 <td>
-                    <button class="btn-icon btn-edit" onclick="editUser('${user.id}')" title="Edit">
+                    <button class="btn-icon btn-edit" onclick="editExpance('${user.id}')" title="Edit">
                         <i class="icon-edit">✎</i>
                     </button>
                 </td>
@@ -104,8 +171,8 @@ function generateTableHTML() {
     return `
         <div class="content-card">
             <div class="staff-header">
-                <h2>Client Management</h2>
-                <button class="btn-add" onclick="openUserForm()">Add User</button>
+                <h2>User Management</h2>
+                <button class="btn-add" onclick="openExpanceForm()">Add User</button>
             </div>
             
             <div class="table-container">
@@ -130,9 +197,9 @@ function generateTableHTML() {
                     Showing ${total === 0 ? 0 : showingFrom} to ${showingTo} of ${total} entries
                 </div>
                 <div class="pagination-controls">
-                    <button onclick="changeUserPage('prev')" ${page === 1 ? "disabled" : ""}>Previous</button>
+                    <button onclick="changeExpancePage('prev')" ${page === 1 ? "disabled" : ""}>Previous</button>
                     <span class="page-number">Page ${page} of ${totalPages}</span>
-                    <button onclick="changeUserPage('next')" ${page === totalPages ? "disabled" : ""}>Next</button>
+                    <button onclick="changeExpancePage('next')" ${page === totalPages ? "disabled" : ""}>Next</button>
                 </div>
             </div>
         </div>
@@ -142,10 +209,10 @@ function generateTableHTML() {
             <div class="modal-content modal-responsive">
                 <div class="modal-header">
                     <h3 id="userFormTitle">Add New User</h3>
-                    <button class="close-btn" onclick="closeUserForm()">&times;</button>
+                    <button class="close-btn" onclick="closeExpanceForm()">&times;</button>
                 </div>
                 <div class="modal-body">
-                    <form id="userForm" onsubmit="submitUserForm(event)" class="form-responsive">
+                    <form id="userForm" onsubmit="submitExpanceForm(event)" class="form-responsive">
                         <input type="hidden" id="userId">
                         
                         <div class="form-row">
@@ -161,39 +228,21 @@ function generateTableHTML() {
                         </div>
 
                         <div class="form-row">
-                         
-
-                          <div class="form-group">
-                              <label for="userShopCode">Shop Code <span class="required">*</span></label>
-                              <input type="text" id="userShopCode" required placeholder="Enter shop code">
+                          <div class="form-group" id="passwordGroup">
+                            <label for="userPassword">Password <span class="required">*</span></label>
+                            <input type="password" id="userPassword" required placeholder="Enter password (min 6 characters)">
                           </div>
 
-                          <div class="form-group">
-                              <label for="userCreditLimit">Credit Limit</label>
-                              <input type="number" id="userCreditLimit" min="0" placeholder="Enter credit limit">
-                          </div>
+
+                            <div class="form-group">
+                                <label for="userShopId">Shop Code <span class="required">*</span></label>
+                                <select id="userShopId" required>
+                                    <option value="">Select shop code</option>
+                                    <!-- Options will be loaded from shops API -->
+                                </select>
+                            </div>
                         </div>
 
-                        <div class="form-row">
-
-                        <div class="form-group">
-                            <label for="userCurrentBalance">Current Balance</label>
-                            <input type="number" id="userCurrentBalance" min="0" placeholder="Enter current balance">
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-
-                        <div class="form-group">
-                            <label for="userAddress">Address</label>
-                            <textarea
-                                id="userAddress"
-                                rows="2"
-                                placeholder="Enter address"
-                                style="resize: vertical;"
-                            ></textarea>
-                        </div>
-                    </div>
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="userStatus">Status</label>
@@ -219,7 +268,7 @@ function generateTableHTML() {
                         </div>
 
                         <div class="form-actions">
-                            <button type="button" class="btn-cancel" onclick="closeUserForm()">Cancel</button>
+                            <button type="button" class="btn-cancel" onclick="closeExpanceForm()">Cancel</button>
                             <button type="submit" class="btn-submit">Save</button>
                         </div>
                     </form>
@@ -232,7 +281,7 @@ function generateTableHTML() {
 // ============================================
 // PAGINATION FUNCTIONS (SERVER-SIDE)
 // ============================================
-function changeUserPage(direction) {
+function changeExpancePage(direction) {
     if (direction === "next" && currentUserPage < userTotalPages) {
         currentUserPage++;
     } else if (direction === "prev" && currentUserPage > 1) {
@@ -241,7 +290,7 @@ function changeUserPage(direction) {
         return Promise.resolve(); // nothing to do
     }
 
-    return loadUserData().then(() => {
+    return loadExpanceData().then(() => {
         const mainContent = document.getElementById("mainContent");
         if (mainContent) {
             mainContent.innerHTML = generateTableHTML();
@@ -249,11 +298,11 @@ function changeUserPage(direction) {
     });
 }
 
-function changeUserPerPage(value) {
+function changeExpancePerPage(value) {
     userPerPage = parseInt(value, 10) || 10;
     currentUserPage = 1; // reset to first page when per-page changes
 
-    return loadUserData().then(() => {
+    return loadExpanceData().then(() => {
         const mainContent = document.getElementById("mainContent");
         if (mainContent) {
             mainContent.innerHTML = generateTableHTML();
@@ -264,8 +313,11 @@ function changeUserPerPage(value) {
 // ============================================
 // FORM FUNCTIONS
 // ============================================
-function openUserForm() {
-
+function openExpanceForm() {
+    if (shopData.length === 0) {
+        showNotification("No shops found!", "error");
+        return;
+    }
     editingUserId = null;
     document.getElementById("userFormTitle").textContent = "Add New User";
     document.getElementById("userForm").reset();
@@ -286,16 +338,16 @@ function openUserForm() {
     };
 
     // Load shop codes into dropdown
-    // return populateShopDropdown().then(() => {
-    //     const modal = document.getElementById("userFormModal");
-    //     modal.style.display = "flex";
-    //     setTimeout(() => {
-    //         modal.classList.add("show");
-    //     }, 10);
-    // });
+    return populateShopDropdown().then(() => {
+        const modal = document.getElementById("userFormModal");
+        modal.style.display = "flex";
+        setTimeout(() => {
+            modal.classList.add("show");
+        }, 10);
+    });
 }
 
-function closeUserForm() {
+function closeExpanceForm() {
     const modal = document.getElementById("userFormModal");
     modal.classList.remove("show");
     setTimeout(() => {
@@ -307,7 +359,7 @@ function closeUserForm() {
 // ============================================
 // DELETE USER FUNCTION WITH CONFIRMATION
 // ============================================
-function deleteUser(id) {
+function deleteExpance(id) {
     return showConfirm(
         "Are you sure you want to delete this user?",
         "warning"
@@ -319,7 +371,7 @@ function deleteUser(id) {
                 showNotification("User deleted successfully!", "success");
                 const mainContent = document.getElementById("mainContent");
                 if (mainContent) {
-                    return loadUserData().then(() => {
+                    return loadExpanceData().then(() => {
                         mainContent.innerHTML = generateTableHTML();
                     });
                 }
@@ -333,7 +385,14 @@ function deleteUser(id) {
 // ============================================
 // EDIT USER FUNCTION
 // ============================================
-function editUser(id) {
+function editExpance(id) {
+    // Hide password field on edit
+    const passwordGroup = document.getElementById("passwordGroup");
+    const passwordInput = document.getElementById("userPassword");
+
+    passwordGroup.style.display = "none";
+    passwordInput.required = false;
+    passwordInput.value = "";
 
     editingUserId = id;
     const item = userData.find(i => String(i.id) === String(id));
@@ -347,44 +406,41 @@ function editUser(id) {
     document.getElementById("userId").value = item.id;
     document.getElementById("userName").value = item.name;
     document.getElementById("userMobile").value = item.mobile || "";
-    document.getElementById("userShopCode").value = item.shop_code || "";
-    document.getElementById("userCreditLimit").value = item.credit_limit || 0;
-    document.getElementById("userCurrentBalance").value = item.current_balance || 0;
-    document.getElementById("userAddress").value = item.address || "";
-
+    document.getElementById("userPassword").value = item.password || "";
 
     // Make sure shop dropdown is populated and select current user's shop
-    const statusCheckbox = document.getElementById("userStatus");
-    const statusText = document.getElementById("userStatusText");
-    statusCheckbox.checked = item.status === "active";
-    statusText.textContent = item.status === "active" ? "Active" : "Inactive";
+    return populateShopDropdown(item.shop_id || "").then(() => {
+        const statusCheckbox = document.getElementById("userStatus");
+        const statusText = document.getElementById("userStatusText");
+        statusCheckbox.checked = item.status === "active";
+        statusText.textContent = item.status === "active" ? "Active" : "Inactive";
 
-    statusCheckbox.onchange = function () {
-        statusText.textContent = this.checked ? "Active" : "Inactive";
-    };
+        statusCheckbox.onchange = function () {
+            statusText.textContent = this.checked ? "Active" : "Inactive";
+        };
 
-    // Set is_family_member checkbox based on API value
-    const isFamilyMemberCheckbox = document.getElementById("userIsFamilyMember");
-    const isFamilyMemberText = document.getElementById("userIsFamilyMemberText");
-    // Handle both string "True"/"False" and boolean true/false from API
-    const isFamilyMemberValue = item.is_family_member;
-    const isFamilyMember = isFamilyMemberValue === "True" || isFamilyMemberValue === true || isFamilyMemberValue === "true";
-    isFamilyMemberCheckbox.checked = isFamilyMember;
-    isFamilyMemberText.textContent = isFamilyMember ? "Yes" : "No";
+        // Set is_family_member checkbox based on API value
+        const isFamilyMemberCheckbox = document.getElementById("userIsFamilyMember");
+        const isFamilyMemberText = document.getElementById("userIsFamilyMemberText");
+        // Handle both string "True"/"False" and boolean true/false from API
+        const isFamilyMemberValue = item.is_family_member;
+        const isFamilyMember = isFamilyMemberValue === "True" || isFamilyMemberValue === true || isFamilyMemberValue === "true";
+        isFamilyMemberCheckbox.checked = isFamilyMember;
+        isFamilyMemberText.textContent = isFamilyMember ? "Yes" : "No";
 
-    isFamilyMemberCheckbox.onchange = function () {
-        isFamilyMemberText.textContent = this.checked ? "Yes" : "No";
-    };
+        isFamilyMemberCheckbox.onchange = function () {
+            isFamilyMemberText.textContent = this.checked ? "Yes" : "No";
+        };
 
-    const modal = document.getElementById("userFormModal");
-    modal.style.display = "flex";
-    setTimeout(() => {
-        modal.classList.add("show");
-    }, 10);
-
+        const modal = document.getElementById("userFormModal");
+        modal.style.display = "flex";
+        setTimeout(() => {
+            modal.classList.add("show");
+        }, 10);
+    });
 }
 
-function submitUserForm(event) {
+function submitExpanceForm(event) {
     event.preventDefault();
     const statusCheckbox = document.getElementById("userStatus");
     const isFamilyMemberCheckbox = document.getElementById("userIsFamilyMember");
@@ -403,26 +459,32 @@ function submitUserForm(event) {
         document.getElementById("userMobile").value
     );
 
+    // Check unique mobile only if mobile validation passed
     let uniqueMobileValidation = { status: true };
-
-    if (editingUserId === null && mobileValidation.status) {
-        // Only check uniqueness when ADDING new user
+    if (mobileValidation.status) {
         uniqueMobileValidation = validateUniqueMobile(
             document.getElementById("userMobile").value,
             userData,
-            null
+            editingUserId
         );
     }
 
+    const passwordValidation = validatePassword(
+        document.getElementById("userPassword").value
+    );
+    const shopIdValidation = validateRequiredField(
+        document.getElementById("userShopId").value,
+        "Shop code"
+    );
 
     // Check all validations
     const formValidation = validateForm([
         nameValidation,
         mobileValidation,
         uniqueMobileValidation,
+        passwordValidation,
+        shopIdValidation
     ]);
-
-
 
     if (!formValidation.status) {
         showNotification(formValidation.message, "error");
@@ -432,16 +494,13 @@ function submitUserForm(event) {
     const formData = {
         name: document.getElementById("userName").value,
         mobile: document.getElementById("userMobile").value,
-        shop_code: document.getElementById("userShopCode").value,
-        credit_limit: document.getElementById("userCreditLimit").value || 0,
-        current_balance: document.getElementById("userCurrentBalance").value || 0,
-        address: document.getElementById("userAddress").value || "",
+        password: document.getElementById("userPassword").value,
+        // Still send shop_id to backend, but selected via shop code dropdown
+        shop_id: document.getElementById("userShopId").value,
         status: statusCheckbox.checked ? "active" : "inactive",
+        // Always send as string "True" or "False" to match API format, never null/undefined
         is_family_member: isFamilyMember ? "True" : "False"
     };
-
-    // ✅ Only send password if user entered it
-
 
     const mainContent = document.getElementById("mainContent");
 
@@ -469,9 +528,9 @@ function submitUserForm(event) {
                     showNotification(errorMessage, "error");
                 } else if (result) {
                     showNotification("User updated successfully!", "success");
-                    closeUserForm();
+                    closeExpanceForm();
                     if (mainContent) {
-                        return loadUserData().then(() => {
+                        return loadExpanceData().then(() => {
                             mainContent.innerHTML = generateTableHTML();
                         });
                     }
@@ -508,10 +567,10 @@ function submitUserForm(event) {
                     showNotification(errorMessage, "error");
                 } else if (result) {
                     showNotification("User added successfully!", "success");
-                    closeUserForm();
+                    closeExpanceForm();
 
                     if (mainContent) {
-                        return loadUserData().then(() => {
+                        return loadExpanceData().then(() => {
                             mainContent.innerHTML = generateTableHTML();
                         });
                     }
@@ -530,7 +589,7 @@ function submitUserForm(event) {
 // ============================================
 // TOGGLE USER STATUS
 // ============================================
-function toggleUserStatus(id, currentStatus) {
+function toggleExpanceStatus(id, currentStatus) {
     return showConfirm(
         `Are you sure you want to change this user's status to ${currentStatus === "active" ? "inactive" : "active"}?`,
         "warning"
@@ -542,7 +601,7 @@ function toggleUserStatus(id, currentStatus) {
             if (result) {
                 const mainContent = document.getElementById("mainContent");
                 if (mainContent) {
-                    return loadUserData().then(() => {
+                    return loadExpanceData().then(() => {
                         mainContent.innerHTML = generateTableHTML();
                         showNotification(`User status changed to ${newStatus}!`, "success");
                     });
@@ -558,21 +617,21 @@ function toggleUserStatus(id, currentStatus) {
 window.addEventListener("click", function (event) {
     const modal = document.getElementById("userFormModal");
     if (event.target === modal) {
-        closeUserForm();
+        closeExpanceForm();
     }
 });
 
 // ============================================
 // MAKE FUNCTIONS GLOBALLY ACCESSIBLE
 // ============================================
-window.deleteUser = deleteUser;
-window.editUser = editUser;
-window.toggleUserStatus = toggleUserStatus;
-window.openUserForm = openUserForm;
-window.closeUserForm = closeUserForm;
-window.submitUserForm = submitUserForm;
-window.changeUserPage = changeUserPage;
-window.changeUserPerPage = changeUserPerPage;
+window.deleteExpance = deleteExpance;
+window.editExpance = editExpance;
+window.toggleExpanceStatus = toggleExpanceStatus;
+window.openExpanceForm = openExpanceForm;
+window.closeExpanceForm = closeExpanceForm;
+window.submitExpanceForm = submitExpanceForm;
+window.changeExpancePage = changeExpancePage;
+window.changeExpancePerPage = changeExpancePerPage;
 window.showNotification = showNotification;
 window.generateTableHTML = generateTableHTML;
 window.showConfirm = showConfirm;

@@ -1,0 +1,392 @@
+POST /api/auth_login.php
+
+Purpose: Login by mobile + password.
+
+Request (JSON)
+
+{
+  "mobile": "9999999999",
+  "password": "demo123"
+}
+Success (200)
+{
+  "status": "ok",
+  "user": {
+    "id": 3,
+    "name": "Demo Shop",
+    "role": "client",
+    "franchise_id": 10
+  }
+}
+
+Errors
+ 400 missing fields: { "error": "Mobile and password required" }
+ 401 invalid creds: { "error": "Invalid credentials" }
+==================================================================================================
+Items
+GET /api/items.php
+
+List with pagination and optional status filter.
+
+Query params
+
+page (default 1), per_page (default 10), status (enable|disable)
+
+Success (200)
+
+{
+  "page": 1,
+  "per_page": 10,
+  "total": 25,
+  "total_pages": 3,
+  "items": [
+    {
+      "id": 1,
+      "name": "Rasa",
+      "description": "Spicy curry",
+      "price": "200.00",
+      "unit": "kg",
+      "image_path": "/uploads/items/rasa.jpg",
+      "status": "enable",
+      "sort_order": 1,
+      "created_at": "2025-03-15 10:00:00"
+    }
+  ]
+}
+
+GET /api/items.php?id=1
+
+Return single item or 404.
+
+=> POST /api/items.php
+
+Create item.
+
+Request (JSON)
+
+{
+  "name": "Rasa",
+  "description": "Spicy curry",
+  "price": 200,
+  "unit": "kg",
+  "image_path": "/uploads/items/rasa.jpg",
+  "status": "enable",
+  "sort_order": 1
+}
+
+
+Success (201)
+
+{ "status": "ok", "item": { /* new item object */ } }
+
+=> PUT/PATCH /api/items.php?id=1
+
+Partial/full update. Provide only fields to update.
+
+Success (200)
+
+{ "status": "ok", "item": { /* updated item */ } }
+
+=> DELETE /api/items.php?id=1 : Soft-delete (sets status='disable').
+
+Success (200)
+{ "status": "ok", "message": "Item disabled (soft deleted)" }
+==================================================================================================
+Users
+GET /api/users.php
+ List users, optional role (admin|client) and status.
+ Success: paginated users list similar to items response.
+
+GET /api/users.php?id=1 : Single user details (no password_hash).
+
+=> POST /api/users.php : Create user.
+
+Request
+{
+  "role": "client",
+  "franchise_id": 10,
+  "name": "Mr. Sharma",
+  "mobile": "9876543210",
+  "password": "secret123",
+  "status": "active"
+}
+
+Success (201)
+{ "status": "ok", "user": { "id": 4, "role":"client", "franchise_id":10, "name":"Mr. Sharma", "mobile":"9876543210", "status":"active", "created_at":"..." } }
+
+PUT/PATCH /api/users.php?id=1 : Update fields; include password to change it.
+
+DELETE /api/users.php?id=1 : Soft delete: sets status='inactive'.
+==================================================================================================
+Staff
+
+(Endpoint: /api/staff.php) — same pattern: list, get, create, update, soft-delete.
+
+Create sample
+{
+  "name": "Ravi",
+  "mobile": "9999990000",
+  "role": "kitchen",
+  "salary": 8000,
+  "start_date": "2025-03-01",
+  "status": "active",
+  "documents_path": null
+}
+Responses: same shape as items/users.
+==================================================================================================
+Vendors
+(Endpoint: /api/vendors.php) — CRUD with pagination.
+
+Create sample
+{
+  "name": "Shanti Traders",
+  "contact_person": "Mr. Mahesh",
+  "mobile": "9876512345",
+  "address": "Surat",
+  "start_date": "2024-07-01",
+  "notes": "Preferred vendor",
+  "status": "active"
+}
+==================================================================================================
+Shops
+(Endpoint: /api/shops.php)
+
+Create sample
+{
+  "franchise_id": 10,
+  "shop_name": "Ring Road Outlet",
+  "shop_code": "RR01",
+  "address": "Ring Road, Surat",
+  "start_date": "2025-03-20",
+  "status": "active"
+}
+List filter: franchise_id, status, pagination.
+==================================================================================================
+Bank / UPI Accounts
+(Endpoint: /api/bank_accounts.php)
+
+Create sample
+{
+  "type": "upi",
+  "name": "Owner GPay",
+  "details": "98765xxxx@ybl",
+  "starting_balance": 0,
+  "status": "active"
+}
+==================================================================================================
+Franchises
+(Endpoint: /api/franchises.php)
+
+List: supports q search (name/ref_code), status, pagination.
+Create sample
+{
+  "name": "Surat Central",
+  "primary_contact_mobile": "9876543210",
+  "ref_code": "SURAT001",
+  "credit_limit": 5000
+}
+Update: credit_limit, current_balance, status, owner_user_id, etc.
+==================================================================================================
+Raw Materials
+(Endpoint: /api/raw_materials.php)
+
+Create
+{
+  "name": "Edible Oil",
+  "unit": "ltr",
+  "current_stock": 100,
+  "reorder_level": 10,
+  "default_price_per_unit": 150.00,
+  "vendor_id": 3,
+  "expiry_type": "na"
+}
+List: q search on name.
+
+Note: Delete is not supported (use current_stock = 0 or vendor inactive).
+==================================================================================================
+Inventory Movements
+(Endpoint: /api/inventory_movements.php)
+
+POST create movement (updates raw_materials.current_stock automatically).
+Request
+{
+  "material_id": 1,
+  "change_qty": 10,               // positive number
+  "type": "in",                   // 'in'|'out'|'adjustment'
+  "reason": "Purchase from vendor",
+  "ref_type": "purchase",
+  "ref_id": 55,
+  "created_by": 1
+}
+Success
+{ "status": "ok", "movement_id": 123, "applied_delta": 10 }
+
+For type='out' the API will apply delta = -change_qty.
+GET list by material_id, paginated.
+==================================================================================================
+Staff Attendance
+(Endpoint: /api/staff_attendance.php)
+
+Create
+{
+  "staff_id": 2,
+  "date": "2025-03-20",
+  "in_time": "09:30:00",
+  "out_time": null,
+  "status": "present",
+  "notes": ""
+}
+
+GET list: filter staff_id, date.
+==================================================================================================
+Payments
+(Endpoint: /api/payments.php)
+
+POST add payment (supports cash and bulk payments)
+Request
+{
+  "franchise_id": 10,
+  "user_id": 1,             // admin who recorded the payment (optional)
+  "order_id": null,         // nullable if bulk/advance
+  "amount": 1500,
+  "method": "cash",         // 'cash','bank','upi',...
+  "bank_account_id": null,
+  "notes": "Paid for orders 101 & 102"
+}
+
+Success
+{
+  "status": "ok",
+  "payment_id": 100,
+  "outstanding": -250
+}
+
+GET /api/payments.php?franchise_id=10 — returns recent payments.
+==================================================================================================
+Orders
+(Endpoint: /api/orders.php)
+
+POST Place Order
+Request
+{
+  "user_id": 3,
+  "franchise_id": 10,
+  "shop_id": 5,
+  "delivery_type": "urgent",  // 'urgent'|'nextday'
+  "notes": "Please deliver before 5pm",
+  "items": [
+    { "item_id": 1, "qty": 2 },
+    { "item_id": 3, "qty": 1 }
+  ]
+}
+
+Success (201)
+{
+  "status": "ok",
+  "order_id": 101,
+  "order_no": "ALP202503150001",
+  "total": 1250.00,
+  "new_balance": 1250.00
+}
+
+Errors
+400 invalid data: { "error":"Missing required fields" }
+400 credit limit: includes outstanding_now, credit_limit, order_amount, would_be_balance.
+
+GET /api/orders.php?franchise_id=10
+List orders (optional status filter). Returns array of orders.
+==================================================================================================
+Balance
+GET /api/balance.php?franchise_id=10
+
+Success
+{
+  "franchise_id": 10,
+  "total_orders": 1250,
+  "total_payments": 1500,
+  "outstanding": -250,
+  "status_text": "Advance 250.00"
+}
+==================================================================================================
+Audit Logs
+(Endpoint: /api/audit_logs.php)
+
+GET list, filter by entity and entity_id.
+POST to record an audit entry:
+
+Request
+{
+  "entity": "payments",
+  "entity_id": 100,
+  "action": "update",
+  "old_value": { "amount": 1000 },
+  "new_value": { "amount": 1500 },
+  "user_id": 1
+}
+
+Success
+{ "status":"ok", "log_id": 501 }
+==================================================================================================
+Documents (uploads)
+(Endpoint: /api/documents.php)
+
+POST (multipart/form-data)
+Fields: owner_type (franchise/shop/staff/vendor), owner_id, uploaded_by (optional), file field file (PDF only, max 10MB).
+
+curl example
+curl -X POST "http://.../api/documents.php" \
+  -F "owner_type=franchise" \
+  -F "owner_id=10" \
+  -F "uploaded_by=1" \
+  -F "file=@/path/to/doc.pdf"
+
+Success (201)
+{ "status": "ok", "document_id": 55, "file_path": "/uploads/franchise/10/..." }
+
+GET /api/documents.php?owner_type=franchise&owner_id=10
+
+List documents for that owner.
+DELETE /api/documents.php?id=55
+
+Removes DB record and attempts to unlink file.
+Note: Create uploads/ folder at project root and set write perms.
+==================================================================================================
+Order Reminders
+(Endpoint: /api/order_reminders.php)
+
+POST
+{
+  "order_id": 101,
+  "user_id": 3,
+  "reminder_type": "delivery"
+}
+
+Enforces max 2 reminders per order.
+Success
+{ "status":"ok", "reminder_id": 7 }
+
+GET
+Filter by order_id or franchise_id.
+==================================================================================================
+Settings
+(Endpoint: /api/settings.php)
+
+GET /api/settings.php?key=same_day_cutoff_time
+Returns single key/value or list all keys.
+
+POST (upsert)
+{
+  "key": "same_day_cutoff_time",
+  "value": "12:00"
+}
+
+Success
+{ "status":"ok", "setting": { "id": 3, "key": "same_day_cutoff_time", "value": "12:00", "updated_at":"..." } }
+
+Common Error Patterns
+400 — bad request / missing required field
+401 — unauthorized (if auth added later)
+404 — resource not found
+405 — method not allowed
+500 — server/db exception with detail (for debugging)
+==================================================================================================
