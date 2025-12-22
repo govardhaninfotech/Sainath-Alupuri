@@ -8,10 +8,13 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 24px;
+    gap: 12px;
 }
 
 .items-header h2 {
     margin: 0;
+    font-size: 24px;
+    color: #111827;
 }
 
 /* Buttons */
@@ -20,11 +23,35 @@
     color: white;
     border: none;
     padding: 10px 20px;
-    border-radius: 6px;
+    border-radius: 8px;
     cursor: pointer;
     font-size: 14px;
     font-weight: 500;
-    transition: background 0.3s;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
+}
+
+.btn-add:hover {
+    background: #5568d3;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+}
+
+.btn-add:active {
+    transform: translateY(0);
+}
+
+.btn-icon-svg {
+    width: 18px;
+    height: 18px;
+    stroke-width: 2.5;
+}
+
+.btn-text {
+    display: inline;
 }
 
 .btn-add:hover {

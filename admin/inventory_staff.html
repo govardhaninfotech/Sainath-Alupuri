@@ -12,8 +12,7 @@
     <div class="inv-wrapper">
         <!-- Page Header -->
         <div class="inv-page-header">
-            <h1>Staff Expense Management</h1>
-            <p class="inv-subtitle">Track and manage staff expenses efficiently</p>
+            <h1>Staff Expense</h1>
         </div>
 
         <!-- Main Grid Layout -->
@@ -76,6 +75,13 @@
                     Add New Expense
                 </h3>
                 <form class="inv-form">
+                    <!-- <div class="inv-form-group">
+                        <label for="invExpenseCategory">Category <span class="required">*</span></label>
+                        <select id="invExpenseCategory" required>
+                            <option value="">Select Category</option>
+                        </select>
+                    </div> -->
+
                     <div class="inv-form-group">
                         <label for="invExpenseAmount">Amount <span class="required">*</span></label>
                         <div class="inv-input-wrapper">
@@ -87,6 +93,22 @@
                     <div class="inv-form-group">
                         <label for="invExpenseDate">Date <span class="required">*</span></label>
                         <input type="date" id="invExpenseDate" required>
+                    </div>
+
+                    <div class="inv-form-group">
+                        <label for="invPaymentMode">Payment Mode <span class="required">*</span></label>
+                        <select id="invPaymentMode" required>
+                            <option value="cash" selected>Cash</option>
+                            <option value="bank">Bank</option>
+                            <option value="upi">UPI</option>
+                        </select>
+                    </div>
+
+                    <div class="inv-form-group">
+                        <label for="invBankAccount">Bank Account <span class="required">*</span></label>
+                        <select id="invBankAccount" required>
+                            <option value="">Select Bank Account</option>
+                        </select>
                     </div>
 
                     <div class="inv-form-group">
@@ -113,9 +135,11 @@
                         <table class="inv-data-table">
                             <thead>
                                 <tr>
-                                    <th class="row-number">#</th>
+                                    <th class="row-number">Sr No</th>
                                     <th>Date</th>
+                                    <!-- <th>Category</th> -->
                                     <th>Amount</th>
+                                    <th>Payment</th>
                                     <th>Notes</th>
                                 </tr>
                             </thead>

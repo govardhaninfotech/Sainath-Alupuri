@@ -1,5 +1,5 @@
 /* ============================================
-   INVENTORY STAFF - CUSTOM LAYOUT REDESIGN
+   STAFF INVENTORY - CLEAN & RESPONSIVE CSS
    ============================================ */
 
 * {
@@ -15,7 +15,9 @@ body {
     padding: 20px;
 }
 
-/* Wrapper */
+/* ============================================
+   WRAPPER
+   ============================================ */
 .inv-wrapper {
     max-width: 1800px;
     margin: 0 auto;
@@ -42,7 +44,7 @@ body {
 }
 
 /* ============================================
-   MAIN LAYOUT - CUSTOM GRID
+   MAIN LAYOUT - GRID SYSTEM
    ============================================ */
 .inv-staff-layout {
     display: grid;
@@ -51,7 +53,7 @@ body {
     gap: 20px;
 }
 
-/* TOP ROW: Filters (left) + Balance & Salary Cards (right) */
+/* Grid Positioning */
 .inv-left-panel {
     grid-column: 1;
     grid-row: 1;
@@ -64,7 +66,11 @@ body {
     gap: 20px;
 }
 
-/* BOTTOM ROW: Form (left) + Table (right) */
+.inv-form-card {
+    grid-column: 1;
+    grid-row: 2;
+}
+
 .inv-center-panel {
     grid-column: 2;
     grid-row: 2;
@@ -154,7 +160,6 @@ body {
     display: flex;
     gap: 20px;
     width: 100%;
-    height: 20%;
 }
 
 .inv-summary-card {
@@ -170,6 +175,8 @@ body {
     justify-content: center;
     text-align: center;
     min-height: 180px;
+    height: 10%;
+
 }
 
 .inv-summary-card:hover {
@@ -183,6 +190,7 @@ body {
 
 .inv-summary-card.salary-card {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
 }
 
 .summary-icon {
@@ -218,8 +226,6 @@ body {
     padding: 24px;
     border-radius: 12px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-    grid-column: 1;
-    grid-row: 2;
     height: 100%;
 }
 
@@ -270,6 +276,7 @@ body {
 }
 
 .inv-form-group input,
+.inv-form-group select,
 .inv-form-group textarea {
     width: 100%;
     padding: 11px 14px;
@@ -281,12 +288,26 @@ body {
     color: #374151;
 }
 
+.inv-form-group select {
+    background: white;
+    cursor: pointer;
+    appearance: none;
+    background-image: linear-gradient(45deg, transparent 50%, #667eea 50%),
+        linear-gradient(135deg, #667eea 50%, transparent 50%);
+    background-position: calc(100% - 14px) calc(50% - 2px),
+        calc(100% - 10px) calc(50% - 2px);
+    background-size: 4px 4px, 4px 4px;
+    background-repeat: no-repeat;
+    padding-right: 32px;
+}
+
 .inv-form-group input::placeholder,
 .inv-form-group textarea::placeholder {
     color: #d1d5db;
 }
 
 .inv-form-group input:focus,
+.inv-form-group select:focus,
 .inv-form-group textarea:focus {
     outline: none;
     border-color: #667eea;
@@ -321,7 +342,7 @@ body {
 }
 
 /* ============================================
-   TABLE CARD (BOTTOM RIGHT - LARGE)
+   TABLE CARD (BOTTOM RIGHT)
    ============================================ */
 .inv-table-card {
     background: white;
@@ -405,16 +426,20 @@ body {
     color: #667eea;
 }
 
+.inv-data-table td.action-col {
+    text-align: center;
+}
+
+.inv-data-table tbody tr {
+    transition: background 0.2s ease;
+}
+
 .inv-data-table tbody tr:hover {
     background: #f9fafb;
 }
 
 .inv-data-table tbody tr:last-child td {
     border-bottom: none;
-}
-
-.inv-data-table td.action-col {
-    text-align: center;
 }
 
 .action-btn {
@@ -441,7 +466,9 @@ body {
     transform: scale(0.95);
 }
 
-/* Empty State */
+/* ============================================
+   EMPTY STATE
+   ============================================ */
 .inv-empty-state {
     display: none;
     text-align: center;
@@ -471,7 +498,9 @@ body {
     color: #9ca3af;
 }
 
-/* Total Expenses Display */
+/* ============================================
+   TOTAL EXPENSES SECTION
+   ============================================ */
 .total-expenses {
     padding: 20px 24px;
     background: #f9fafb;
@@ -499,7 +528,7 @@ body {
    RESPONSIVE DESIGN
    ============================================ */
 
-/* Tablet Large: 1200px and below */
+/* Large Tablets & Small Desktops: 1200px and below */
 @media (max-width: 1200px) {
     .inv-staff-layout {
         grid-template-columns: 1fr;
@@ -529,9 +558,13 @@ body {
     .inv-summary-cards {
         flex-direction: row;
     }
+
+    .inv-summary-card {
+        min-height: 160px;
+    }
 }
 
-/* Tablet: 768px and below */
+/* Tablets: 768px and below */
 @media (max-width: 768px) {
     body {
         padding: 12px;
@@ -543,6 +576,10 @@ body {
 
     .inv-page-header h1 {
         font-size: 26px;
+    }
+
+    .inv-subtitle {
+        font-size: 14px;
     }
 
     .inv-filters-card,
@@ -573,6 +610,7 @@ body {
 
     .inv-summary-card {
         min-height: 140px;
+        padding: 20px;
     }
 
     .summary-icon {
@@ -608,6 +646,23 @@ body {
     .total-value {
         font-size: 22px;
     }
+
+    .inv-form-group input,
+    .inv-form-group select,
+    .inv-form-group textarea {
+        padding: 10px 12px;
+        font-size: 13px;
+    }
+
+    .inv-filter-group select {
+        padding: 10px 12px;
+        font-size: 13px;
+    }
+
+    .inv-submit-btn {
+        padding: 11px 20px;
+        font-size: 14px;
+    }
 }
 
 /* Mobile: 480px and below */
@@ -638,6 +693,11 @@ body {
     .card-title {
         font-size: 15px;
         margin-bottom: 12px;
+        padding-bottom: 10px;
+    }
+
+    .card-title-icon {
+        font-size: 18px;
     }
 
     .inv-filter-group label,
@@ -647,9 +707,10 @@ body {
 
     .inv-filter-group select,
     .inv-form-group input,
+    .inv-form-group select,
     .inv-form-group textarea {
-        padding: 10px 12px;
-        font-size: 13px;
+        padding: 9px 11px;
+        font-size: 12px;
     }
 
     .inv-form-group textarea {
@@ -657,13 +718,13 @@ body {
     }
 
     .inv-submit-btn {
-        padding: 11px 18px;
-        font-size: 14px;
+        padding: 10px 16px;
+        font-size: 13px;
     }
 
     .inv-summary-card {
         min-height: 120px;
-        padding: 18px;
+        padding: 16px;
     }
 
     .summary-icon {
@@ -697,7 +758,7 @@ body {
 
     .inv-data-table th,
     .inv-data-table td {
-        padding: 10px 12px;
+        padding: 10px 8px;
         font-size: 12px;
     }
 
@@ -710,8 +771,8 @@ body {
     }
 
     .action-btn {
-        width: 30px;
-        height: 30px;
+        width: 32px;
+        height: 32px;
         font-size: 14px;
     }
 
@@ -734,6 +795,10 @@ body {
         font-size: 44px;
     }
 
+    .inv-empty-state {
+        padding: 60px 16px;
+    }
+
     .inv-empty-state h3 {
         font-size: 16px;
     }
@@ -743,396 +808,60 @@ body {
     }
 }
 
-/* ============================================
-   ORDERS PAGE - SPECIFIC STYLES
-   ============================================ */
-
-/* Orders Header with Filters in One Row */
-.inv-orders-header {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 30px;
-    margin-bottom: 28px;
-    padding: 28px 24px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 14px;
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
-    flex-wrap: wrap;
-}
-
-.inv-orders-title-section {
-    flex: 1;
-    min-width: 250px;
-}
-
-.inv-orders-title-section h1 {
-    font-size: 32px;
-    font-weight: 700;
-    color: #ffffff;
-    margin-bottom: 6px;
-}
-
-.inv-orders-title-section .inv-subtitle {
-    font-size: 15px;
-    color: rgba(255, 255, 255, 0.9);
-    font-weight: 400;
-}
-
-/* Inline Filters */
-.inv-orders-filters-inline {
-    display: flex;
-    gap: 20px;
-    align-items: flex-end;
-    flex: 1;
-    min-width: 300px;
-    justify-content: flex-end;
-}
-
-.inv-orders-filters-inline .inv-filter-group {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-bottom: 0;
-    min-width: 200px;
-}
-
-.inv-orders-filters-inline .inv-filter-group label {
-    font-size: 13px;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.95);
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.inv-orders-filters-inline .inv-filter-group input,
-.inv-orders-filters-inline .inv-filter-group select {
-    width: 100%;
-    padding: 11px 14px;
-    border: 1.5px solid rgba(255, 255, 255, 0.3);
-    border-radius: 8px;
-    font-size: 14px;
-    background: rgba(255, 255, 255, 0.95);
-    cursor: pointer;
-    transition: all 0.3s ease;
-    color: #374151;
-    appearance: none;
-    background-image: linear-gradient(45deg, transparent 50%, #667eea 50%),
-        linear-gradient(135deg, #667eea 50%, transparent 50%);
-    background-position: calc(100% - 14px) calc(50% - 2px),
-        calc(100% - 10px) calc(50% - 2px);
-    background-size: 4px 4px, 4px 4px;
-    background-repeat: no-repeat;
-    padding-right: 32px;
-}
-
-.inv-orders-filters-inline .inv-filter-group input:focus,
-.inv-orders-filters-inline .inv-filter-group select:focus {
-    outline: none;
-    border-color: rgba(255, 255, 255, 0.8);
-    background: white;
-    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
-}
-
-.inv-orders-filters-inline .inv-filter-group input:hover,
-.inv-orders-filters-inline .inv-filter-group select:hover {
-    border-color: rgba(255, 255, 255, 0.6);
-    background: white;
-}
-
-/* Orders Table Card */
-.inv-orders-table-card {
-    background: white;
-    border-radius: 14px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    min-height: 500px;
-}
-
-.inv-orders-table-card .table-header {
-    padding: 24px;
-    background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
-    border-bottom: 2px solid #e5e7eb;
-}
-
-.inv-orders-table-card .table-header h3 {
-    font-size: 18px;
-    font-weight: 700;
-    color: #111827;
-    margin-bottom: 4px;
-}
-
-.inv-orders-table-card .table-subtitle {
-    font-size: 13px;
-    color: #9ca3af;
-    margin: 0;
-}
-
-/* Orders Table */
-.inv-orders-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.inv-orders-table thead {
-    background: #f9fafb;
-    position: sticky;
-    top: 0;
-    z-index: 10;
-}
-
-.inv-orders-table th {
-    padding: 14px 16px;
-    text-align: left;
-    font-size: 12px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: #6b7280;
-    border-bottom: 2px solid #e5e7eb;
-}
-
-.inv-orders-table td {
-    padding: 14px 16px;
-    border-bottom: 1px solid #f0f0f0;
-    font-size: 14px;
-    color: #374151;
-}
-
-.inv-orders-table tbody tr {
-    transition: all 0.2s ease;
-}
-
-.inv-orders-table tbody tr:hover {
-    background: #f9fafb;
-}
-
-.inv-orders-table tbody tr:last-child td {
-    border-bottom: none;
-}
-
-/* Order Number Column */
-.inv-orders-table td:first-child {
-    font-weight: 600;
-    color: #667eea;
-    text-align: center;
-    width: 60px;
-    background: #f9fafb;
-}
-
-/* Status Column */
-.inv-orders-table td:last-child {
-    text-align: center;
-}
-
-/* Table Wrapper */
-.inv-orders-table-card .inv-table-wrapper {
-    flex: 1;
-    overflow-x: auto;
-    overflow-y: auto;
-    max-height: 600px;
-    position: relative;
-}
-
-/* ============================================
-   STATUS BADGES
-   ============================================ */
-.inv-status-badge {
-    display: inline-block;
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 600;
-    text-align: center;
-    white-space: nowrap;
-}
-
-.inv-status-pending {
-    background: #fef3c7;
-    color: #92400e;
-}
-
-.inv-status-delivered {
-    background: #dcfce7;
-    color: #166534;
-}
-
-.inv-status-accepted {
-    background: #dbeafe;
-    color: #0c4a6e;
-}
-
-.inv-status-processing {
-    background: #f3e8ff;
-    color: #581c87;
-}
-
-.inv-status-cancelled {
-    background: #fee2e2;
-    color: #991b1b;
-}
-
-/* ============================================
-   RESPONSIVE - ORDERS PAGE
-   ============================================ */
-
-@media (max-width: 1024px) {
-    .inv-orders-header {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 20px;
-        padding: 24px 20px;
+/* Extra Small Mobile: 360px and below */
+@media (max-width: 360px) {
+    body {
+        padding: 8px;
     }
 
-    .inv-orders-title-section {
-        min-width: auto;
+    .inv-page-header h1 {
+        font-size: 20px;
     }
 
-    .inv-orders-filters-inline {
-        flex-direction: column;
-        justify-content: flex-start;
-        min-width: auto;
-    }
-
-    .inv-orders-filters-inline .inv-filter-group {
-        min-width: auto;
-    }
-
-    .inv-orders-filters-inline .inv-filter-group input,
-    .inv-orders-filters-inline .inv-filter-group select {
-        width: 100%;
-    }
-}
-
-@media (max-width: 768px) {
-    .inv-orders-header {
-        padding: 20px 16px;
-    }
-
-    .inv-orders-title-section h1 {
-        font-size: 26px;
-    }
-
-    .inv-orders-title-section .inv-subtitle {
-        font-size: 13px;
-    }
-
-    .inv-orders-filters-inline {
-        gap: 16px;
-    }
-
-    .inv-orders-filters-inline .inv-filter-group {
-        margin-bottom: 0;
-    }
-
-    .inv-orders-filters-inline .inv-filter-group label {
+    .inv-subtitle {
         font-size: 12px;
     }
 
-    .inv-orders-filters-inline .inv-filter-group input,
-    .inv-orders-filters-inline .inv-filter-group select {
-        padding: 10px 12px;
-        font-size: 13px;
+    .inv-filters-card,
+    .inv-form-card,
+    .inv-table-card {
+        padding: 12px;
     }
 
-    .inv-orders-table-card {
-        min-height: 400px;
+    .card-title {
+        font-size: 14px;
     }
 
-    .inv-orders-table-card .table-header {
-        padding: 18px;
+    .inv-summary-card {
+        min-height: 110px;
+        padding: 14px;
     }
 
-    .inv-orders-table-card .table-header h3 {
-        font-size: 16px;
+    .summary-icon {
+        font-size: 24px;
     }
 
-    .inv-orders-table-card .table-subtitle {
-        font-size: 12px;
+    .summary-label {
+        font-size: 10px;
     }
 
-    .inv-orders-table th,
-    .inv-orders-table td {
-        padding: 12px 14px;
-        font-size: 13px;
-    }
-
-    .inv-table-wrapper {
-        max-height: 500px;
-    }
-}
-
-@media (max-width: 480px) {
-    .inv-orders-header {
-        padding: 18px 12px;
-        gap: 16px;
-    }
-
-    .inv-orders-title-section h1 {
+    .summary-value {
         font-size: 22px;
     }
 
-    .inv-orders-title-section .inv-subtitle {
-        font-size: 12px;
-    }
-
-    .inv-orders-filters-inline {
-        flex-direction: column;
-        gap: 12px;
-    }
-
-    .inv-orders-filters-inline .inv-filter-group {
-        margin-bottom: 0;
-    }
-
-    .inv-orders-filters-inline .inv-filter-group label {
+    .inv-data-table th,
+    .inv-data-table td {
+        padding: 8px 6px;
         font-size: 11px;
     }
 
-    .inv-orders-filters-inline .inv-filter-group input,
-    .inv-orders-filters-inline .inv-filter-group select {
-        padding: 9px 11px;
+    .action-btn {
+        width: 28px;
+        height: 28px;
         font-size: 12px;
     }
 
-    .inv-orders-table-card {
-        min-height: 350px;
-        border-radius: 10px;
-    }
-
-    .inv-orders-table-card .table-header {
-        padding: 14px 12px;
-    }
-
-    .inv-orders-table-card .table-header h3 {
-        font-size: 15px;
-    }
-
-    .inv-orders-table-card .table-subtitle {
-        font-size: 11px;
-    }
-
-    .inv-orders-table th,
-    .inv-orders-table td {
-        padding: 10px 10px;
-        font-size: 12px;
-    }
-
-    .inv-orders-table th:first-child,
-    .inv-orders-table td:first-child {
-        width: 50px;
-        padding: 10px 6px;
-    }
-
-    .inv-table-wrapper {
-        max-height: 400px;
-    }
-
-    .inv-status-badge {
-        padding: 5px 10px;
-        font-size: 11px;
+    .total-value {
+        font-size: 18px;
     }
 }

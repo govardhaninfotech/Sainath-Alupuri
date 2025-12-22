@@ -324,8 +324,12 @@ function renderHomeStats() {
 // ===============================
 // HTML Generator
 // ===============================
-
 export function renderHomePage() {
+    return `<h1>Home Page</h1>`;
+
+}
+
+export function renderHomePage1() {
     console.log("🧱 Rendering Home HTML");
 
     return `

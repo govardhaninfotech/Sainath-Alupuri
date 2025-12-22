@@ -2,6 +2,10 @@
 
 export let baseURL = "https://gisurat.com/govardhan/sainath_aloopuri/api"
 
+export let sendOTPURL = `${baseURL}/send_otp.php`
+
+export let verifyOTPURL = `${baseURL}/verify_otp.php`
+
 export let userURL = `${baseURL}/auth_login.php`
 
 export let itemURLphp = `${baseURL}/items.php`
@@ -11,7 +15,7 @@ export let staffURLphp = `${baseURL}/staff.php`
 export let bankURLphp = `${baseURL}/bank_accounts.php`
 
 export let userURLphp = `${baseURL}/users.php`
-    
+
 export let shopURLphp = `${baseURL}/shops.php`
 
 export let ordersURLphp = `${baseURL}/orders.php`
@@ -22,24 +26,4 @@ export let attendanceURLphp = `${baseURL}/attendance_api.php`;
 
 export let expenseCategoriesURLphp = `${baseURL}/expense_categories.php`;
 
-// --------------*-----------------*--------------*-----------------*--------------*
-// json urls 
-
-export let expenseListURL = `apis/staff_expenses.json`;
-
-export let addExpenseURL = `apis/add_staff_expense.php`;
-
-export const ORDERS_URL = "http://localhost:3000/orders";
-
-export const ORDER_ITEMS_URL = "http://localhost:3000/order_items";
-
-export const STATUS_URL = "http://localhost:3000/status";
-
-export const EXPENSES_URL = "http://localhost:3000/expenses";
-
-export const ATTENDANCE_URL = "http://localhost:3000/attendance";
-
-
-
-
-
+export let expenseURLphp = `${baseURL}/expenses.php`;

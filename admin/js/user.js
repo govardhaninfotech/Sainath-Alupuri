@@ -73,25 +73,19 @@ function generateTableHTML() {
     }
 
     let tableRows = "";
-    userData.forEach(user => {
+    for (let index = 0; index < userData.length; index++) {
+        const serialNo = (page - 1) * perPage + index + 1;
+
+        let user = userData[index];
         tableRows += `
-            <tr>
+    <tr>
+                <td>${serialNo}</td>
                 <td>${user.name}</td>
+                <td>${user.email}</td>
                 <td>${user.mobile}</td>
                 <td>${user.shop_code}</td>
-               
-                <td style="width: 150px;">
-                    <div style="display: flex; align-items: center; justify-content: center;">
-                        <label class="toggle-switch">
-                            <input type="checkbox"
-                                   onchange="toggleUserStatus('${user.id}', '${user.status}')"
-                                   ${user.status === 'active' ? 'checked' : ''}>
-                            <span class="slider"></span>
-                        </label>
-                        <span class="status-text" style="margin-left: 10px; font-weight: 500; min-width: 60px;">
-                        </span>
-                    </div>
-                </td>
+                <td>${user.current_balance}</td>
+                <td>${user.is_family_member}</td>
                 <td>
                     <button class="btn-icon btn-edit" onclick="editUser('${user.id}')" title="Edit">
                         <i class="icon-edit">✎</i>
@@ -99,7 +93,7 @@ function generateTableHTML() {
                 </td>
             </tr>
         `;
-    });
+    }
 
     return `
         <div class="content-card">
@@ -112,10 +106,13 @@ function generateTableHTML() {
                 <table class="data-table">
                     <thead>
                         <tr>
+                            <th>Sr No</th>
                             <th>Name</th>
+                            <th>Email</th>
                             <th>Mobile</th>
                             <th>Shop Code</th>
-                            <th>Status</th>
+                            <th>Balance</th>
+                            <th>Family Member?</th>
                             <th>Edit</th>
                         </tr>
                     </thead>
@@ -164,22 +161,26 @@ function generateTableHTML() {
                          
 
                           <div class="form-group">
+                              <label for="userEmail">Email <span class="required">*</span></label>
+                              <input type="email" id="userEmail" required placeholder="Enter Email id">
+                          </div>
+                          <div class="form-group">
                               <label for="userShopCode">Shop Code <span class="required">*</span></label>
                               <input type="text" id="userShopCode" required placeholder="Enter shop code">
                           </div>
-
-                          <div class="form-group">
-                              <label for="userCreditLimit">Credit Limit</label>
-                              <input type="number" id="userCreditLimit" min="0" placeholder="Enter credit limit">
                           </div>
-                        </div>
-
-                        <div class="form-row">
-
-                        <div class="form-group">
-                            <label for="userCurrentBalance">Current Balance</label>
-                            <input type="number" id="userCurrentBalance" min="0" placeholder="Enter current balance">
-                        </div>
+                          
+                          <div class="form-row">
+                          
+                          
+                                                    <div class="form-group">
+                                                        <label for="userCreditLimit">Credit Limit</label>
+                                                        <input type="number" id="userCreditLimit" min="0" placeholder="Enter credit limit">
+                                                    </div>
+                          <div class="form-group">
+                          <label for="userCurrentBalance">Current Balance</label>
+                          <input type="number" id="userCurrentBalance" min="0" placeholder="Enter current balance">
+                          </div>
                     </div>
 
                     <div class="form-row">
@@ -286,13 +287,12 @@ function openUserForm() {
     };
 
     // Load shop codes into dropdown
-    // return populateShopDropdown().then(() => {
-    //     const modal = document.getElementById("userFormModal");
-    //     modal.style.display = "flex";
-    //     setTimeout(() => {
-    //         modal.classList.add("show");
-    //     }, 10);
-    // });
+    const modal = document.getElementById("userFormModal");
+    modal.style.display = "flex";
+    setTimeout(() => {
+        modal.classList.add("show");
+    }, 10);
+
 }
 
 function closeUserForm() {
@@ -346,6 +346,7 @@ function editUser(id) {
     document.getElementById("userFormTitle").textContent = "Update User";
     document.getElementById("userId").value = item.id;
     document.getElementById("userName").value = item.name;
+    document.getElementById("userEmail").value = item.email;
     document.getElementById("userMobile").value = item.mobile || "";
     document.getElementById("userShopCode").value = item.shop_code || "";
     document.getElementById("userCreditLimit").value = item.credit_limit || 0;
@@ -431,6 +432,7 @@ function submitUserForm(event) {
 
     const formData = {
         name: document.getElementById("userName").value,
+        email: document.getElementById("userEmail").value,
         mobile: document.getElementById("userMobile").value,
         shop_code: document.getElementById("userShopCode").value,
         credit_limit: document.getElementById("userCreditLimit").value || 0,
@@ -453,6 +455,8 @@ function submitUserForm(event) {
             if (!confirmed) return;
 
             return updateItem(userURLphp, editingUserId, formData).then(result => {
+                console.log(result);
+
                 // Handle error response
                 if (result?.error) {
                     let errorMessage = result.message || "Error updating user!";

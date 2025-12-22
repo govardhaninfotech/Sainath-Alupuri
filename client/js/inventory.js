@@ -1,28 +1,32 @@
-// inventory.js (defensive update)
-// Purpose: auto-select staff when opened with ?staff_id=ID and robustly handle missing/odd API responses.
+// inventory.js - Live PHP API Integration
+// Purpose: Manage staff expenses with live PHP backend
 
-import { EXPENSES_URL, STATUS_URL } from "../apis/api.js";
-import { staffURLphp } from "../apis/api.js";
+import { staffURLphp, bankURLphp, expenseCategoriesURLphp } from "../apis/api.js";
 import { showNotification, showConfirm } from "./notification.js";
 
-console.log("inventory.js: loaded (defensive update)");
+console.log("inventory.js: loaded with live API");
 
-const STAFF_API_URL = staffURLphp || "/staff.php"; // fallback string if import fails
+// Base URL for expenses
+const baseURL = "https://gisurat.com/govardhan/sainath_aloopuri/api";
+const EXPENSES_URL = `${baseURL}/expenses.php`;
+
+let currentUser = JSON.parse(localStorage.getItem("rememberedUser") || sessionStorage.getItem("rememberedUser"));
+let user_id = currentUser?.id;
 
 let invAllStaff = [];
 let invFilteredStaff = [];
 let invSelectedStaff = null;
 let invExpenses = [];
+let invBankAccounts = [];
+let invExpenseCategories = [];
 
 /**
- * Public functions expected by your app
+ * Public functions
  */
 export function renderInventoryStaffPage() {
     return fetch("inventory_staff.html")
         .then(res => res.text())
         .then(html => {
-            // Remove the script tag since dashboard.js handles initialization
-            // This prevents double initialization and timing issues
             return html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
         })
         .catch(err => {
@@ -33,61 +37,36 @@ export function renderInventoryStaffPage() {
 
 export function initInventoryStaffPage() {
     console.log("inventory.js: initInventoryStaffPage()");
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/255f31eb-83ff-4a2e-b4ec-8216608d9181',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'inventory.js:30',message:'initInventoryStaffPage called',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-    // #endregion agent log
-    
-    // Wait for DOM to be ready (in case HTML injection hasn't completed)
+
     setTimeout(() => {
-        checkInventoryApiStatus();
         setDefaultDateToday();
         initMonthDropdown();
         attachEventListeners();
+        handlePaymentModeChange("cash");
 
-        // 1) load staff list
-        // 2) if ?staff_id= present OR localStorage has selectedStaffId, attempt to select that staff (with fallbacks)
-        fetchStaffList()
-            .then(() => {
-                // Check URL params first, then localStorage
-                const staffIdFromUrl = getQueryParam("staff_id");
-                const staffIdFromStorage = localStorage.getItem("selectedStaffId");
-                const staffIdToSelect = staffIdFromUrl || staffIdFromStorage;
-                
-                // #region agent log
-                fetch('http://127.0.0.1:7242/ingest/255f31eb-83ff-4a2e-b4ec-8216608d9181',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'inventory.js:45',message:'staff ID sources checked',data:{staffIdFromUrl:staffIdFromUrl,staffIdFromStorage:staffIdFromStorage,staffIdToSelect:staffIdToSelect},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-                // #endregion agent log
-                
-                if (staffIdToSelect) {
-                    // Clear localStorage after reading to avoid stale data
-                    if (staffIdFromStorage) {
-                        localStorage.removeItem("selectedStaffId");
-                    }
-                    // Add a small delay to ensure dropdown is populated
-                    setTimeout(() => {
-                        selectStaffByIdWithFallbacks(staffIdToSelect).catch(err => {
-                            console.warn("inventory.js: selectStaffByIdWithFallbacks error:", err);
-                            // #region agent log
-                            fetch('http://127.0.0.1:7242/ingest/255f31eb-83ff-4a2e-b4ec-8216608d9181',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'inventory.js:54',message:'selectStaffByIdWithFallbacks error',data:{error:err.message,staffId:staffIdToSelect},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-                            // #endregion agent log
-                        });
-                    }, 100);
+
+        // Load all required data
+        Promise.all([
+            fetchStaffList(),
+            fetchBankAccounts(),
+            fetchExpenseCategories()
+        ]).then(() => {
+            const staffIdFromUrl = getQueryParam("staff_id");
+            const staffIdFromStorage = localStorage.getItem("selectedStaffId");
+            const staffIdToSelect = staffIdFromUrl || staffIdFromStorage;
+
+            if (staffIdToSelect) {
+                if (staffIdFromStorage) {
+                    localStorage.removeItem("selectedStaffId");
                 }
-            })
-            .catch(err => {
-                console.warn("inventory.js: fetchStaffList failed:", err);
-                // still attempt fallback if staff_id present
-                const staffIdFromUrl = getQueryParam("staff_id");
-                const staffIdFromStorage = localStorage.getItem("selectedStaffId");
-                const staffIdToSelect = staffIdFromUrl || staffIdFromStorage;
-                if (staffIdToSelect) {
-                    if (staffIdFromStorage) {
-                        localStorage.removeItem("selectedStaffId");
-                    }
-                    setTimeout(() => {
-                        selectStaffByIdWithFallbacks(staffIdToSelect).catch(e => console.warn(e));
-                    }, 100);
-                }
-            });
+                setTimeout(() => {
+                    selectStaffById(staffIdToSelect);
+                }, 100);
+            }
+        }).catch(err => {
+            console.error("Error loading initial data:", err);
+            showNotification("Error loading data. Please refresh the page.", "error");
+        });
     }, 50);
 }
 
@@ -103,162 +82,22 @@ function getQueryParam(name) {
     }
 }
 
-async function selectStaffByIdWithFallbacks(staffId) {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/255f31eb-83ff-4a2e-b4ec-8216608d9181',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'inventory.js:70',message:'selectStaffByIdWithFallbacks called',data:{staffId:staffId,invFilteredStaffLength:invFilteredStaff.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-    // #endregion agent log
-    
-    // If staff already present in invFilteredStaff, just select
+function selectStaffById(staffId) {
     const staffSelect = document.getElementById("invStaffSelect");
-    if (!staffSelect) {
-        console.warn("inventory.js: invStaffSelect not present in DOM.");
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/255f31eb-83ff-4a2e-b4ec-8216608d9181',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'inventory.js:76',message:'invStaffSelect not found in DOM',data:{staffId:staffId},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-        // #endregion agent log
-        return;
+    if (!staffSelect) return;
+
+    const exists = Array.from(staffSelect.options).some(o => String(o.value) === String(staffId));
+    if (exists) {
+        staffSelect.value = String(staffId);
+        handleStaffSelection(String(staffId));
+    } else {
+        console.warn("Staff ID not found in dropdown:", staffId);
     }
-
-    // If staff present in already-loaded filtered list -> select it
-    const present = invFilteredStaff.some(s => String(s.id) === String(staffId));
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/255f31eb-83ff-4a2e-b4ec-8216608d9181',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'inventory.js:80',message:'checking if staff in filtered list',data:{staffId:staffId,present:present,filteredStaffIds:invFilteredStaff.map(s=>s.id),dropdownOptions:Array.from(staffSelect.options).map(o=>o.value)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-    // #endregion agent log
-    
-    if (present) {
-        // Ensure the option exists in dropdown before selecting
-        const optionExists = Array.from(staffSelect.options).some(o => String(o.value) === String(staffId));
-        if (optionExists) {
-            staffSelect.value = String(staffId);
-            handleStaffSelection(String(staffId));
-            highlightSelectedStaffOption(String(staffId));
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/255f31eb-83ff-4a2e-b4ec-8216608d9181',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'inventory.js:90',message:'staff found in filtered list, selected',data:{staffId:staffId,selectValue:staffSelect.value,optionExists:optionExists},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-            // #endregion agent log
-        } else {
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/255f31eb-83ff-4a2e-b4ec-8216608d9181',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'inventory.js:95',message:'staff in list but option not in dropdown yet, waiting',data:{staffId:staffId},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-            // #endregion agent log
-            // Wait a bit and try again
-            setTimeout(() => {
-                if (Array.from(staffSelect.options).some(o => String(o.value) === String(staffId))) {
-                    staffSelect.value = String(staffId);
-                    handleStaffSelection(String(staffId));
-                    highlightSelectedStaffOption(String(staffId));
-                }
-            }, 200);
-        }
-        return;
-    }
-
-    // Otherwise, try to fetch single staff by id with a few fallback URL formats.
-    // This helps if your staff.php endpoint doesn't offer a list or returns a different structure.
-    const fallbackUrls = [
-        `${STAFF_API_URL}?id=${encodeURIComponent(staffId)}`,
-        `${STAFF_API_URL}/${encodeURIComponent(staffId)}`,
-        `${STAFF_API_URL}?staff_id=${encodeURIComponent(staffId)}`,
-        // last resort: try staff.php in same folder
-        `staff.php?id=${encodeURIComponent(staffId)}`
-    ];
-
-    console.log("inventory.js: trying fallback staff fetch for id", staffId, fallbackUrls);
-
-    let foundStaff = null;
-    for (const u of fallbackUrls) {
-        try {
-            const res = await fetch(u, { credentials: "same-origin" });
-            if (!res.ok) {
-                console.log(`inventory.js: fallback ${u} returned status ${res.status}`);
-                continue;
-            }
-            const json = await res.json();
-            // Accept several shapes:
-            // - a single staff object { id:.., name:.. }
-            // - array [ {..}, ... ]
-            // - { staff: {...} } or { data: {...} } or { staff: [ ... ] }
-            if (!json) continue;
-
-            if (Array.isArray(json) && json.length) {
-                foundStaff = json[0];
-            } else if (json.id || json.name) {
-                // single object
-                foundStaff = json;
-            } else if (json.staff && Array.isArray(json.staff) && json.staff.length) {
-                foundStaff = json.staff[0];
-            } else if (json.data && Array.isArray(json.data) && json.data.length) {
-                foundStaff = json.data[0];
-            } else if (json.staff && typeof json.staff === "object" && (json.staff.id || json.staff.name)) {
-                foundStaff = json.staff;
-            } else if (json.data && typeof json.data === "object" && (json.data.id || json.data.name)) {
-                foundStaff = json.data;
-            }
-
-            if (foundStaff) {
-                console.log("inventory.js: found staff via fallback url:", u, foundStaff);
-                break;
-            }
-        } catch (e) {
-            console.warn("inventory.js: error fetching fallback url", u, e);
-        }
-    }
-
-    if (!foundStaff) {
-        // Last resort: if invAllStaff has at least one item, open the select as-is and notify
-        if ((invAllStaff && invAllStaff.length) === 0) {
-            showNotification("Could not load staff list. See console for details.", "warning");
-            console.warn("inventory.js: no staff found by fallback and invAllStaff empty.");
-            // ensure select shows a friendly message
-            staffSelect.innerHTML = `<option value="">No staff available</option>`;
-        }
-        return;
-    }
-
-    // Add the found staff into the dropdown (so user can see it) and select it
-    // But avoid duplicates: if already present by id skip adding
-    const already = Array.from(staffSelect.options).some(o => String(o.value) === String(foundStaff.id));
-    if (!already) {
-        const opt = document.createElement("option");
-        opt.value = foundStaff.id;
-        opt.textContent = foundStaff.name || (`Staff ${foundStaff.id}`);
-        staffSelect.appendChild(opt);
-    }
-
-    // Ensure internal lists contain the staff (makes the rest of the flow consistent)
-    invAllStaff = invAllStaff || [];
-    if (!invAllStaff.some(s => String(s.id) === String(foundStaff.id))) {
-        invAllStaff.push(foundStaff);
-    }
-
-    // Re-apply filters so filtered list also contains the staff
-    applyStatusFilter();
-
-    // Finally select and load
-    staffSelect.value = foundStaff.id;
-    handleStaffSelection(foundStaff.id);
-    highlightSelectedStaffOption(foundStaff.id);
-    
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/255f31eb-83ff-4a2e-b4ec-8216608d9181',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'inventory.js:172',message:'staff selected via fallback',data:{staffId:foundStaff.id,staffName:foundStaff.name,selectValue:staffSelect.value},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-    // #endregion agent log
 }
 
 /* ============================
    Initialization helpers
    ============================ */
-
-async function checkInventoryApiStatus() {
-    if (!STATUS_URL) return;
-    try {
-        const res = await fetch(STATUS_URL);
-        if (!res.ok) {
-            console.warn("inventory.js: status endpoint returned", res.status);
-            return;
-        }
-        const j = await res.json();
-        console.log("inventory.js: status ->", j);
-    } catch (e) {
-        console.warn("inventory.js: status check failed:", e);
-    }
-}
 
 function setDefaultDateToday() {
     const dateInput = document.getElementById("invExpenseDate");
@@ -272,7 +111,7 @@ function initMonthDropdown() {
     if (!monthSelect) return;
     monthSelect.innerHTML = "";
     const today = new Date();
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 12; i++) {
         const d = new Date();
         d.setMonth(today.getMonth() - i);
         const value = d.toISOString().slice(0, 7);
@@ -289,15 +128,23 @@ function attachEventListeners() {
     const staffSelect = document.getElementById("invStaffSelect");
     const monthSelect = document.getElementById("invMonthSelect");
     const submitBtn = document.getElementById("invSubmitExpense");
+    const paymentSelect = document.getElementById("invPaymentMode");
 
     if (statusSelect) statusSelect.addEventListener("change", () => { applyStatusFilter(); });
     if (staffSelect) staffSelect.addEventListener("change", (e) => { handleStaffSelection(e.target.value); });
     if (monthSelect) monthSelect.addEventListener("change", () => { renderExpenses(); calculateTotals(); });
     if (submitBtn) submitBtn.addEventListener("click", handleSubmitExpense);
+
+    // Add payment mode change listener
+    if (paymentSelect) {
+        paymentSelect.addEventListener("change", (e) => {
+            handlePaymentModeChange(e.target.value);
+        });
+    }
 }
 
 /* ============================
-   Staff fetching & filtering
+   API Data Fetching
    ============================ */
 
 async function fetchStaffList() {
@@ -305,40 +152,112 @@ async function fetchStaffList() {
     if (staffSelect) staffSelect.innerHTML = "<option value=''>Loading staff...</option>";
 
     try {
-        console.log("inventory.js: fetching staff list from", STAFF_API_URL);
-        const res = await fetch(STAFF_API_URL, { credentials: "same-origin" });
-        if (!res.ok) {
-            console.warn("inventory.js: staff list fetch returned status", res.status);
-            if (staffSelect) staffSelect.innerHTML = "<option value=''>Failed to load staff</option>";
-            return;
-        }
+        const res = await fetch(`${staffURLphp}?user_id=${user_id}`);
+        if (!res.ok) throw new Error(`Staff API returned ${res.status}`);
+
         const json = await res.json();
 
-        // Accept many shapes (array, { staff: [...] }, { data: [...] })
         if (Array.isArray(json)) {
             invAllStaff = json;
-        } else if (json && Array.isArray(json.staff)) {
+        } else if (json?.staff && Array.isArray(json.staff)) {
             invAllStaff = json.staff;
-        } else if (json && Array.isArray(json.data)) {
+        } else if (json?.data && Array.isArray(json.data)) {
             invAllStaff = json.data;
-        } else if (json && typeof json === "object" && (json.id || json.name)) {
-            invAllStaff = [json];
         } else {
-            console.warn("inventory.js: staff endpoint returned unexpected shape:", json);
             invAllStaff = [];
         }
 
-        console.log("inventory.js: staff loaded count =", invAllStaff.length);
+        console.log("Staff loaded:", invAllStaff.length);
         applyStatusFilter();
     } catch (e) {
-        console.error("inventory.js: error fetching staff list:", e);
-        if (document.getElementById("invStaffSelect")) {
-            document.getElementById("invStaffSelect").innerHTML = "<option value=''>Error loading staff</option>";
-        }
-        // rethrow so top-level can handle fallback
+        console.error("Error fetching staff list:", e);
+        if (staffSelect) staffSelect.innerHTML = "<option value=''>Error loading staff</option>";
+        showNotification("Failed to load staff list", "error");
         throw e;
     }
 }
+
+async function fetchBankAccounts() {
+    try {
+        const res = await fetch(`${bankURLphp}?user_id=${user_id}`);
+        if (!res.ok) throw new Error(`Bank API returned ${res.status}`);
+
+        const json = await res.json();
+
+        if (Array.isArray(json)) {
+            invBankAccounts = json;
+        } else if (json?.bank_accounts && Array.isArray(json.bank_accounts)) {
+            invBankAccounts = json.bank_accounts;
+        } else if (json?.data && Array.isArray(json.data)) {
+            invBankAccounts = json.data;
+        } else {
+            invBankAccounts = [];
+        }
+
+        console.log("Bank accounts loaded:", invBankAccounts.length);
+        populateBankAccountDropdown();
+    } catch (e) {
+        console.error("Error fetching bank accounts:", e);
+        invBankAccounts = [];
+        populateBankAccountDropdown();
+    }
+}
+
+async function fetchExpenseCategories() {
+    try {
+        const res = await fetch(`${expenseCategoriesURLphp}?user_id=${user_id}`);
+        if (!res.ok) throw new Error(`Categories API returned ${res.status}`);
+
+        const json = await res.json();
+
+        if (Array.isArray(json)) {
+            invExpenseCategories = json;
+        } else if (json?.categories && Array.isArray(json.categories)) {
+            invExpenseCategories = json.categories;
+        } else if (json?.data && Array.isArray(json.data)) {
+            invExpenseCategories = json.data;
+        } else {
+            invExpenseCategories = [];
+        }
+
+        console.log("Expense categories loaded:", invExpenseCategories.length);
+        populateCategoryDropdown();
+    } catch (e) {
+        console.error("Error fetching expense categories:", e);
+        invExpenseCategories = [];
+        populateCategoryDropdown();
+    }
+}
+
+function populateBankAccountDropdown() {
+    const bankSelect = document.getElementById("invBankAccount");
+    if (!bankSelect) return;
+
+    bankSelect.innerHTML = '<option value="">Select Bank Account</option>';
+    invBankAccounts.forEach(bank => {
+        const opt = document.createElement("option");
+        opt.value = bank.id;
+        opt.textContent = `${bank.bank_name || bank.account_name || 'Bank'} - ${bank.account_number || ''}`;
+        bankSelect.appendChild(opt);
+    });
+}
+
+function populateCategoryDropdown() {
+    const categorySelect = document.getElementById("invExpenseCategory");
+    if (!categorySelect) return;
+
+    categorySelect.innerHTML = '<option value="">Select Category</option>';
+    invExpenseCategories.forEach(cat => {
+        const opt = document.createElement("option");
+        opt.value = cat.id;
+        opt.textContent = cat.name || cat.category_name || `Category ${cat.id}`;
+        categorySelect.appendChild(opt);
+    });
+}
+
+/* ============================
+   Staff Selection & Filtering
+   ============================ */
 
 function applyStatusFilter() {
     const statusSelect = document.getElementById("invStatusSelect");
@@ -359,50 +278,24 @@ function applyStatusFilter() {
         staffSelect.appendChild(opt);
     });
 
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/255f31eb-83ff-4a2e-b4ec-8216608d9181',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'inventory.js:290',message:'applyStatusFilter completed',data:{filteredCount:invFilteredStaff.length,dropdownOptions:staffSelect.options.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
-    // #endregion agent log
+    invSelectedStaff = null;
+    updateStaffHeader();
+    clearExpenses();
+}
 
-    // Check if there's a pending staff selection from localStorage
-    const pendingStaffId = localStorage.getItem("selectedStaffId");
-    if (pendingStaffId && invFilteredStaff.some(s => String(s.id) === String(pendingStaffId))) {
-        // Staff is now in the dropdown, select it
-        setTimeout(() => {
-            staffSelect.value = pendingStaffId;
-            handleStaffSelection(pendingStaffId);
-            highlightSelectedStaffOption(pendingStaffId);
-            localStorage.removeItem("selectedStaffId");
-        }, 50);
-    } else {
+function handleStaffSelection(staffId) {
+    if (!staffId) {
         invSelectedStaff = null;
         updateStaffHeader();
         clearExpenses();
+        return;
     }
-}
 
-/* ============================
-   Selection, expenses & totals
-   ============================ */
-
-function handleStaffSelection(staffId) {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/255f31eb-83ff-4a2e-b4ec-8216608d9181',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'inventory.js:301',message:'handleStaffSelection called',data:{staffId:staffId,invFilteredStaffLength:invFilteredStaff.length,invAllStaffLength:invAllStaff.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-    // #endregion agent log
-    
     invSelectedStaff = invFilteredStaff.find(s => String(s.id) === String(staffId)) || null;
-    if (!invSelectedStaff) {
-        // maybe the staff was added via fallback to invAllStaff but not present in invFilteredStaff;
-        // try to get it from invAllStaff
-        invSelectedStaff = (invAllStaff || []).find(s => String(s.id) === String(staffId)) || null;
-        // if we found it in invAllStaff, include it into filtered list
-        if (invSelectedStaff && !invFilteredStaff.some(s => String(s.id) === String(staffId))) {
-            invFilteredStaff.push(invSelectedStaff);
-        }
-    }
 
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/255f31eb-83ff-4a2e-b4ec-8216608d9181',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'inventory.js:315',message:'staff selection result',data:{staffId:staffId,found:!!invSelectedStaff,staffName:invSelectedStaff?.name,staffSalary:invSelectedStaff?.salary},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-    // #endregion agent log
+    if (!invSelectedStaff) {
+        invSelectedStaff = (invAllStaff || []).find(s => String(s.id) === String(staffId)) || null;
+    }
 
     updateStaffHeader();
     if (invSelectedStaff) {
@@ -414,8 +307,8 @@ function handleStaffSelection(staffId) {
 
 function updateStaffHeader() {
     const salaryEl = document.getElementById("invStaffSalary");
-    // invStaffName may not be present in your HTML — handle gracefully
     const nameEl = document.getElementById("invStaffName");
+
     if (salaryEl) {
         salaryEl.textContent = invSelectedStaff ? (invSelectedStaff.salary || "0") : "0";
     }
@@ -424,52 +317,46 @@ function updateStaffHeader() {
     }
 }
 
+/* ============================
+   Expenses Loading & Display
+   ============================ */
+
 async function loadExpensesForStaff() {
     if (!invSelectedStaff) {
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/255f31eb-83ff-4a2e-b4ec-8216608d9181',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'inventory.js:333',message:'loadExpensesForStaff called but no staff selected',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
-        // #endregion agent log
         renderExpenses();
         calculateTotals();
         return;
     }
 
     try {
-        console.log("inventory.js: loading expenses for staff", invSelectedStaff.id);
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/255f31eb-83ff-4a2e-b4ec-8216608d9181',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'inventory.js:340',message:'fetching expenses from API',data:{staffId:invSelectedStaff.id,expensesUrl:EXPENSES_URL},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
-        // #endregion agent log
-        
-        const res = await fetch(EXPENSES_URL, { credentials: "same-origin" });
+        console.log("Loading expenses for staff:", invSelectedStaff.id);
+
+        const res = await fetch(`${EXPENSES_URL}?user_id=${user_id}&staff_id=${invSelectedStaff.id}`);
         if (!res.ok) {
-            console.warn("inventory.js: /expenses returned", res.status);
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/255f31eb-83ff-4a2e-b4ec-8216608d9181',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'inventory.js:345',message:'expenses API returned error status',data:{status:res.status,staffId:invSelectedStaff.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
-            // #endregion agent log
+            console.warn("Expenses API returned", res.status);
             invExpenses = [];
             renderExpenses();
             calculateTotals();
             return;
         }
+
         const data = await res.json();
-        if (!Array.isArray(data)) {
-            console.warn("inventory.js: /expenses returned unexpected shape", data);
-            invExpenses = [];
+
+        if (Array.isArray(data)) {
+            invExpenses = data;
+        } else if (data?.expenses && Array.isArray(data.expenses)) {
+            invExpenses = data.expenses;
+        } else if (data?.data && Array.isArray(data.data)) {
+            invExpenses = data.data;
         } else {
-            invExpenses = data.filter(exp => String(exp.staff_id) === String(invSelectedStaff.id));
+            invExpenses = [];
         }
-        
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/255f31eb-83ff-4a2e-b4ec-8216608d9181',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'inventory.js:356',message:'expenses loaded and filtered',data:{staffId:invSelectedStaff.id,totalExpenses:data.length,filteredExpenses:invExpenses.length,expenseAmounts:invExpenses.map(e=>e.amount)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
-        // #endregion agent log
-        
+
+        console.log("Expenses loaded:", invExpenses.length);
         renderExpenses();
         calculateTotals();
     } catch (e) {
-        console.error("inventory.js: error loading expenses:", e);
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/255f31eb-83ff-4a2e-b4ec-8216608d9181',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'inventory.js:363',message:'error loading expenses',data:{error:e.message,staffId:invSelectedStaff?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
-        // #endregion agent log
+        console.error("Error loading expenses:", e);
         invExpenses = [];
         renderExpenses();
         calculateTotals();
@@ -486,22 +373,59 @@ function renderExpenses() {
     const tbody = document.getElementById("invExpenseList");
     const emptyState = document.getElementById("invEmptyState");
     if (!tbody) return;
+
     tbody.innerHTML = "";
-    if (!invExpenses.length) {
-        if (emptyState) emptyState.classList && emptyState.classList.add("show");
+
+    const monthSelect = document.getElementById("invMonthSelect");
+    const selectedMonth = monthSelect ? monthSelect.value : null;
+
+    let filtered = invExpenses;
+    if (selectedMonth) {
+        filtered = invExpenses.filter(e => {
+            const expDate = e.expense_date || e.date || "";
+            // Handle both YYYY-MM-DD and DD-MM-YYYY formats
+            let dateStr = "";
+            if (expDate.includes("-")) {
+                const parts = expDate.split("-");
+                if (parts[0].length === 4) {
+                    dateStr = expDate.slice(0, 7); // YYYY-MM
+                } else {
+                    dateStr = `${parts[2]}-${parts[1]}`; // Convert DD-MM-YYYY to YYYY-MM
+                }
+            }
+            return dateStr === selectedMonth;
+        });
+    }
+
+    if (!filtered.length) {
+        if (emptyState) emptyState.classList.add("show");
         return;
     }
-    if (emptyState) emptyState.classList && emptyState.classList.remove("show");
 
-    invExpenses.forEach((exp, i) => {
+    if (emptyState) emptyState.classList.remove("show");
+
+    filtered.forEach((exp, i) => {
+        const bankAccount = invBankAccounts.find(b => String(b.id) === String(exp.bank_account_id));
+        const category = invExpenseCategories.find(c => String(c.id) === String(exp.category_id));
+
         const tr = document.createElement("tr");
         tr.innerHTML = `
-      <td>${i + 1}</td>
-      <td>${exp.date || "-"}</td>
-      <td>₹${Number(exp.amount || 0).toFixed(2)}</td>
-      <td>${exp.note || "-"}</td>
-      <td><button class="action-btn" onclick="window.handleDeleteExpense(${exp.id})">🗑️</button></td>
-    `;
+            <td data-label="#">${i + 1}</td>
+            <td data-label="Date">${exp.expense_date || exp.date || "-"}</td>
+            <td data-label="Category">${category?.name || category?.category_name || "-"}</td>
+            <td data-label="Amount">₹${Number(exp.amount || 0).toFixed(2)}</td>
+            <td data-label="Payment">${exp.payment_mode || "-"}</td>
+            <td data-label="Bank">${bankAccount?.bank_name || bankAccount?.account_name || "-"}</td>
+            <td data-label="Notes">${exp.note || exp.notes || "-"}</td>
+            <td data-label="Actions">
+                <button class="action-btn delete-btn" onclick="window.handleDeleteExpense(${exp.id})">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                </button>
+            </td>
+        `;
         tbody.appendChild(tr);
     });
 }
@@ -510,14 +434,20 @@ window.handleDeleteExpense = async function (expenseId) {
     try {
         const confirmed = await showConfirm("Are you sure you want to delete this expense?", "warning");
         if (!confirmed) return;
-        const res = await fetch(`${EXPENSES_URL}/${expenseId}`, { method: "DELETE", credentials: "same-origin" });
+
+        const res = await fetch(`${EXPENSES_URL}?id=${expenseId}`, {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" }
+        });
+
         if (!res.ok) throw new Error("Delete failed with status " + res.status);
+
         invExpenses = invExpenses.filter(e => e.id !== expenseId);
         renderExpenses();
         calculateTotals();
         showNotification("Expense deleted successfully.", "success");
     } catch (e) {
-        console.error("inventory.js: failed to delete expense:", e);
+        console.error("Failed to delete expense:", e);
         showNotification("Error deleting expense.", "error");
     }
 };
@@ -532,7 +462,21 @@ function calculateTotals() {
     const selectedMonth = monthSelect ? monthSelect.value : null;
 
     let filtered = invExpenses;
-    if (selectedMonth) filtered = invExpenses.filter(e => (e.date || "").slice(0, 7) === selectedMonth);
+    if (selectedMonth) {
+        filtered = invExpenses.filter(e => {
+            const expDate = e.expense_date || e.date || "";
+            let dateStr = "";
+            if (expDate.includes("-")) {
+                const parts = expDate.split("-");
+                if (parts[0].length === 4) {
+                    dateStr = expDate.slice(0, 7);
+                } else {
+                    dateStr = `${parts[2]}-${parts[1]}`;
+                }
+            }
+            return dateStr === selectedMonth;
+        });
+    }
 
     const totalExpense = filtered.reduce((s, e) => s + Number(e.amount || 0), 0);
     const balance = salary - totalExpense;
@@ -543,22 +487,63 @@ function calculateTotals() {
 }
 
 /* ============================
-   Submit expense
+   Submit Expense
    ============================ */
 async function handleSubmitExpense() {
-    if (!invSelectedStaff) { showNotification("Please select a staff first.", "error"); return; }
+    if (!invSelectedStaff) {
+        showNotification("Please select a staff first.", "error");
+        return;
+    }
+
     const amountInput = document.getElementById("invExpenseAmount");
     const dateInput = document.getElementById("invExpenseDate");
     const noteInput = document.getElementById("invExpenseNote");
+    const bankSelect = document.getElementById("invBankAccount");
+    const paymentSelect = document.getElementById("invPaymentMode");
+    const categorySelect = document.getElementById("invExpenseCategory");
+
     if (!amountInput || !dateInput) return;
 
     const amount = Number(amountInput.value);
     const date = dateInput.value;
     const note = noteInput ? noteInput.value.trim() : "";
-    if (!amount || !date) { showNotification("Please enter amount and date.", "error"); return; }
-    if (amount <= 0) { showNotification("Amount must be greater than zero.", "error"); return; }
+    const bankAccountId = bankSelect ? bankSelect.value : "";
+    const paymentMode = paymentSelect ? paymentSelect.value : "cash";
+    const categoryId = categorySelect ? categorySelect.value : "";
 
-    const payload = { staff_id: invSelectedStaff.id, date, amount, note };
+    // Validation
+    if (!amount || !date) {
+        showNotification("Please enter amount and date.", "error");
+        return;
+    }
+    if (amount <= 0) {
+        showNotification("Amount must be greater than zero.", "error");
+        return;
+    }
+    if (!categoryId) {
+        showNotification("Please select an expense category.", "error");
+        return;
+    }
+    if (!bankAccountId) {
+        showNotification("Please select a bank account.", "error");
+        return;
+    }
+
+    // Convert date from YYYY-MM-DD to DD-MM-YYYY format
+    const [year, month, day] = date.split("-");
+    const formattedDate = `${day}-${month}-${year}`;
+
+    const payload = {
+        user_id: user_id,
+        staff_id: invSelectedStaff.id,
+        category_id: parseInt(categoryId),
+        amount: amount,
+        expense_date: formattedDate,
+        bank_account_id: parseInt(bankAccountId),
+        payment_mode: paymentMode,
+        note: note
+    };
+
     const confirmed = await showConfirm("Are you sure you want to add this expense?", "warning");
     if (!confirmed) return;
 
@@ -566,34 +551,33 @@ async function handleSubmitExpense() {
         const res = await fetch(EXPENSES_URL, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            credentials: "same-origin",
             body: JSON.stringify(payload)
         });
-        if (!res.ok) throw new Error("POST failed " + res.status);
+
+        if (!res.ok) {
+            const errorText = await res.text();
+            console.error("API Error:", errorText);
+            throw new Error("POST failed " + res.status);
+        }
+
         const created = await res.json();
-        invExpenses.push(created);
+
+        // Reload expenses to get fresh data
+        await loadExpensesForStaff();
+
+        // Clear form
         amountInput.value = "";
         if (noteInput) noteInput.value = "";
+        if (categorySelect) categorySelect.value = "";
+        if (bankSelect) bankSelect.value = "";
+        if (paymentSelect) paymentSelect.value = "cash";
         setDefaultDateToday();
-        renderExpenses();
-        calculateTotals();
+
         showNotification("Expense added successfully.", "success");
     } catch (e) {
-        console.error("inventory.js: error posting expense:", e);
-        showNotification("Error while adding expense.", "error");
+        console.error("Error posting expense:", e);
+        showNotification("Error while adding expense. Please try again.", "error");
     }
-}
-
-/* ============================
-   Small UI helpers
-   ============================ */
-
-function highlightSelectedStaffOption(staffId) {
-    const staffSelect = document.getElementById("invStaffSelect");
-    if (!staffSelect) return;
-    Array.from(staffSelect.options).forEach(o => o.classList && o.classList.remove("selected-staff-option"));
-    const selectedOpt = Array.from(staffSelect.options).find(o => String(o.value) === String(staffId));
-    if (selectedOpt) selectedOpt.classList.add("selected-staff-option");
 }
 
 /* Expose for outside use */

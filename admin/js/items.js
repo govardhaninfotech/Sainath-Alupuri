@@ -90,18 +90,9 @@ function generateItemsTableHTML() {
                 <td>${serialNo}</td>
                 <td>${imageCell}</td>
                 <td>${item.name}</td>
+                <td>${item.unit}</td>
                 <td>${item.price}</td>
                 <td>${item.visible_to_all === "True" ? "Yes" : "No"}</td>
-                <td style="width:150px;">
-                    <div style="display:flex;align-items:center;justify-content:center;">
-                        <label class="toggle-switch">
-                            <input type="checkbox"
-                                   onchange="toggleItemStatusItems('${item.id}', '${item.status}')"
-                                   ${item.status === "enable" ? "checked" : ""}>
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-                </td>
                 <td>
                     <button class="btn-icon btn-edit"
                             onclick="editItem('${item.id}')"
@@ -124,12 +115,12 @@ function generateItemsTableHTML() {
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>#</th>
+                            <th>Sr No</th>
                             <th>Image</th>
                             <th>Item Name</th>
+                            <th>Unit</th>
                             <th>Price</th>
                             <th>Visible</th>
-                            <th>Status</th>
                             <th>Edit</th>
                         </tr>
                     </thead>
@@ -305,6 +296,8 @@ function closeItemForm() {
     }, 300);
     editingItemId = null;
 }
+let currentlyEditingStaffStatus = 'Active';
+let currentlyEditingStaffVisibleStatus = 'Active';
 
 function editItem(id) {
     editingItemId = id;
@@ -328,7 +321,7 @@ function editItem(id) {
     const statusText = document.getElementById("statusText");
     statusCheckbox.checked = item.status === "enable";
     statusText.textContent = statusCheckbox.checked ? "Enable" : "Disable";
-
+    currentlyEditingStaffStatus = item.status;
     statusCheckbox.onchange = function () {
         statusText.textContent = this.checked ? "Enable" : "Disable";
     };
@@ -339,6 +332,7 @@ function editItem(id) {
 
     visibleCheckbox.checked = item.visible_to_all === "True";
     visibleText.textContent = visibleCheckbox.checked ? "Yes" : "No";
+    currentlyEditingStaffVisibleStatus = item.visible_to_all;
 
     visibleCheckbox.onchange = function () {
         visibleText.textContent = this.checked ? "Yes" : "No";
@@ -375,8 +369,11 @@ async function submitItemForm(event) {
             "Are you sure you want to update this item?",
             "warning"
         ).then(confirmed => {
-            if (!confirmed) return;
-
+            if (!confirmed) {
+                statusCheckbox.checked = currentlyEditingStaffStatus;
+                visibleCheckbox.checked = currentlyEditingStaffVisibleStatus;
+                return;
+            }
             return updateItem(itemURLphp, editingItemId, formData, user_id)
                 .then(result => {
                     // ❗ Only fail if API explicitly says error

@@ -10,7 +10,7 @@ import { renderInventoryExpancesPage } from "./expances.js";
 
 // 🔹 NEW: Inventory module imports
 import { renderInventoryStaffPage, initInventoryStaffPage } from "./inventory.js";
-import { renderInventoryOrdersPage, initInventoryOrdersPage } from "./inventory_orders.js";
+import { renderInventoryOrdersPage, openorderform, calculateOrderTotal, calculateItemTotal } from "./inventory_orders.js";
 
 // GLOBAL VARIABLES
 // ============================================
@@ -192,12 +192,12 @@ document.addEventListener("click", function (event) {
 // LOGOUT FUNCTION
 // ============================================
 function logout() {
-    console.log("👋 Logging out user");
-    localStorage.removeItem("rememberedUser");
-    currentUser = null;
-    window.location.href = "index.html";
-}
 
+    localStorage.removeItem("rememberedUser");
+    sessionStorage.removeItem("rememberedUser");
+    currentUser = null;
+    window.location.replace("../index.html");
+}
 // ============================================
 // NAVIGATION FUNCTION
 // ============================================
@@ -310,7 +310,10 @@ async function navigateTo(page) {
                 .querySelector('.submenu-item[onclick*="inventory_orders"]')
                 ?.classList.add("active");
             // After HTML inject, hook up events
-            initInventoryOrdersPage();
+            // OrdersPage();    
+            // var date = document.getElementById("btnDate").value = new Date().toISOString().split("T")[0];
+            // console.log(date);
+
             break;
         case "expances":
             mainContent.innerHTML = await renderInventoryExpancesPage();
@@ -318,7 +321,7 @@ async function navigateTo(page) {
                 .querySelector('.submenu-item[onclick*="inventory_orders"]')
                 ?.classList.add("active");
             // After HTML inject, hook up events
-            initInventoryOrdersPage();
+            // OrdersPage();    
             break;
 
         // 🔹 NEW: Inventory → Staff Attendance
@@ -501,7 +504,7 @@ window.toggleInventorySubmenu = toggleInventorySubmenu; // 🔹 NEW
 window.toggleUserMenu = toggleUserMenu;
 window.logout = logout;
 window.navigateTo = navigateTo;
-window.initInventoryOrdersPage = initInventoryOrdersPage; // 🔹 NEW: Orders
+// window.OrdersPage = OrdersPage; 
 
 // ============================================
 // RESPONSIVE HANDLING

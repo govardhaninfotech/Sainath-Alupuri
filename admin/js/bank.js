@@ -25,20 +25,19 @@ function getLoggedInUserId() {
 
     return user?.id || null;
 }
-
+let user_id = getLoggedInUserId();
 
 // ============================================
 // LOAD BANK DATA WITH SERVER-SIDE PAGINATION
 // ============================================
 function loadBankData(page = 1, perPage = 10) {
-    const userId = getLoggedInUserId();
 
-    if (!userId) {
+    if (!user_id) {
         showNotification("User not logged in!", "error");
         return Promise.resolve();
     }
 
-    const url = `${bankURLphp}?user_id=${userId}&page=${page}&per_page=${perPage}`;
+    const url = `${bankURLphp}?user_id=${user_id}&page=${page}&per_page=${perPage}`;
 
     return getItemsData(url).then(data => {
         bankData = data.accounts || [];
@@ -62,16 +61,19 @@ export function renderbankTable() {
 // Generate table HTML using server-side pagination
 function generateBankTableHTML() {
     let tableRows = "";
+    for (let index = 0; index < bankData.length; index++) {
+        const serialNo = (paginationInfo.page - 1) * paginationInfo.per_page + index + 1;
 
-    // Use the data directly from the server (already paginated)
-    bankData.forEach((item) => {
+        let item = bankData[index];
+        // Use the data directly from the server (already paginated)
         tableRows += `
             <tr>
+                <td>${serialNo}</td>
                 <td>${item.type}</td>
                 <td>${item.name}</td>
                 <td>${item.details}</td>
                 <td>${item.starting_balance}</td>
-                <td style="width: 150px;">
+              <!--  <td style="width: 150px;">
                     <div style="display: flex; align-items: center; justify-content: center;">
                         <label class="toggle-switch">
                             <input type="checkbox"
@@ -82,7 +84,7 @@ function generateBankTableHTML() {
                         <span class="status-text" style="margin-left: 10px; font-weight: 500; min-width: 60px;">
                         </span>
                     </div>
-                </td>
+                </td> -->
                 <td>
                     <button class="btn-icon btn-edit" onclick="editBankAccount('${item.id}')" title="Edit">
                         <i class="icon-edit">✎</i>
@@ -90,7 +92,7 @@ function generateBankTableHTML() {
                 </td>
             </tr>
         `;
-    });
+    }
 
     // Calculate display range
     const start = (paginationInfo.page - 1) * paginationInfo.per_page;
@@ -107,11 +109,12 @@ function generateBankTableHTML() {
                 <table class="data-table">
                     <thead>
                         <tr>
+                            <th>Sr No</th>
                             <th>Type</th>
                             <th>Name</th>
                             <th>Details</th>
                             <th>Starting Balance</th>
-                            <th>Status</th>
+                           <!-- <th>Status</th> -->
                             <th>Edit</th>
                         </tr>
                     </thead>
@@ -298,6 +301,7 @@ async function editBankAccount(id) {
 
     populateBankForm(item);
 }
+let currentlyEditingStaffStatus = "Active";               // TRUE or FALSE
 
 function populateBankForm(item) {
     document.getElementById("formTitle").textContent = "Update Account";
@@ -313,7 +317,7 @@ function populateBankForm(item) {
     const statusText = document.getElementById("statusText");
     statusCheckbox.checked = item.status === "active";
     statusText.textContent = item.status === "active" ? "Active" : "Inactive";
-
+    currentlyEditingStaffStatus = item.status;
     statusCheckbox.onchange = function () {
         statusText.textContent = this.checked ? "Active" : "Inactive";
     };
@@ -353,12 +357,17 @@ async function submitBankForm(event) {
 
     if (editingItemId) {
         return showConfirm("Update this account?", "warning").then(confirmed => {
-            if (!confirmed) return;
+            if (!confirmed) {
+                statusCheckbox.checked = currentlyEditingStaffStatus;
+                return;
+            }
 
-            return updateItem(bankURLphp, editingItemId, formData)
+            return updateItem(bankURLphp, editingItemId, formData, userId)
                 .then(result => {
                     // If backend sends explicit error
-                    if (result?.error) {
+                    console.log(result);
+
+                    if (result.error) {
                         showNotification(result.message || "Error updating account!", "error");
                         return;
                     }
@@ -383,13 +392,13 @@ async function submitBankForm(event) {
             if (!confirmed) return;
 
             return addItemToAPI(bankURLphp, formData).then(result => {
-                if (result) {
+                if (result.status === "ok") {
                     showNotification("Account added successfully!", "success");
                     closeBankForm();
                     return loadBankData(paginationInfo.page, paginationInfo.per_page)
                         .then(() => mainContent.innerHTML = generateBankTableHTML());
                 } else {
-                    showNotification("Error adding account!", "error");
+                    showNotification(result.detail, "error");
                 }
             });
         });

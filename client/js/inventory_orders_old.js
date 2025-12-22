@@ -1,8 +1,8 @@
 // ============================================
-// ORDERS PAGE - WITH VIEW ORDER DETAILS
+// ORDERS PAGE - FIXED VERSION (PRESERVED ORIGINAL LOGIC)
 // ============================================
 
-import { ordersURLphp, itemURLphp, orderItemsURLphp } from "../apis/api.js";
+import { ordersURLphp, itemURLphp } from "../apis/api.js";
 import {
     getItemsData,
     updateItem,
@@ -31,7 +31,7 @@ let currentstaffPage = 1;
 let staffPerPage = 10;
 let staffTotal = 0;
 let staffTotalPages = 1;
-let currentDate = null
+
 let editingItemId = null;
 
 // EXPENSE MANAGEMENT STATE
@@ -56,223 +56,23 @@ function loadorderData() {
     if (dateEle == null) {
         date = new Date().toISOString().split("T")[0];
     } else {
-        date = dateEle.value || new Date().toISOString().split("T")[0];
+        date = dateEle.value;
     }
-    console.log(date);
-
     const regex = /^\d{4}-\d{2}-\d{2}$/;
 
-    // if (!regex.test(date)) {
-    //     console.log("Invalid date format. Expected YYYY-MM-DD.");
-    //     date = new Date().toISOString().split("T")[0];
-    // } else {
-    //     console.log("Format valid:", date);
-    // }
+    if (!regex.test(date)) {
+        console.log("Invalid date format. Expected YYYY-MM-DD.");
+    } else {
+        console.log("Format valid:", date);
+    }
 
     const url = `${ordersURLphp}?user_id=${user_id}&date=${date}`;
-    console.log("Loading orders from URL:", url);
+    console.log(url);
 
     return getItemsData(url).then(data => {
-        console.log("Orders data received:", data);
         orderData = data.orders || [];
         staffTotal = data.total ?? orderData.length;
-        staffTotalPages = Math.ceil(staffTotal / staffPerPage);
         return data;
-    }).catch(error => {
-        console.error("Error loading orders:", error);
-        showNotification("Error loading orders data!", "error");
-        orderData = [];
-        staffTotal = 0;
-        staffTotalPages = 1;
-        return { orders: [], total: 0 };
-    });
-}
-
-// ============================================
-// VIEW ORDER DETAILS
-// ============================================
-async function viewOrderDetails(orderId) {
-    const order = orderData.find(o => String(o.id) === String(orderId));
-    if (!order) {
-        showNotification("Order not found!", "error");
-        return;
-    }
-
-    // Fetch order items using orderItemsURLphp
-    const date = order.expected_delivery.split(" ")[0];
-    const orderItemsURL = `${orderItemsURLphp}?order_id=${orderId}&date=${date}`;
-
-    try {
-        const itemsData = await getItemsData(orderItemsURL);
-        const orderItemsList = itemsData.items || [];
-
-        displayOrderDetailsModal(order, orderItemsList);
-    } catch (error) {
-        console.error("Error fetching order items:", error);
-        showNotification("Error loading order items!", "error");
-    }
-}
-
-function displayOrderDetailsModal(order, orderItemsList) {
-    // Generate items table - ONLY showing ordered items (from orderItemsList, not all items)
-    console.log(order)
-    let itemsTableHTML = "";
-    if (orderItemsList.length > 0) {
-        orderItemsList.forEach((item, index) => {
-            itemsTableHTML += `
-                <tr>
-                    <td style="text-align: center;">${index + 1}</td>
-                    <td>${item.name}</td>
-                    <td style="text-align: center;">${item.qty}</td>
-                    <td style="text-align: right;">₹${parseFloat(item.price).toFixed(2)}</td>
-                    <td style="text-align: right; font-weight: 600;">₹${parseFloat(item.line_total).toFixed(2)}</td>
-                </tr>
-            `;
-        });
-    } else {
-        itemsTableHTML = `<tr><td colspan="5" style="text-align:center; color: #9ca3af; padding: 40px;">No items found in this order</td></tr>`;
-    }
-
-    const modalHTML = `
-        <div id="viewOrderModal" class="modal show" style="display: flex;">
-            <div class="modal-content modal-large">
-                <div class="modal-header">
-                    <h3>Order Details - ${order.order_no}</h3>
-                    <button class="close-btn" onclick="closeViewOrderModal()">&times;</button>
-                </div>
-                <div class="modal-body">
-                    <div class="order-details-container">
-                        <!-- Order Information Section -->
-                        <div class="order-info-section">
-                            <h4 class="section-title">Order Information</h4>
-                            <div class="info-grid">
-                                <div class="info-item">
-                                    <span class="info-label">Order Number</span>
-                                    <span class="info-value order-number">${order.order_no}</span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="info-label">Order Date</span>
-                                    <span class="info-value">${formatDateTime(order.placed_at)}</span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="info-label">Expected Delivery</span>
-                                    <span class="info-value">${formatDate(order.expected_delivery)}</span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="info-label">Status</span>
-                                    <span class="info-value">
-                                        <span class="inv-status-badge inv-status-${order.status.toLowerCase()}">${order.status.toUpperCase()}</span>
-                                    </span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="info-label">Delivery Type</span>
-                                    <span class="info-value">${order.delivery_type === 'urgent' ? 'Same Day Delivery' : 'Next Day Delivery'}</span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="info-label">Total Amount</span>
-                                    <span class="info-value" style="font-weight: 700; color: #667eea; font-size: 16px;">₹${parseFloat(order.total_amount).toFixed(2)}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Customer Information Section -->
-                        <div class="order-info-section">
-                            <h4 class="section-title">Customer Information</h4>
-                            <div class="info-grid">
-                                <div class="info-item">
-                                    <span class="info-label">Name</span>
-                                    <span class="info-value">${order.name}</span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="info-label">Mobile</span>
-                                    <span class="info-value">${order.mobile}</span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="info-label">Email</span>
-                                    <span class="info-value">${order.email || 'N/A'}</span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="info-label">Shop Code</span>
-                                    <span class="info-value">${order.shop_code || 'N/A'}</span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="info-label">Address</span>
-                                    <span class="info-value">${order.address || 'N/A'}</span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="info-label">Family Member</span>
-                                    <span class="info-value">${order.is_family_member === 'True' ? 'Yes' : 'No'}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Order Items Section - Shows ONLY ordered items -->
-                        <div class="order-info-section">
-                            <h4 class="section-title">Order Items (${orderItemsList.length} ${orderItemsList.length === 1 ? 'item' : 'items'})</h4>
-                            <div class="order-items-table-wrapper">
-                                <table class="order-items-table">
-                                    <thead>
-                                        <tr>
-                                            <th style="text-align: center; width: 80px;">Sr No</th>
-                                            <th style="text-align: left;">Item Name</th>
-                                            <th style="text-align: center; width: 100px;">Quantity</th>
-                                            <th style="text-align: right; width: 120px;">Price</th>
-                                            <th style="text-align: right; width: 120px;">Total</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        ${itemsTableHTML}
-                                    </tbody>
-                                    ${orderItemsList.length > 0 ? `
-                                    <tfoot>
-                                        <tr class="total-row">
-                                            <td colspan="4" style="text-align: right; font-weight: 700; font-size: 15px; padding: 16px;">Grand Total:</td>
-                                            <td style="text-align: right; font-weight: 700; color: #667eea; font-size: 18px; padding: 16px;">₹${parseFloat(order.total_amount).toFixed(2)}</td>
-                                        </tr>
-                                    </tfoot>
-                                    ` : ''}
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-    const existingModal = document.getElementById("viewOrderModal");
-    if (existingModal) {
-        existingModal.remove();
-    }
-
-    // Add modal to body
-    document.body.insertAdjacentHTML('beforeend', modalHTML);
-}
-
-
-function closeViewOrderModal() {
-    const modal = document.getElementById("viewOrderModal");
-    if (modal) {
-        modal.classList.remove("show");
-        setTimeout(() => {
-            modal.remove();
-        }, 300);
-    }
-}
-function formatDate(dateString) {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-}
-
-function formatDateTime(dateString) {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleString('en-GB', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
     });
 }
 
@@ -337,45 +137,27 @@ function generateTableHTML() {
     }
 
     let tableRows = "";
-    if (orderData.length === 0) {
-        tableRows = `
+    for (let index = 0; index < orderData.length; index++) {
+        const serialNo = (page - 1) * perPage + index + 1;
+
+        let order = orderData[index];
+        tableRows += `
             <tr>
-                <td colspan="6" style="text-align: center; padding: 40px; color: #9ca3af;">
-                    <div style="font-size: 48px; margin-bottom: 16px;">📦</div>
-                    <div style="font-size: 16px; font-weight: 600; color: #6b7280;">No orders found for this date</div>
-                    <div style="font-size: 14px; color: #9ca3af; margin-top: 8px;">Try selecting a different date or add a new order</div>
-                </td>
+                <td>${serialNo}</td>
+                <td>${order.total_amount}</td>
+                <td>${order.delivery_type}</td>
+                <td>${order.status}</td>
+                <td>${order.notes || 'NA'}</td>
             </tr>
         `;
-    } else {
-        for (let index = 0; index < orderData.length; index++) {
-            const serialNo = (page - 1) * perPage + index + 1;
-
-            let order = orderData[index];
-            tableRows += `
-                <tr>
-                    <td><a href="javascript:void(0)" class="order-link" onclick="viewOrderDetails(${order.id})">${serialNo}</a></td>
-                    <td>₹${parseFloat(order.total_amount).toFixed(2)}</td>
-                    <td>${order.delivery_type === 'urgent' ? 'Same Day' : 'Next Day'}</td>
-                    <td><span class="inv-status-badge inv-status-${order.status.toLowerCase()}">${order.status.toUpperCase()}</span></td>
-                    <td>${order.notes || 'N/A'}</td>
-                </tr>
-            `;
-        }
-    }
-    console.log(currentDate);
-    if (currentDate == null) {
-        console.log(currentDate);
-        currentDate = new Date().toISOString().split("T")[0];
-
     }
 
+    const currentDate = new Date().toISOString().split("T")[0];
 
     return `
         <div class="content-card">
             <div class="staff-header">
                 <h2>Order Management</h2>
-                <input type="date" id="btnDate" value="${currentDate}" onchange="refreshOrdersTable()"/>
                 <input type="date" id="btnDate" value="${currentDate}" onchange="refreshOrdersTable()"/>
                 <button class="btn-add" onclick="openorderform()">Add Order</button>
             </div>
@@ -385,7 +167,6 @@ function generateTableHTML() {
                     <thead>
                         <tr>
                             <th>Sr No</th>
-                            <!-- <th>Order No</th> -->
                             <th>Amount</th>
                             <th>Delivery Type</th>
                             <th>Status</th>
@@ -625,24 +406,11 @@ function changestaffPerPage(value) {
 // REFRESH ORDERS TABLE ON DATE CHANGE
 // ============================================
 function refreshOrdersTable() {
-    console.log("Refreshing orders table...");
-    const dateInput = document.getElementById("btnDate");
-    if (dateInput) {
-        console.log("Selected date:", dateInput.value);
-        currentDate = dateInput.value;
-    }
-    // Reset to first page when filtering
-    currentstaffPage = 1;
-
     return loadorderData().then(() => {
         const mainContent = document.getElementById("mainContent");
         if (mainContent) {
             mainContent.innerHTML = generateTableHTML();
-            console.log("Table refreshed with orders:", orderData.length);
         }
-    }).catch(error => {
-        console.error("Error refreshing table:", error);
-        showNotification("Error refreshing orders!", "error");
     });
 }
 
@@ -833,7 +601,6 @@ async function submitstaffForm(event) {
     }
 }
 
-
 // ============================================
 // TOGGLE STAFF STATUS
 // ============================================
@@ -853,7 +620,7 @@ function togglestafftatus(id, currentStatus) {
         }
 
         const newStatus = currentStatus === "active" ? "inactive" : "active";
-        return updateItem(orderItemsURLphp, id, { status: newStatus }, user_id).then(result => {
+        return updateItem(ordersURLphp, id, { status: newStatus }, user_id).then(result => {
             if (result) {
                 const mainContent = document.getElementById("mainContent");
                 if (mainContent) {
@@ -875,14 +642,9 @@ function togglestafftatus(id, currentStatus) {
 
 // Close modal when clicking outside
 window.addEventListener("click", function (event) {
-    const addOrderModal = document.getElementById("orderFormModal");
-    const viewOrderModal = document.getElementById("viewOrderModal");
-
-    if (event.target === addOrderModal) {
+    const modal = document.getElementById("orderFormModal");
+    if (event.target === modal) {
         closestaffForm();
-    }
-    if (event.target === viewOrderModal) {
-        closeViewOrderModal();
     }
 });
 
@@ -900,7 +662,6 @@ function navigateToInventoryStaff(staffId) {
     }
 }
 
-// ============================================
 // ============================================
 // MAKE FUNCTIONS GLOBALLY ACCESSIBLE
 // ============================================
@@ -920,5 +681,3 @@ window.showConfirm = showConfirm;
 window.navigateToInventoryStaff = navigateToInventoryStaff;
 window.refreshOrdersTable = refreshOrdersTable;
 window.updateDeliveryStatusText = updateDeliveryStatusText;
-window.viewOrderDetails = viewOrderDetails;
-window.closeViewOrderModal = closeViewOrderModal;

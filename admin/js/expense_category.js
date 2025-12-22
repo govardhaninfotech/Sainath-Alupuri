@@ -83,6 +83,7 @@ export function renderExpenseCategoryTable() {
 
 // Generate table HTML
 function generateTableHTML() {
+
     let tableRows = "";
     if (expenseCategoryData.length === 0) {
         tableRows = `
@@ -93,10 +94,14 @@ function generateTableHTML() {
             </tr>
         `;
     } else {
-        expenseCategoryData.forEach(category => {
-            tableRows += `
+        for (let index = 0; index < expenseCategoryData.length; index++) {
+            // const serialNo = (page - 1) * perPage + index + 1;
+            const serialNo = index + 1;
+
+            let category = expenseCategoryData[index];
+            tableRows += `    
                 <tr>
-                    <td>${category.id || "-"}</td>
+                    <td>${serialNo}</td>
                     <td>${category.name || category.category_name || "-"}</td>
                     <td>${category.notes || "-"}</td>
                     <td>
@@ -106,13 +111,13 @@ function generateTableHTML() {
                     </td>
                 </tr>
             `;
-        });
+        }
     }
 
     return `
         <div class="content-card">
             <div class="items-header">
-                <h2>Expanse Categories</h2>
+                <h2>Expense Categories</h2>
                 <button class="btn-add" onclick="openExpenseCategoryForm()">Add Category</button>
             </div>
             
@@ -120,9 +125,9 @@ function generateTableHTML() {
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>id</th>
-                            <th>category name</th>
-                            <th>notes</th>
+                            <th>Sr No</th>
+                            <th>Category Name</th>
+                            <th>Notes</th>
                             <th>Delete</th>
                         </tr>
                     </thead>

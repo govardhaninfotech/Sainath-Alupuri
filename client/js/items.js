@@ -36,7 +36,7 @@ function loadItemsData() {
         return Promise.reject("Missing user_id");
     }
 
-    const url = `${itemURLphp}?user_id=${currentUser.id}&page=${currentItemsPage}&per_page=${itemsPerPage}`;
+    const url = `${itemURLphp}?user_id=${currentUser.id}&status=enable&page=${currentItemsPage}&per_page=${itemsPerPage}`;
 
     return getItemsData(url).then(data => {
         itemsData = data.items || [];
@@ -91,24 +91,8 @@ function generateItemsTableHTML() {
                 <td>${imageCell}</td>
                 <td>${item.name}</td>
                 <td>${item.price}</td>
-                <td>${item.visible_to_all === "True" ? "Yes" : "No"}</td>
-                <td style="width:150px;">
-                    <div style="display:flex;align-items:center;justify-content:center;">
-                        <label class="toggle-switch">
-                            <input type="checkbox"
-                                   onchange="toggleItemStatusItems('${item.id}', '${item.status}')"
-                                   ${item.status === "enable" ? "checked" : ""}>
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-                </td>
-                <td>
-                    <button class="btn-icon btn-edit"
-                            onclick="editItem('${item.id}')"
-                            title="Edit">
-                        <i class="icon-edit">✎</i>
-                    </button>
-                </td>
+                <td>${item.unit}</td>
+                
             </tr>
         `;
     });
@@ -117,20 +101,17 @@ function generateItemsTableHTML() {
         <div class="content-card">
             <div class="items-header">
                 <h2>Items Management</h2>
-                <button class="btn-add" onclick="openItemForm()">Add Item</button>
             </div>
 
             <div class="table-container">
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>#</th>
+                            <th>Sr No</th>
                             <th>Image</th>
                             <th>Item Name</th>
                             <th>Price</th>
-                            <th>Visible</th>
-                            <th>Status</th>
-                            <th>Edit</th>
+                            <th>Unit</th>
                         </tr>
                     </thead>
                     <tbody>

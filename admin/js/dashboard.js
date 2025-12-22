@@ -1,4 +1,4 @@
-import { renderclientTable } from "./client.js";
+// import { renderclientTable } from "./client.js";
 import { renderItemsTable } from "./items.js";
 import { renderstaffTable } from "./staff.js";
 import { renderbankTable } from "./bank.js";
@@ -10,7 +10,8 @@ import { renderInventoryExpancesPage } from "./expances.js";
 
 // 🔹 NEW: Inventory module imports
 import { renderInventoryStaffPage, initInventoryStaffPage } from "./inventory.js";
-import { renderInventoryOrdersPage, initInventoryOrdersPage } from "./inventory_orders.js";
+import { renderInventoryOrdersPage } from "./inventory_orders.js";
+// import { renderStaffAttendancePage } from "./inventory_attendance.js";
 
 // GLOBAL VARIABLES
 // ============================================
@@ -18,6 +19,15 @@ let currentUser = null;
 let currentPage = "home";
 let sidebarOpen = false;
 
+
+
+currentUser = JSON.parse(localStorage.getItem("rememberedUser") || sessionStorage.getItem("rememberedUser") || "null");
+const user_id = currentUser?.id || "";
+if (!user_id) {
+    sessionStorage.removeItem("rememberedUser");
+    localStorage.removeItem("rememberedUser");
+    window.location.replace("../index.html");
+}
 // ============================================
 // INITIALIZATION - Runs when page loads
 // ============================================
@@ -128,17 +138,26 @@ function closeSidebar() {
 function toggleSubmenu() {
     console.log("🔽 Master submenu toggle clicked");
 
-    const submenu = document.getElementById("masterSubmenu");
-    if (!submenu) return;
+    const masterMenu = document.getElementById("masterSubmenu");
+    const inventoryMenu = document.getElementById("inventorySubmenu");
 
-    submenu.classList.toggle("open");
-
-    const masterButton = submenu.previousElementSibling;
-    if (masterButton) {
-        const chevron = masterButton.querySelector(".chevron");
-        if (chevron) {
-            chevron.classList.toggle("down");
+    // Close inventory submenu when master opens
+    if (inventoryMenu.classList.contains("open")) {
+        inventoryMenu.classList.remove("open");
+        const invBtn = inventoryMenu.previousElementSibling;
+        if (invBtn) {
+            const chev = invBtn.querySelector(".chevron");
+            chev?.classList.remove("down");
         }
+    }
+
+    // Toggle master submenu
+    masterMenu.classList.toggle("open");
+
+    const masterBtn = masterMenu.previousElementSibling;
+    if (masterBtn) {
+        const chevron = masterBtn.querySelector(".chevron");
+        chevron?.classList.toggle("down");
     }
 }
 
@@ -146,17 +165,26 @@ function toggleSubmenu() {
 function toggleInventorySubmenu() {
     console.log("🔽 Inventory submenu toggle clicked");
 
-    const submenu = document.getElementById("inventorySubmenu");
-    if (!submenu) return;
+    const inventoryMenu = document.getElementById("inventorySubmenu");
+    const masterMenu = document.getElementById("masterSubmenu");
 
-    submenu.classList.toggle("open");
-
-    const inventoryButton = submenu.previousElementSibling;
-    if (inventoryButton) {
-        const chevron = inventoryButton.querySelector(".chevron");
-        if (chevron) {
-            chevron.classList.toggle("down");
+    // Close master submenu when inventory opens
+    if (masterMenu.classList.contains("open")) {
+        masterMenu.classList.remove("open");
+        const masterBtn = masterMenu.previousElementSibling;
+        if (masterBtn) {
+            const chev = masterBtn.querySelector(".chevron");
+            chev?.classList.remove("down");
         }
+    }
+
+    // Toggle inventory submenu
+    inventoryMenu.classList.toggle("open");
+
+    const inventoryBtn = inventoryMenu.previousElementSibling;
+    if (inventoryBtn) {
+        const chevron = inventoryBtn.querySelector(".chevron");
+        chevron?.classList.toggle("down");
     }
 }
 
@@ -194,8 +222,9 @@ document.addEventListener("click", function (event) {
 function logout() {
     console.log("👋 Logging out user");
     localStorage.removeItem("rememberedUser");
+    sessionStorage.removeItem("rememberedUser");
     currentUser = null;
-    window.location.href = "index.html";
+    window.location.replace("../index.html");
 }
 
 // ============================================
@@ -232,12 +261,12 @@ async function navigateTo(page) {
                 ?.classList.add("active");
             break;
 
-        case "client":
-            mainContent.innerHTML = await renderclientTable();
-            document
-                .querySelector('.submenu-item[onclick*="client"]')
-                ?.classList.add("active");
-            break;
+        // case "client":
+        //     mainContent.innerHTML = await renderclientTable();
+        //     document
+        //         .querySelector('.submenu-item[onclick*="client"]')
+        //         ?.classList.add("active");
+        //     break;
 
         case "user":
             if (typeof renderuserTable === "function") {
@@ -309,8 +338,7 @@ async function navigateTo(page) {
             document
                 .querySelector('.submenu-item[onclick*="inventory_orders"]')
                 ?.classList.add("active");
-            // After HTML inject, hook up events
-            initInventoryOrdersPage();
+
             break;
         case "expances":
             mainContent.innerHTML = await renderInventoryExpancesPage();
@@ -318,30 +346,47 @@ async function navigateTo(page) {
                 .querySelector('.submenu-item[onclick*="inventory_orders"]')
                 ?.classList.add("active");
             // After HTML inject, hook up events
-            initInventoryOrdersPage();
+            // initInventoryOrdersPage();
             break;
 
         // 🔹 NEW: Inventory → Staff Attendance
-        case "inventory_staff_attendance":
-            // Load the external HTML file
-            try {
-                const response = await fetch("inventory_staff_attendance.html");
-                const html = await response.text();
-                mainContent.innerHTML = html;
-                document
-                    .querySelector('.submenu-item[onclick*="inventory_staff_attendance"]')
-                    ?.classList.add("active");
-                // Dynamic import and initialize the JS module
-                const module = await import("./inventory_attendance.js");
-            } catch (err) {
-                console.error("Error loading Staff Attendance page:", err);
-                mainContent.innerHTML = "<p>Error loading page</p>";
-            }
-            break;
+        // case "inventory_staff_attendance":
+        //     // Load the external HTML file
+        //     try {
+        //         mainContent.innerHTML = await renderStaffAttendancePage();
+        //         document
+        //             .querySelector('.submenu-item[onclick*="inventory_staff_attendance"]')
+        //             ?.classList.add("active");
+        //         // After HTML inject, hook up events
+        //         initInventoryStaffAttendancePage();
+        //         break;
+
+        //     } catch (err) {
+        //         console.error("Error loading Staff Attendance page:", err);
+        //         mainContent.innerHTML = "<p>Error loading page</p>";
+        //     }
 
         case "profile":
             mainContent.innerHTML = getProfileContent();
             break;
+
+        // case "inventory_staff_attendance":
+        //     // Load the external HTML file
+        //     try {
+        //         const response = await fetch("inventory_staff_attendance.html");
+        //         const html = await response.text();
+        //         mainContent.innerHTML = html;
+        //         document
+        //             .querySelector('.submenu-item[onclick*="inventory_staff_attendance"]')
+        //             ?.classList.add("active");
+        //         // Dynamic import and initialize the JS module
+        //         const module = await import("./inventory_attendance.js");
+        //     } catch (err) {
+        //         console.error("Error loading Staff Attendance page:", err);
+        //         mainContent.innerHTML = "<p>Error loading page</p>";
+        //     }
+        //     break;
+
     }
 
     // ALWAYS close sidebar after navigation (on all screen sizes)
@@ -438,17 +483,9 @@ function getInventoryContent() {
         `;
 }
 
-// 🔹 NEW: simple placeholder for Inventory Orders
-function getInventoryOrdersContent() {
-    return `
-            <div class="content-card">
-                <h2>Inventory - Orders</h2>
-                <p>This is a placeholder for orders. You can implement it later.</p>
-            </div>
-        `;
-}
 
-function getProfileContent() {
+
+export function getProfileContent() {
     return `
             <div class="content-card">
                 <h2>User Profile</h2>
@@ -501,7 +538,7 @@ window.toggleInventorySubmenu = toggleInventorySubmenu; // 🔹 NEW
 window.toggleUserMenu = toggleUserMenu;
 window.logout = logout;
 window.navigateTo = navigateTo;
-window.initInventoryOrdersPage = initInventoryOrdersPage; // 🔹 NEW: Orders
+window.getProfileContent = getProfileContent;
 
 // ============================================
 // RESPONSIVE HANDLING

@@ -384,6 +384,10 @@ input:checked+.slider:before {
     gap: 20px;
 }
 
+#for-row-other {
+    grid-template-columns: 1fr;
+}
+
 .form-group {
     margin-bottom: 0;
 }
@@ -440,6 +444,10 @@ input:checked+.slider:before {
     background: #e5e7eb;
 }
 
+#formActions {
+    margin-top: 0px;
+}
+
 .btn-submit {
     padding: 10px 20px;
     background: #667eea;
@@ -451,6 +459,8 @@ input:checked+.slider:before {
     font-weight: 500;
     transition: background 0.3s;
 }
+
+
 
 .btn-submit:hover {
     background: #5568d3;

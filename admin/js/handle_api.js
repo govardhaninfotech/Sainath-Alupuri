@@ -1,6 +1,6 @@
 import { userURL } from "../apis/api.js";
 import { showMessage } from "./message.js";
-import { setCurrentUser } from "./validation.js";
+import { setCurrentUser, setLocalStorage } from "./validation.js";
 
 // user login
 export function loginUers(mobile, password, remember) {
@@ -75,22 +75,95 @@ export function loginUers(mobile, password, remember) {
         });
 }
 
-// forgot password
-export function forgotUserPassword(email, password) {
-    return fetch(`${userURL}?email=${email}`).then(response => response.json()).then(data => {
-        if (data.length === 0) {
-            showMessage('forgotMessage', 'Email not found', 'error');
-            return;
-        }
-        return fetch(`${userURL}/${data[0].id}`, {
-            method: 'PATCH',
+// Forgot Password API
+export async function forgotUserPassword(user_id, password) {
+
+    // -------------------------
+    // 🔹 Basic Frontend Validation
+    // -------------------------
+
+    // if (!user_id || user_id === "") {
+    //     showMessage('forgotMessage', 'Please enter your valid email.', 'error');
+    //     return;
+    // }
+
+    // Email format check (if user_id is email)
+    // const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    // if (user_id.includes("@") && !emailRegex.test(user_id)) {
+    //     showMessage('forgotMessage', 'Invalid email format. Please enter a valid email.', 'error');
+    //     return;
+    // }
+
+    if (!password || password.trim() === "") {
+        showMessage('forgotMessage', 'Please enter a new password.', 'error');
+        return;
+    }
+
+
+    try {
+        // -------------------------
+        // 🔹 API CALL
+        // -------------------------
+        const response = await fetch(`https://gisurat.com/govardhan/sainath_aloopuri/api/reset_password.php`, {
+            method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ "password": password })
-        }).then(() => {
-            showMessage('forgotMessage', 'Password updated successfully. Please login with your new password.', 'success');
-            window.location.href = '../../index.html';
+            body: JSON.stringify({
+                user_id: user_id,
+                password: password
+            })
         });
-    });
+
+        const data = await response.json();
+        console.log("API Response:", data);
+
+        // -------------------------
+        // 🔹 API Validations & Handling
+        // -------------------------
+
+        if (!response.ok) {
+            showMessage('forgotMessage', 'Server error! Please try again later.', 'error');
+            return;
+        }
+
+        // Case 1: User not found
+        if (data.status === "user_not_found") {
+            showMessage('forgotMessage', 'User does not exist. Please check your email or user ID.', 'error');
+            return;
+        }
+
+        // Case 2: Email invalid (if API returns such message)
+        if (data.status === "invalid_email") {
+            showMessage('forgotMessage', 'Email is not valid. Please enter a registered email.', 'error');
+            return;
+        }
+
+        // Case 3: Any custom error from backend
+        if (data.status === "error") {
+            showMessage('forgotMessage', data.message || 'Something went wrong. Try again.', 'error');
+            return;
+        }
+
+        // Case 4: Success
+        if (data.status === "ok") {
+            showMessage('forgotMessage', 'Password updated successfully. Please login with your new password.', 'success');
+            sessionStorage.removeItem('user_id');
+            sessionStorage.removeItem('email');
+
+            setTimeout(() => {
+                window.location.replace('../../index.html');
+            }, 1000);
+
+
+            return;
+        }
+
+        // Unknown case
+        // showMessage('forgotMessage', 'Unexpected response from server.', 'error');
+
+    } catch (error) {
+        console.error(error);
+        showMessage('forgotMessage', 'Network error! Please check your internet connection.', 'error');
+    }
 }

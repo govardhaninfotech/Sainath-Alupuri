@@ -2,8 +2,9 @@
 // get itemsData for items tablein itemsData.js
 export function getItemsData(url) {
     return fetch(url).then(response => response.json()).then(data => {
-        // console.log(data);
+        console.log("master : ", data);
         // If data is an array, return it directly; if it's an object with items property, return that
+
         return data;
     }).catch(error => {
         console.error('Error fetching items data:', error);
@@ -17,11 +18,14 @@ export function getItemsData(url) {
 export async function updateItem(url, itemId, itemData, userId = null) {
     console.log(itemData);
 
+    console.log(userId);
+
     try {
         var finalURL = `${url}?id=${itemId}`;
         if (userId) {
             finalURL = `${url}?user_id=${userId}&id=${itemId}`;
         }
+        console.log(finalURL);
         let response = await fetch(finalURL, {
             method: 'PATCH',
             headers: {
@@ -30,8 +34,21 @@ export async function updateItem(url, itemId, itemData, userId = null) {
             body: JSON.stringify(itemData)
         });
 
-        // console.log(response.json());
+        console.log(response);
 
+        if (!response.ok) {
+            const errorText = await response.text();
+            let errorData = null;
+            try {
+                errorData = JSON.parse(errorText);
+            } catch (e) {
+                errorData = { error: errorText };
+            }
+            throw new Error(JSON.stringify(errorData));
+        }
+
+        const result = await response.json();
+        return result;
         // return await response.json();/
     } catch (error) {
         console.error('Error updating item:', error);

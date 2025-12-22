@@ -39,12 +39,19 @@ let selectedStaffForExpense = null;
 let staffExpenses = [];
 let expenseEditingId = null;
 
+const currentUser = JSON.parse(localStorage.getItem("rememberedUser") || sessionStorage.getItem("rememberedUser") || "null");
+const user_id = currentUser?.id || "";
+if (!user_id) {
+    sessionStorage.removeItem("rememberedUser");
+    localStorage.removeItem("rememberedUser");
+    window.location.replace("../index.html");
+}
 // ============================================
 // LOAD STAFF DATA FROM API (SERVER PAGINATION)
 // ============================================
 function loadstaffData() {
     // Build URL with query params for server-side pagination
-    const url = `${staffURLphp}?page=${currentstaffPage}&per_page=${staffPerPage}`;
+    const url = `${staffURLphp}?user_id=${user_id}&page=${currentstaffPage}&per_page=${staffPerPage}`;
 
     return getItemsData(url).then(data => {
         // API shape:
@@ -82,24 +89,29 @@ function generateTableHTML() {
     }
 
     let tableRows = "";
-    staffData.forEach(staff => {
+    for (let index = 0; index < staffData.length; index++) {
+        const serialNo = (page - 1) * perPage + index + 1;
+
+        let staff = staffData[index];
         tableRows += `
-            <tr>
+    <tr>
+        <td>${serialNo}</td>
                 <td>
                     <!-- Link to inventory staff page for this staff -->
                     <a href="#" onclick="navigateToInventoryStaff('${staff.id}'); return false;" class="staff-name-link" style="cursor: pointer; color: #007bff; text-decoration: underline;">
                         ${staff.name}
                     </a>
                 </td>
+
                 <td>${staff.mobile}</td>
                 <td>${staff.role}</td>
                 <td>${staff.salary}</td>
                 <td>${staff.address}</td>
                
-                <td style="width: 150px;">
+               <!-- <td style="width: 150px;">
                     <div style="display: flex; align-items: center; justify-content: center;">
                         <label class="toggle-switch">
-                            <input type="checkbox"
+                            <input type="checkbox" id='${staff.id}'
                                    onchange="togglestafftatus('${staff.id}', '${staff.status}')"
                                    ${staff.status === 'active' ? 'checked' : ''}>
                             <span class="slider"></span>
@@ -107,7 +119,7 @@ function generateTableHTML() {
                         <span class="status-text" style="margin-left: 10px; font-weight: 500; min-width: 60px;">
                         </span>
                     </div>
-                </td>
+                </td> -->
                 <td>
                     <button class="btn-icon btn-edit" onclick="editstaff('${staff.id}')" title="Edit">
                         <i class="icon-edit">✎</i>
@@ -120,7 +132,7 @@ function generateTableHTML() {
                 </td> --> 
             </tr>
         `;
-    });
+    }
 
     return `
         <div class="content-card">
@@ -133,12 +145,13 @@ function generateTableHTML() {
                 <table class="data-table">
                     <thead>
                         <tr>
+                            <th>Sr No</th>
                             <th>Name</th>
                             <th>Mobile</th>
                             <th>Role</th>
                             <th>Salary</th>
                             <th>Address</th>
-                            <th>Status</th>
+                         <!--   <th>Status</th> -->
                             <th>Edit</th>
                            <!--  <th>Delete</th> -->
                         </tr>
@@ -237,8 +250,8 @@ function generateTableHTML() {
             </div>
         </div>
     `;
-}
 
+}
 // ============================================
 // PAGINATION FUNCTIONS (SERVER-SIDE)
 // ============================================
@@ -339,6 +352,7 @@ function deletestaff(id) {
 // ============================================
 // EDIT STAFF FUNCTION
 // ============================================
+let currentlyEditingStaffStatus = 'Active';
 function editstaff(id) {
     editingItemId = id;
 
@@ -356,14 +370,14 @@ function editstaff(id) {
     document.getElementById("itemPrice").value = item.mobile || "";
     document.getElementById("itemUnit").value = item.role || "";
     document.getElementById("itemImagePath").value = item.salary || 0;
-    document.getElementById("staffDate").value = item.date || "";
+    document.getElementById("staffDate").value = item.start_date || "";
     document.getElementById("staffReference").value = item.reference || "";
 
     const statusCheckbox = document.getElementById("stafftatus");
     const statusText = document.getElementById("statusText");
     statusCheckbox.checked = item.status === "active";
     statusText.textContent = item.status === "active" ? "Active" : "Inactive";
-
+    currentlyEditingStaffStatus = item.status;
     statusCheckbox.onchange = function () {
         statusText.textContent = this.checked ? "Active" : "Inactive";
     };
@@ -429,30 +443,38 @@ async function submitstaffForm(event) {
     }
 
     const formData = {
+        user_id: user_id,
         name: name,
         mobile: mobile,
         role: role,
         salary: parseFloat(salary),
         address: address,
         start_date: date,
-        reference: reference || "",
+        ref: reference || "",
         status: statusCheckbox.checked ? "active" : "inactive"
     };
 
     const mainContent = document.getElementById("mainContent");
+    console.log(formData);
 
     if (editingItemId) {
         return showConfirm(
             "Are you sure you want to update this staff member?",
             "warning"
         ).then(confirmed => {
-            if (!confirmed) return;
+            if (!confirmed) {
+                statusCheckbox.checked = currentlyEditingStaffStatus;
+                return;
+            }
+            console.log(user_id);
 
-            return updateItem(staffURLphp, editingItemId, formData).then(result => {
+            return updateItem(staffURLphp, editingItemId, formData, user_id).then(result => {
+                console.log(result);
+
                 if (result) {
                     showNotification("Staff updated successfully!", "success");
                 } else {
-                    showNotification("Error updating staff!", "error");
+                    showNotification(result.detail, "error");
                 }
 
                 closestaffForm();
@@ -471,7 +493,9 @@ async function submitstaffForm(event) {
             if (!confirmed) return;
 
             return addItemToAPI(staffURLphp, formData).then(result => {
-                if (result) {
+                console.log(result);
+
+                if (result.status === "ok") {
                     showNotification("Staff added successfully!", "success");
                     closestaffForm();
 
@@ -481,7 +505,7 @@ async function submitstaffForm(event) {
                         });
                     }
                 } else {
-                    showNotification("Error adding staff!", "error");
+                    showNotification(result.detail, "error");
                 }
             });
         });
@@ -492,14 +516,22 @@ async function submitstaffForm(event) {
 // TOGGLE STAFF STATUS
 // ============================================
 function togglestafftatus(id, currentStatus) {
+    let staff_status_element = document.getElementById(id);
     return showConfirm(
         `Are you sure you want to change this staff member's status to ${currentStatus === "active" ? "inactive" : "active"}?`,
         "warning"
     ).then(confirmed => {
-        if (!confirmed) return;
+
+        if (!confirmed) {
+            if (currentStatus === "active")
+                staff_status_element.checked = true;
+            else
+                staff_status_element.checked = false;
+            return;
+        }
 
         const newStatus = currentStatus === "active" ? "inactive" : "active";
-        return updateItem(staffURLphp, id, { status: newStatus }).then(result => {
+        return updateItem(staffURLphp, id, { status: newStatus }, user_id).then(result => {
             if (result) {
                 const mainContent = document.getElementById("mainContent");
                 if (mainContent) {
@@ -509,6 +541,10 @@ function togglestafftatus(id, currentStatus) {
                     });
                 }
             } else {
+                if (currentStatus === "active")
+                    staff_status_element.checked = true;
+                else
+                    staff_status_element.checked = false;
                 showNotification("Error updating staff status!", "error");
             }
         });
