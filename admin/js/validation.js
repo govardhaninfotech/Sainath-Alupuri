@@ -123,6 +123,30 @@ export function validateEmail(email) {
 }
 
 // ============================================
+// AADHAR CARD NUMBER VALIDATION
+// ============================================
+export function validateAadharNumber(aadhar) {
+    if (!aadhar) {
+        return { status: false, message: "Aadhar card number is required" };
+    }
+
+    // Remove spaces if user typed with space
+    aadhar = aadhar.trim();
+
+    // Indian Aadhar is 12 digits
+    const pattern = /^\d{12}$/;
+
+    if (!pattern.test(aadhar)) {
+        return {
+            status: false,
+            message: "Enter a valid 12-digit Aadhar card number"
+        };
+    }
+
+    return { status: true };
+}
+
+// ============================================
 // SETUP GLOBAL ESC KEY HANDLER
 // ============================================
 export function setupEscKeyHandler() {

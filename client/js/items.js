@@ -203,8 +203,18 @@ function generateItemsTableHTML() {
 
 
                         <div class="form-actions">
-                            <button type="button" class="btn-cancel" onclick="closeItemForm()">Cancel</button>
-                            <button type="submit" class="btn-submit">Save</button>
+                            <button type="button" class="btn-cancel" onclick="closeItemForm()">
+                                <svg class="btn-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                                <span class="btn-text">Cancel</span>
+                            </button>
+                            <button type="submit" class="btn-submit">
+                                <svg class="btn-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                                <span class="btn-text">Save</span>
+                            </button>
                         </div>
                     </form>
                 </div>

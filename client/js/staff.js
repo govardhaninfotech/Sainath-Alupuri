@@ -2,7 +2,7 @@
 // STAFF PAGE - CRUD OPERATIONS WITH PAGINATION + EXPENSE MANAGEMENT
 // ============================================
 
-import { staffURLphp, EXPENSES_URL } from "../apis/api.js";
+import { staffURLphp, userURLphp } from "../apis/api.js";
 import {
     getItemsData,
     updateItem,
@@ -14,7 +14,7 @@ import {
     validateIndianMobile,
     validateDate,
     validateSalary,
-    validateRequiredField,
+    validateAadharNumber,
     setupEscKeyHandler
 } from "./validation.js";
 
@@ -23,14 +23,17 @@ setupEscKeyHandler();
 
 // Staff Data Storage
 let staffData = [];
+let allStaffData = []; // Store all staff for filtering by client
+let clientData = []; // Store all clients for dropdown
 
 // Server-side pagination meta
 let currentstaffPage = 1;   // current page (matches API "page")
-let staffPerPage = 10;      // matches API "per_page"
+let staffPerPage = 15;      // matches API "per_page"
 let staffTotal = 0;         // API "total"
 let staffTotalPages = 1;    // API "total_pages"
 
 let editingItemId = null;
+let selectedClientFilter = null; // Filter by selected client
 
 // ============================================
 // EXPENSE MANAGEMENT STATE
@@ -39,6 +42,7 @@ let selectedStaffForExpense = null;
 let staffExpenses = [];
 let expenseEditingId = null;
 
+// Get user from localStorage or sessionStorage
 const currentUser = JSON.parse(localStorage.getItem("rememberedUser") || sessionStorage.getItem("rememberedUser") || "null");
 const user_id = currentUser?.id || "";
 if (!user_id) {
@@ -46,17 +50,59 @@ if (!user_id) {
     localStorage.removeItem("rememberedUser");
     window.location.replace("../index.html");
 }
+
+// ============================================
+// LOAD CLIENT DATA FROM API (FOR DROPDOWN)
+// ============================================
+async function loadClientData() {
+    try {
+        const url = `${userURLphp}?user_id=${user_id}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`Clients API returned ${res.status}`);
+
+        const json = await res.json();
+        console.log("Clients API Response:", json);
+
+        // Handle different response formats
+        if (Array.isArray(json)) {
+            clientData = json;
+        } else if (json?.clients && Array.isArray(json.clients)) {
+            clientData = json.clients;
+        } else if (json?.users && Array.isArray(json.users)) {
+            clientData = json.users;
+        } else if (json?.data && Array.isArray(json.data)) {
+            clientData = json.data;
+        } else {
+            clientData = [];
+            console.warn("No clients found in response");
+        }
+
+        console.log("Clients loaded:", clientData.length);
+        return clientData;
+    } catch (error) {
+        console.error("Error loading client data:", error);
+        showNotification("Error loading clients!", "error");
+        clientData = [];
+        return [];
+    }
+}
 // ============================================
 // LOAD STAFF DATA FROM API (SERVER PAGINATION)
 // ============================================
 function loadstaffData() {
     // Build URL with query params for server-side pagination
-    const url = `${staffURLphp}?user_id=${user_id}&page=${currentstaffPage}&per_page=${staffPerPage}`;
+    let url = `${staffURLphp}?user_id=${user_id}&page=${currentstaffPage}&per_page=${staffPerPage}`;
+
+    // Add client filter if selected
+    if (selectedClientFilter) {
+        url += `&client_id=${selectedClientFilter}`;
+    }
 
     return getItemsData(url).then(data => {
         // API shape:
         // { page, per_page, total, total_pages, staff: [...] }
-        staffData = data.staff || [];
+        allStaffData = data.staff || [];
+        staffData = allStaffData;
         staffTotal = data.total ?? staffData.length;
         staffPerPage = data.per_page ?? staffPerPage;
         staffTotalPages = data.total_pages ?? Math.max(1, Math.ceil(staffTotal / staffPerPage));
@@ -68,7 +114,10 @@ function loadstaffData() {
 // RENDER STAFF TABLE WITH PAGINATION
 // ============================================
 export function renderstaffTable() {
-    return loadstaffData().then(() => generateTableHTML());
+    return Promise.all([
+        loadstaffData(),
+        loadClientData()
+    ]).then(() => generateTableHTML());
 }
 
 // Generate table HTML (no client-side slicing now)
@@ -93,18 +142,24 @@ function generateTableHTML() {
         const serialNo = (page - 1) * perPage + index + 1;
 
         let staff = staffData[index];
+
+        // Check if user_id matches to show clickable link
+        const isOwnedByCurrentUser = String(staff.user_id) === String(user_id);
+        const nameDisplay = isOwnedByCurrentUser
+            ? `<a href="#" onclick="navigateToInventoryStaff('${staff.id}'); return false;" class="staff-name-link" style="cursor: pointer; color: #007bff; text-decoration: underline;">
+                    ${staff.name}
+                </a>`
+            : `<span style="color: #666;">${staff.name}</span>`;
+
         tableRows += `
     <tr>
         <td>${serialNo}</td>
                 <td>
-                    <!-- Link to inventory staff page for this staff -->
-                    <a href="#" onclick="navigateToInventoryStaff('${staff.id}'); return false;" class="staff-name-link" style="cursor: pointer; color: #007bff; text-decoration: underline;">
-                        ${staff.name}
-                    </a>
+                    ${nameDisplay}
                 </td>
 
                 <td>${staff.mobile}</td>
-                <td>${staff.role}</td>
+                <td>${staff.aadhar}</td>
                 <td>${staff.salary}</td>
                 <td>${staff.address}</td>
                
@@ -134,11 +189,23 @@ function generateTableHTML() {
         `;
     }
 
+    // Build client filter dropdown options
+    let clientOptions = `<option value="">All Clients</option>`;
+    if (clientData && clientData.length > 0) {
+        clientData.forEach(client => {
+            const clientName = client.name || client.client_name || client.username || `Client ${client.id}`;
+            const selected = String(selectedClientFilter) === String(client.id) ? 'selected' : '';
+            clientOptions += `<option value="${client.id}" ${selected}>${clientName}</option>`;
+        });
+    }
+
     return `
         <div class="content-card">
             <div class="staff-header">
                 <h2>Staff Management</h2>
-                <button class="btn-add" onclick="openstaffForm()">Add Staff</button>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <button class="btn-add" onclick="openstaffForm()">Add Staff</button>
+                </div>
             </div>
             
             <div class="table-container">
@@ -148,7 +215,7 @@ function generateTableHTML() {
                             <th>Sr No</th>
                             <th>Name</th>
                             <th>Mobile</th>
-                            <th>Role</th>
+                            <th>Aadhar</th>
                             <th>Salary</th>
                             <th>Address</th>
                          <!--   <th>Status</th> -->
@@ -177,8 +244,9 @@ function generateTableHTML() {
         <!-- Staff Form Modal -->
         <div id="staffFormModal" class="modal">
             <div class="modal-content modal-responsive">
-                <div class="modal-header">
+                <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; gap: 15px;">
                     <h3 id="formTitle">Add New Staff</h3>
+                    <input type="date" id="staffDate" required style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; flex: 0 0 auto;">
                     <button class="close-btn" onclick="closestaffForm()">&times;</button>
                 </div>
                 <div class="modal-body">
@@ -186,11 +254,12 @@ function generateTableHTML() {
                         <input type="hidden" id="itemId">
                         
                         <div class="form-row">
+                           
+
                             <div class="form-group">
                                 <label for="itemName">Staff Name <span class="required">*</span></label>
                                 <input type="text" id="itemName" required placeholder="Enter staff name">
                             </div>
-
                             <div class="form-group">
                                 <label for="itemPrice">Mobile <span class="required">*</span></label>
                                 <input type="text" id="itemPrice" required placeholder="Enter mobile number" pattern="[0-9]{10}" title="Mobile number must be 10 digits">
@@ -199,32 +268,28 @@ function generateTableHTML() {
 
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="itemUnit">Role <span class="required">*</span></label>
-                                <input type="text" id="itemUnit" required placeholder="e.g., Kitchen, Manager">
-                            </div>
-
-                            <div class="form-group">
                                 <label for="itemImagePath">Salary <span class="required">*</span></label>
                                 <input type="number" id="itemImagePath" step="0.01" min="0.01" value="0" required placeholder="Enter monthly salary">
                             </div>
-                        </div>
 
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="itemDescription">Address <span class="required">*</span></label>
-                                <input type="text" id="itemDescription" required placeholder="Enter staff address">
-                            </div>
 
-                            <div class="form-group">
-                                <label for="staffDate">Date <span class="required">*</span></label>
-                                <input type="date" id="staffDate" required>
+                             <div class="form-group">
+                                <label for="itemUnit">Aadhar Card Number <span class="required">*</span></label>
+                                <input type="text" id="itemadhar" required placeholder="Enter 12-digit Aadhar number" pattern="[0-9]{12}" title="Aadhar number must be 12 digits">
                             </div>
                         </div>
-
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="staffReference">Reference <span class="optional">(Optional)</span></label>
                                 <input type="text" id="staffReference" placeholder="Enter reference file or ID">
+                            </div>
+                        </div>
+                        <div class="form-row">
+
+                            <div class="form-group">
+                                <label for="itemDescription">Address <span class="required">*</span></label>
+                                <textarea id="itemDescription" placeholder="Enter Address" style="width: 200%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-family: Arial, sans-serif; resize: vertical; min-height: 80px;"></textarea>
+
                             </div>
                         </div>
 
@@ -252,6 +317,21 @@ function generateTableHTML() {
     `;
 
 }
+// ============================================
+// CLIENT FILTER FUNCTION
+// ============================================
+function filterByClient(clientId) {
+    selectedClientFilter = clientId || null;
+    currentstaffPage = 1; // Reset to first page
+
+    return loadstaffData().then(() => {
+        const mainContent = document.getElementById("mainContent");
+        if (mainContent) {
+            mainContent.innerHTML = generateTableHTML();
+        }
+    });
+}
+
 // ============================================
 // PAGINATION FUNCTIONS (SERVER-SIDE)
 // ============================================
@@ -368,7 +448,7 @@ function editstaff(id) {
     document.getElementById("itemName").value = item.name;
     document.getElementById("itemDescription").value = item.address || "";
     document.getElementById("itemPrice").value = item.mobile || "";
-    document.getElementById("itemUnit").value = item.role || "";
+    document.getElementById("itemadhar").value = item.aadhar || "";
     document.getElementById("itemImagePath").value = item.salary || 0;
     document.getElementById("staffDate").value = item.start_date || "";
     document.getElementById("staffReference").value = item.reference || "";
@@ -394,42 +474,35 @@ async function submitstaffForm(event) {
     const statusCheckbox = document.getElementById("stafftatus");
     const name = document.getElementById("itemName").value.trim();
     const mobile = document.getElementById("itemPrice").value.trim();
-    const role = document.getElementById("itemUnit").value.trim();
+    const aadhar = document.getElementById("itemadhar").value.trim();
     const salary = document.getElementById("itemImagePath").value;
     const address = document.getElementById("itemDescription").value.trim();
     const date = document.getElementById("staffDate").value.trim();
     const reference = document.getElementById("staffReference").value.trim();
 
-    // Validate Name
-    let validation = validateRequiredField(name, "Staff name", 3);
-    if (!validation.status) {
-        showNotification(validation.message, "error");
+    // Validate Date (must be provided)
+    if (!date) {
+        showNotification("Date is required", "error");
         return;
     }
+
 
     // Validate Mobile
-    validation = validateIndianMobile(mobile);
+    let validation = validateIndianMobile(mobile);
+    if (!validation.status) {
+        showNotification(validation.message, "error");
+        return;
+    }
+    // Validate Aadhar Card Number
+    validation = validateAadharNumber(aadhar);
     if (!validation.status) {
         showNotification(validation.message, "error");
         return;
     }
 
-    // Validate Role
-    validation = validateRequiredField(role, "Role", 2);
-    if (!validation.status) {
-        showNotification(validation.message, "error");
-        return;
-    }
 
     // Validate Salary
     validation = validateSalary(salary);
-    if (!validation.status) {
-        showNotification(validation.message, "error");
-        return;
-    }
-
-    // Validate Address
-    validation = validateRequiredField(address, "Address");
     if (!validation.status) {
         showNotification(validation.message, "error");
         return;
@@ -446,9 +519,9 @@ async function submitstaffForm(event) {
         user_id: user_id,
         name: name,
         mobile: mobile,
-        role: role,
+        aadhar: aadhar,
         salary: parseFloat(salary),
-        address: address,
+        address: address || "N/A",
         start_date: date,
         ref: reference || "",
         status: statusCheckbox.checked ? "active" : "inactive"
@@ -563,16 +636,9 @@ window.addEventListener("click", function (event) {
 // NAVIGATE TO INVENTORY STAFF PAGE WITH STAFF ID
 // ============================================
 function navigateToInventoryStaff(staffId) {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/255f31eb-83ff-4a2e-b4ec-8216608d9181', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'staff.js:543', message: 'navigateToInventoryStaff called', data: { staffId: staffId }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'A' }) }).catch(() => { });
-    // #endregion agent log
 
     // Store staff_id in localStorage for inventory page to read
     localStorage.setItem('selectedStaffId', staffId);
-
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/255f31eb-83ff-4a2e-b4ec-8216608d9181', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'staff.js:548', message: 'staffId stored in localStorage', data: { staffId: staffId, stored: localStorage.getItem('selectedStaffId') }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'A' }) }).catch(() => { });
-    // #endregion agent log
 
     // Navigate to inventory_staff page using SPA navigation
     if (window.navigateTo) {
@@ -598,3 +664,4 @@ window.showNotification = showNotification;
 window.generateTableHTML = generateTableHTML;
 window.showConfirm = showConfirm;
 window.navigateToInventoryStaff = navigateToInventoryStaff;
+window.filterByClient = filterByClient;

@@ -11,9 +11,38 @@
     <link rel="stylesheet" href="./css/client.css">
     <link rel="stylesheet" href="./css/inventory.css">
     <link rel="stylesheet" href="./css/inventory_orders.css">
+    <link rel="stylesheet" href="./css/inventory_staff_attendance.css">
 </head>
 
 <body>
+    <!-- Immediate login validation -->
+    <script>
+        (function() {
+            // Check if user is logged in
+            let userData = localStorage.getItem('rememberedUser');
+            if (!userData) {
+                userData = sessionStorage.getItem('rememberedUser');
+            }
+
+            // If no user data, redirect to login
+            if (!userData) {
+                window.location.replace('../index.html');
+                return;
+            }
+
+            try {
+                const user = JSON.parse(userData);
+                // Validate user object has required fields
+                if (!user || !user.id || !user.role) {
+                    window.location.replace('../index.html');
+                    return;
+                }
+            } catch (e) {
+                window.location.replace('../index.html');
+                return;
+            }
+        })();
+    </script>
     <!-- ============================================
          DASHBOARD PAGE
          ============================================ -->
@@ -67,65 +96,130 @@
 
                 <!-- Scrollable menu area -->
                 <div class="sidebar-menu">
-                    <button class="menu-item active" onclick="navigateTo('home')">
+                    <!-- <button class="menu-item active" onclick="navigateTo('home')">
                         <span class="menu-icon">🏠</span>
                         <span class="menu-label">Home</span>
+                    </button> -->
+                    <button class="menu-item active" onclick="navigateTo('inventory_orders')">
+                        <span class="menu-icon">🛒</span>
+                        <span class="menu-label">Orders</span>
                     </button>
-
-                    <button class="menu-item" onclick="toggleSubmenu()">
-                        <span class="menu-icon">🧰</span>
-                        <span class="menu-label">Master</span>
+                    
+                    <button class="menu-item" onclick="navigateTo('bank')">
+                        <span class="menu-icon">🏦</span>
+                        <span class="menu-label">Bank / UPI</span>
+                    </button>
+                    
+                    <!-- staff sub-menu -->
+                    <button class="menu-item" onclick="toggleInventorySubmenu()">
+                        <span class="menu-icon">👨‍💼</span>
+                        <span class="menu-label">Staff</span>
                         <span class="chevron">›</span>
                     </button>
 
-                    <div id="masterSubmenu" class="submenu">
-                        <button class="menu-item submenu-item" onclick="navigateTo('items')">
-                            <span class="submenu-dot"></span>
-                            <span class="menu-label">Items</span>
-                        </button>
+                    <!-- staff submenu -->
+                    <div id="inventorySubmenu" class="submenu">
 
                         <button class="menu-item submenu-item" onclick="navigateTo('staff')">
                             <span class="submenu-dot"></span>
                             <span class="menu-label">Staff</span>
                         </button>
 
-                        <button class="menu-item submenu-item" onclick="navigateTo('bank')">
-                            <span class="submenu-dot"></span>
-                            <span class="menu-label">Bank / UPI</span>
-                        </button>
-                        <button class="menu-item submenu-item" onclick="navigateTo('expense_category')">
-                            <span class="submenu-dot"></span>
-                            <span class="menu-label">Expense Categories</span>
-                        </button>
-                    </div>
-                    <!-- Inventory main button just toggles sub-menu -->
-                    <button class="menu-item" onclick="toggleInventorySubmenu()">
-                        <span class="menu-icon">📦</span>
-                        <span class="menu-label">Inventory</span>
-                        <span class="chevron">›</span>
-                    </button>
-
-                    <!-- Inventory submenu -->
-                    <div id="inventorySubmenu" class="submenu">
-                        <button class="menu-item submenu-item" onclick="navigateTo('inventory_staff')">
+                        <button class="menu-item submenu-item" onclick="navigateTo('staff_expense')">
                             <span class="submenu-dot"></span>
                             <span class="menu-label">Staff Expances</span>
                         </button>
 
-                        <button class="menu-item submenu-item" onclick="navigateTo('inventory_orders')">
-                            <span class="submenu-dot"></span>
-                            <span class="menu-label">Orders</span>
-                        </button>
 
                         <button class="menu-item submenu-item" onclick="navigateTo('inventory_staff_attendance')">
                             <span class="submenu-dot"></span>
                             <span class="menu-label">Staff Attendance</span>
                         </button>
+
+                    </div>
+
+
+                    <!-- Expances main button just toggles sub-menu -->
+                    <button class="menu-item" onclick="toggleExpancesSubmenu()">
+                        <span class="menu-icon">🧾</span>
+                        <span class="menu-label">Expances</span>
+                        <span class="chevron">›</span>
+                    </button>
+
+                    <!-- Expances submenu -->
+                    <div id="expancesSubmenu" class="submenu">
+                        <button class="menu-item submenu-item" onclick="navigateTo('expense_category')">
+                            <span class="submenu-dot"></span>
+                            <span class="menu-label">Expense Categories</span>
+                        </button>
+
+
                         <button class="menu-item submenu-item" onclick="navigateTo('expances')">
                             <span class="submenu-dot"></span>
-                            <span class="menu-label">Other Expances</span>
+                            <span class="menu-label">General Expances</span>
                         </button>
                     </div>
+
+                    <!-- report menu -->
+
+                    <button class="menu-item" onclick="toggleReportSubmenu()">
+                        <span class="menu-icon">🗂️</span>
+                        <span class="menu-label">Reports</span>
+                        <span class="chevron">›</span>
+                    </button>
+
+                    <!-- report submenu -->
+                    <div id="reportSubMenu" class="submenu">
+
+                        <button class="menu-item submenu-item" onclick="navigateTo('staffAttendanceReports')">
+                            <span class="submenu-dot"></span>
+                            <span class="menu-label">Staff Attendance Reports</span>
+                        </button>
+
+                        <button class="menu-item submenu-item" onclick="navigateTo('staffExpReports')">
+                            <span class="submenu-dot"></span>
+                            <span class="menu-label">Staff Expances Report</span>
+                        </button>
+
+                        <button class="menu-item submenu-item" onclick="navigateTo('expancesReport')">
+                            <span class="submenu-dot"></span>
+                            <span class="menu-label">General Expenses Report</span>
+                        </button>
+                    </div>
+
+
+                    <!-- Billing Menu -->
+                    <button class="menu-item" onclick="toggleBillingSubmenu()">
+                        <span class="menu-icon">🏦</span>
+                        <span class="menu-label">Billing</span>
+                        <span class="chevron">›</span>
+                    </button>
+
+                    <div id="billingSubMenu" class="submenu">
+                        <!-- <button class="menu-item submenu-item" onclick="navigateTo('clientDues')">
+                            <span class="submenu-dot"></span>
+                            <span class="menu-label">Client Dues</span>
+                        </button> -->
+
+                        <!-- Payment Submenu -->
+                        <button class="menu-item" onclick="navigateTo('paymentHistory')">
+                            <span class="menu-icon">💳</span>
+                            <span class="menu-label">Payment</span>
+                        </button>
+
+                        <!-- <div id="paymentSubmenu" class="submenu">
+                            <button class="menu-item submenu-item" onclick="navigateTo('addPayment')">
+                                <span class="submenu-dot"></span>
+                                <span class="menu-label">Add Payment</span>
+                            </button>
+
+                            <button class="menu-item submenu-item" onclick="navigateTo('paymentHistory')">
+                                <span class="submenu-dot"></span>
+                                <span class="menu-label">Payment History</span>
+                            </button>
+                        </div> -->
+                    </div>
+
                 </div>
             </div>
         </aside>
@@ -177,6 +271,7 @@
     <script type="module" src="js/staff.js"></script>
     <script type="module" src="js/bank.js"></script>
     <script type="module" src="js/inventory_orders.js"></script>
+    <script type="module" src="js/staffExpense.js"></script>
 </body>
 
 </html>

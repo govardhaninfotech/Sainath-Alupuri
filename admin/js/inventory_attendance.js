@@ -1,146 +1,123 @@
 // ============================================
-// STAFF ATTENDANCE PAGE - PROFESSIONAL DESIGN
+// STAFF ATTENDANCE PAGE - FIXED VERSION
 // ============================================
 
 import { staffURLphp, attendanceURLphp } from "../apis/api.js";
+import { getItemsData, addItemToAPI, updateItem } from "../apis/master_api.js";
 import { showNotification, showConfirm } from "./notification.js";
-import {
-    validateRequiredField,
-    validateForm,
-    setupEscKeyHandler
-} from "./validation.js";
 
-// Get user from localStorage or sessionStorage
-let currentUser = JSON.parse(localStorage.getItem("rememberedUser") || sessionStorage.getItem("rememberedUser"));
-let user_id = currentUser?.id || '22';
+// Get user from storage
+const currentUser = JSON.parse(localStorage.getItem("rememberedUser") || sessionStorage.getItem("rememberedUser") || "null");
+const user_id = currentUser?.id || "22";
+
+console.log('[LOG] Initializing Staff Attendance - User ID:', user_id);
 
 // Data Storage
 let staffData = [];
 let attendanceData = [];
-let selectedStaffId = null;
-let selectedDate = null;
 
 // Pagination
 let currentPage = 1;
 let itemsPerPage = 10;
 let totalItems = 0;
 let totalPages = 1;
+let mainDate = null;
+// Current filter date
+let currentFilterDate = null;
 
-let editingAttendanceId = null;
+// Store current editing record
+let currentEditingRecord = null;
+
+// Default constants
+const DEFAULT_STATUS = "fullday";
+
+// Helper function to get today's date
+function getTodayDate() {
+    console.log('[LOG] Getting today date');
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const formatted = `${year}-${month}-${day}`;
+    console.log('[LOG] Today date:', formatted);
+    return formatted;
+}
+
+const TODAY_DATE = getTodayDate();
+currentFilterDate = TODAY_DATE;
 
 // ============================================
-// LOAD STAFF DATA
+// LOAD FUNCTIONS
 // ============================================
-async function loadStaffData() {
+
+async function loadStaffData(date) {
+    console.log('[LOG] Loading active staff data for date:', date);
     try {
-        const res = await fetch(`${staffURLphp}?user_id=${user_id}`);
-        if (!res.ok) throw new Error(`Staff API returned ${res.status}`);
+        const url = `${staffURLphp}?user_id=${user_id}&date=${date}&status=active`;
+        console.log('[LOG] Staff URL:', url);
 
-        const json = await res.json();
-        console.log("Staff API Response:", json);
+        const data = await getItemsData(url);
 
-        if (Array.isArray(json)) {
-            staffData = json;
-        } else if (json?.staff && Array.isArray(json.staff)) {
-            staffData = json.staff;
-        } else if (json?.data && Array.isArray(json.data)) {
-            staffData = json.data;
-        } else {
-            staffData = [];
-        }
-
-        // Filter only active staff
-        staffData = staffData.filter(staff =>
-            (staff.status || "").toLowerCase() === "active"
-        );
-
-        console.log("Active staff loaded:", staffData.length);
+        staffData = Array.isArray(data) ? data : (data?.staff || data?.data || []);
+        console.log(`[LOG] Loaded ${staffData.length} active staff members`);
         return staffData;
     } catch (error) {
-        console.error("Error loading staff data:", error);
-        showNotification("Error loading staff!", "error");
+        console.error('[LOG] Error loading staff data:', error);
+        showNotification("Error loading staff data!", "error");
         staffData = [];
         return [];
     }
 }
 
-// ============================================
-// LOAD ATTENDANCE DATA
-// ============================================
-async function loadAttendanceData() {
+async function loadAttendanceData(filterDate = null) {
+    console.log('[LOG] Loading attendance data - Filter Date:', filterDate);
     try {
         let url = `${attendanceURLphp}?user_id=${user_id}`;
 
-        // Add filters if selected
-        if (selectedStaffId) {
-            url += `&staff_id=${selectedStaffId}`;
-        }
-        if (selectedDate) {
-            url += `&date=${selectedDate}`;
-        }
-
-        const res = await fetch(url);
-        if (!res.ok) {
-            console.warn("Attendance API returned", res.status);
-            attendanceData = [];
-            return;
-        }
-
-        const data = await res.json();
-        console.log("Attendance API Response:", data);
-
-        if (Array.isArray(data)) {
-            attendanceData = data;
-        } else if (data?.attendance && Array.isArray(data.attendance)) {
-            attendanceData = data.attendance;
-        } else if (data?.data && Array.isArray(data.data)) {
-            attendanceData = data.data;
+        if (filterDate) {
+            url += `&date=${filterDate}`;
+            currentFilterDate = filterDate;
+            console.log('[LOG] Applied date filter:', filterDate);
         } else {
-            attendanceData = [];
+            currentFilterDate = TODAY_DATE;
         }
 
-        // Sort by date descending (newest first)
+        console.log('[LOG] Attendance URL:', url);
+        const data = await getItemsData(url);
+        console.log('[LOG] Attendance API Response:', data);
+        mainDate = data.date;
+        console.log(mainDate);
+        
+        attendanceData = data.records || [];
+
+        // Sort by date descending
         attendanceData.sort((a, b) => {
-            const dateA = new Date(a.date || a.attendance_date);
-            const dateB = new Date(b.date || b.attendance_date);
+            const dateA = new Date(a.date || "");
+            const dateB = new Date(b.date || "");
             return dateB - dateA;
         });
 
         totalItems = attendanceData.length;
         totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
 
-        console.log("Attendance records loaded:", attendanceData.length);
+        console.log(`[LOG] Loaded ${attendanceData.length} attendance records`);
+        return attendanceData;
     } catch (error) {
-        console.error("Error loading attendance:", error);
+        console.error('[LOG] Error loading attendance data:', error);
         attendanceData = [];
         totalItems = 0;
         totalPages = 1;
+        return [];
     }
 }
 
 // ============================================
 // HELPER FUNCTIONS
 // ============================================
+
 function getStaffNameById(staffId) {
-    if (!staffId) return "";
     const staff = staffData.find(s => String(s.id) === String(staffId));
-    return staff ? staff.name || "" : "";
-}
-
-function getTodayDate() {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const day = String(today.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-}
-
-function getCurrentTime() {
-    const now = new Date();
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    const seconds = String(now.getSeconds()).padStart(2, '0');
-    return `${hours}:${minutes}:${seconds}`;
+    return staff ? staff.name : "Unknown Staff";
 }
 
 function formatDateForDisplay(dateStr) {
@@ -152,67 +129,67 @@ function formatDateForDisplay(dateStr) {
     return `${day}/${month}/${year}`;
 }
 
-function formatTimeForDisplay(timeStr) {
-    if (!timeStr || timeStr === "00:00:00") return "N/A";
-    // Convert 24hr to 12hr format
-    const [hours, minutes] = timeStr.split(':');
-    const hr = parseInt(hours);
-    const ampm = hr >= 12 ? 'PM' : 'AM';
-    const displayHr = hr % 12 || 12;
-    return `${displayHr}:${minutes} ${ampm}`;
-}
-
 function getStatusBadgeClass(status) {
-    switch ((status || "").toLowerCase()) {
-        case 'present': return 'badge-success';
-        case 'absent': return 'badge-danger';
-        case 'halfday': return 'badge-warning';
-        case 'fullday': return 'badge-success';
-        case 'leave': return 'badge-info';
-        default: return 'badge-secondary';
-    }
+    const statusLower = (status || "").toLowerCase();
+    const badgeMap = {
+        'fullday': 'badge-success',
+        'halfday': 'badge-warning',
+        'leave': 'badge-danger'
+    };
+    return badgeMap[statusLower] || 'badge-secondary';
 }
 
-function populateStaffDropdown(selectId, selectedStaffId = "") {
-    const select = document.getElementById(selectId);
-    if (!select) return;
-
-    select.innerHTML = '<option value="">All Staff</option>';
-
-    staffData.forEach(staff => {
-        const option = document.createElement("option");
-        option.value = staff.id;
-        option.textContent = staff.name;
-        select.appendChild(option);
-    });
-
-    if (selectedStaffId) {
-        select.value = String(selectedStaffId);
+function validateFilterDate(dateStr) {
+    console.log('[LOG] Validating filter date:', dateStr);
+    if (!dateStr) {
+        console.warn('[LOG] Filter date is empty');
+        return false;
     }
+
+    const selectedDate = new Date(dateStr);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    selectedDate.setHours(0, 0, 0, 0);
+
+    if (selectedDate > today) {
+        console.warn('[LOG] Selected date is in the future');
+        showNotification("Cannot select future dates!", "warning");
+        return false;
+    }
+
+    console.log('[LOG] Filter date validated successfully');
+    return true;
 }
 
 // ============================================
-// RENDER ATTENDANCE PAGE
+// RENDER PAGE
 // ============================================
+
 export async function renderStaffAttendancePage() {
-    console.log("renderStaffAttendancePage: Starting");
+    console.log('[LOG] Rendering Staff Attendance Page');
+    try {
+        await loadAttendanceData(TODAY_DATE);
+        const html = generatePageHTML();
 
-    return Promise.all([
-        loadStaffData(),
-        loadAttendanceData()
-    ]).then(() => {
-        console.log("All data loaded successfully");
+        const appDiv = document.getElementById("app");
+        if (appDiv) {
+            appDiv.innerHTML = html;
+            console.log('[LOG] HTML rendered into #app');
+        } else {
+            console.warn('[LOG] #app div not found');
+        }
+        return html;
+    } catch (error) {
+        console.error('[LOG] Error rendering page:', error);
+        showNotification(error.message || "Error loading page", "error");
         return generatePageHTML();
-    }).catch(error => {
-        console.error("Error in renderStaffAttendancePage:", error);
-        showNotification("Error loading data. Please refresh the page.", "error");
-        return generatePageHTML();
-    });
+    }
 }
 
 // ============================================
 // GENERATE PAGE HTML
 // ============================================
+
 function generatePageHTML() {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
@@ -223,35 +200,28 @@ function generatePageHTML() {
     if (currentPageData.length === 0) {
         tableRows = `
             <tr>
-                <td colspan="8" style="text-align: center; padding: 40px;">
-                    <div style="color: #6b7280;">
-                        <p style="font-size: 18px; margin-bottom: 8px;">No attendance records found</p>
-                        <p style="font-size: 14px;">Click "Mark Attendance" to add attendance records.</p>
-                    </div>
+                <td colspan="7" style="text-align: center; padding: 40px; color: #6b7280;">
+                    <p style="font-size: 16px; margin-bottom: 8px;">📋 No attendance records found</p>
+                    <p style="font-size: 14px;">Click "Add Attendance" button to record attendance</p>
                 </td>
             </tr>
         `;
     } else {
         currentPageData.forEach((record, index) => {
-            const staffName = getStaffNameById(record.staff_id);
             const statusBadge = getStatusBadgeClass(record.status);
+
+            // CRITICAL FIX: Use record.id (the attendance record ID), not record.staff_id
 
             tableRows += `
                 <tr>
                     <td>${startIndex + index + 1}</td>
-                    <td><strong>${staffName}</strong></td>
-                    <td>${formatDateForDisplay(record.date || record.attendance_date)}</td>
-                    <td>${formatTimeForDisplay(record.in_time)}</td>
-                    <td>${formatTimeForDisplay(record.out_time)}</td>
+                    <td><strong>${record.name || 'N/A'}</strong></td>
+                    <td>${record.cap === 1 ? '✓ Cap' : '✘'}</td>
+                    <td>${record.t_shirt === 1 ? '✓ T-Shirt' : '✘'}</td>
                     <td><span class="status-badge ${statusBadge}">${(record.status || 'N/A').toUpperCase()}</span></td>
-                    <td>${record.notes || 'N/A'}</td>
                     <td>
-                        <button class="btn-icon btn-edit" onclick="editAttendance(${record.id})" title="Edit">
-                            <i class="icon-edit">✎</i>
-                        </button>
-                        <button class="btn-icon btn-delete" onclick="deleteAttendance(${record.id})" title="Delete">
-                            <i class="icon-delete">🗑️</i>
-                        </button>
+                        <button class="btn-edit" onclick="editAttendance(${record.staff_id})" title="Edit">✎</button>
+                        <!-- <button class="btn-delete" onclick="deleteAttendance(${record.staff_id})" title="Delete">🗑️</button> -->
                     </td>
                 </tr>
             `;
@@ -262,522 +232,29 @@ function generatePageHTML() {
     const showingTo = Math.min(endIndex, totalItems);
 
     return `
-        <style>
-            .attendance-container {
-                padding: 20px;
-                max-width: 1400px;
-                margin: 0 auto;
-            }
-
-            .page-header {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-                padding: 30px;
-                border-radius: 12px;
-                margin-bottom: 30px;
-                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            }
-
-            .page-header h1 {
-                margin: 0;
-                font-size: 28px;
-                font-weight: 600;
-            }
-
-            .page-header p {
-                margin: 8px 0 0 0;
-                opacity: 0.9;
-                font-size: 14px;
-            }
-
-            .filter-section {
-                background: white;
-                padding: 25px;
-                border-radius: 12px;
-                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
-                margin-bottom: 25px;
-            }
-
-            .filter-title {
-                font-size: 16px;
-                font-weight: 600;
-                color: #1f2937;
-                margin-bottom: 15px;
-                display: flex;
-                align-items: center;
-                gap: 8px;
-            }
-
-            .filter-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                gap: 15px;
-                margin-bottom: 15px;
-            }
-
-            .filter-group {
-                display: flex;
-                flex-direction: column;
-            }
-
-            .filter-group label {
-                font-size: 13px;
-                font-weight: 500;
-                color: #4b5563;
-                margin-bottom: 6px;
-            }
-
-            .filter-group select,
-            .filter-group input {
-                padding: 10px 12px;
-                border: 1.5px solid #e5e7eb;
-                border-radius: 8px;
-                font-size: 14px;
-                transition: all 0.2s;
-            }
-
-            .filter-group select:focus,
-            .filter-group input:focus {
-                outline: none;
-                border-color: #667eea;
-                box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-            }
-
-            .filter-actions {
-                display: flex;
-                gap: 10px;
-                flex-wrap: wrap;
-            }
-
-            .btn-filter,
-            .btn-clear,
-            .btn-mark-attendance {
-                padding: 10px 20px;
-                border-radius: 8px;
-                font-size: 14px;
-                font-weight: 500;
-                cursor: pointer;
-                transition: all 0.2s;
-                border: none;
-                display: flex;
-                align-items: center;
-                gap: 8px;
-            }
-
-            .btn-filter {
-                background: #667eea;
-                color: white;
-            }
-
-            .btn-filter:hover {
-                background: #5568d3;
-                transform: translateY(-1px);
-            }
-
-            .btn-clear {
-                background: #6b7280;
-                color: white;
-            }
-
-            .btn-clear:hover {
-                background: #4b5563;
-            }
-
-            .btn-mark-attendance {
-                background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-                color: white;
-                margin-left: auto;
-            }
-
-            .btn-mark-attendance:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-            }
-
-            .data-table {
-                width: 100%;
-                background: white;
-                border-radius: 12px;
-                overflow: hidden;
-                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
-            }
-
-            .data-table thead {
-                background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
-            }
-
-            .data-table th {
-                padding: 16px;
-                text-align: left;
-                font-weight: 600;
-                color: #374151;
-                font-size: 13px;
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
-            }
-
-            .data-table td {
-                padding: 16px;
-                border-top: 1px solid #f3f4f6;
-                font-size: 14px;
-                color: #4b5563;
-            }
-
-            .data-table tbody tr:hover {
-                background: #f9fafb;
-            }
-
-            .status-badge {
-                display: inline-block;
-                padding: 4px 12px;
-                border-radius: 20px;
-                font-size: 11px;
-                font-weight: 600;
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
-            }
-
-            .badge-success {
-                background: #d1fae5;
-                color: #065f46;
-            }
-
-            .badge-danger {
-                background: #fee2e2;
-                color: #991b1b;
-            }
-
-            .badge-warning {
-                background: #fef3c7;
-                color: #92400e;
-            }
-
-            .badge-info {
-                background: #dbeafe;
-                color: #1e40af;
-            }
-
-            .badge-secondary {
-                background: #f3f4f6;
-                color: #6b7280;
-            }
-
-            .pagination {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding: 20px;
-                background: white;
-                border-radius: 12px;
-                margin-top: 20px;
-                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
-            }
-
-            .pagination-info {
-                color: #6b7280;
-                font-size: 14px;
-            }
-
-            .pagination-controls {
-                display: flex;
-                gap: 10px;
-                align-items: center;
-            }
-
-            .pagination-controls button {
-                padding: 8px 16px;
-                border: 1.5px solid #e5e7eb;
-                background: white;
-                border-radius: 8px;
-                cursor: pointer;
-                font-size: 14px;
-                font-weight: 500;
-                color: #374151;
-                transition: all 0.2s;
-            }
-
-            .pagination-controls button:hover:not(:disabled) {
-                background: #f9fafb;
-                border-color: #667eea;
-                color: #667eea;
-            }
-
-            .pagination-controls button:disabled {
-                opacity: 0.5;
-                cursor: not-allowed;
-            }
-
-            .page-number {
-                font-size: 14px;
-                color: #374151;
-                font-weight: 500;
-            }
-
-            /* Modal Styles */
-            .modal {
-                display: none;
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(0, 0, 0, 0.5);
-                z-index: 1000;
-                align-items: center;
-                justify-content: center;
-                backdrop-filter: blur(4px);
-            }
-
-            .modal.show {
-                display: flex;
-            }
-
-            .modal-content {
-                background: white;
-                border-radius: 16px;
-                width: 90%;
-                max-width: 600px;
-                max-height: 90vh;
-                overflow-y: auto;
-                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-                animation: modalSlideIn 0.3s ease-out;
-            }
-
-            @keyframes modalSlideIn {
-                from {
-                    opacity: 0;
-                    transform: translateY(-20px);
-                }
-                to {
-                    opacity: 1;
-                    transform: translateY(0);
-                }
-            }
-
-            .modal-header {
-                padding: 24px;
-                border-bottom: 1px solid #e5e7eb;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-                border-radius: 16px 16px 0 0;
-            }
-
-            .modal-header h3 {
-                margin: 0;
-                font-size: 20px;
-                font-weight: 600;
-            }
-
-            .close-btn {
-                background: rgba(255, 255, 255, 0.2);
-                border: none;
-                color: white;
-                font-size: 24px;
-                cursor: pointer;
-                width: 36px;
-                height: 36px;
-                border-radius: 8px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                transition: all 0.2s;
-            }
-
-            .close-btn:hover {
-                background: rgba(255, 255, 255, 0.3);
-            }
-
-            .modal-body {
-                padding: 24px;
-            }
-
-            .form-row {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-                gap: 20px;
-                margin-bottom: 20px;
-            }
-
-            .form-group {
-                display: flex;
-                flex-direction: column;
-            }
-
-            .form-group.full-width {
-                grid-column: 1 / -1;
-            }
-
-            .form-group label {
-                font-size: 13px;
-                font-weight: 600;
-                color: #374151;
-                margin-bottom: 8px;
-            }
-
-            .required {
-                color: #ef4444;
-            }
-
-            .form-group input,
-            .form-group select,
-            .form-group textarea {
-                padding: 12px;
-                border: 1.5px solid #e5e7eb;
-                border-radius: 8px;
-                font-size: 14px;
-                transition: all 0.2s;
-            }
-
-            .form-group textarea {
-                resize: vertical;
-                min-height: 80px;
-                font-family: inherit;
-            }
-
-            .form-group input:focus,
-            .form-group select:focus,
-            .form-group textarea:focus {
-                outline: none;
-                border-color: #667eea;
-                box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-            }
-
-            .form-actions {
-                display: flex;
-                gap: 12px;
-                justify-content: flex-end;
-                margin-top: 24px;
-                padding-top: 20px;
-                border-top: 1px solid #e5e7eb;
-            }
-
-            .btn-cancel,
-            .btn-submit {
-                padding: 12px 24px;
-                border-radius: 8px;
-                font-size: 14px;
-                font-weight: 500;
-                cursor: pointer;
-                transition: all 0.2s;
-                border: none;
-            }
-
-            .btn-cancel {
-                background: #f3f4f6;
-                color: #374151;
-            }
-
-            .btn-cancel:hover {
-                background: #e5e7eb;
-            }
-
-            .btn-submit {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-            }
-
-            .btn-submit:hover {
-                transform: translateY(-1px);
-                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-            }
-
-            @media (max-width: 768px) {
-                .attendance-container {
-                    padding: 15px;
-                }
-
-                .page-header {
-                    padding: 20px;
-                }
-
-                .page-header h1 {
-                    font-size: 22px;
-                }
-
-                .filter-grid {
-                    grid-template-columns: 1fr;
-                }
-
-                .filter-actions {
-                    flex-direction: column;
-                }
-
-                .btn-mark-attendance {
-                    margin-left: 0;
-                    width: 100%;
-                    justify-content: center;
-                }
-
-                .data-table {
-                    font-size: 12px;
-                }
-
-                .data-table th,
-                .data-table td {
-                    padding: 12px 8px;
-                }
-
-                .pagination {
-                    flex-direction: column;
-                    gap: 15px;
-                }
-
-                .form-row {
-                    grid-template-columns: 1fr;
-                }
-            }
-        </style>
-
-        <div class="attendance-container">
-            <div class="page-header">
-                <h1>📋 Staff Attendance Management</h1>
-                <p>Track and manage daily staff attendance records</p>
-            </div>
-
-            <div class="filter-section">
-                <div class="filter-title">
-                    🔍 Filter Attendance Records
+        <div class="staffAttendance-container">
+            <!-- Header Section -->
+            <div class="staff-page-header">
+                <div class="header-content-staff">
+                    <h1>Staff Attendance</h1>
                 </div>
-                <div class="filter-grid">
-                    <div class="filter-group">
-                        <label>Select Staff</label>
-                        <select id="filterStaff">
-                            <option value="">All Staff</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label>Select Date</label>
-                        <input type="date" id="filterDate">
-                    </div>
-                </div>
-                <div class="filter-actions">
-                    <button class="btn-filter" onclick="applyFilters()">
-                        🔍 Apply Filters
-                    </button>
-                    <button class="btn-clear" onclick="clearFilters()">
-                        ✖️ Clear Filters
-                    </button>
-                    <button class="btn-mark-attendance" onclick="openAttendanceForm()">
-                        ➕ Mark Attendance
-                    </button>
+                <div>
+                    <input type="date" id="filterDate" class="filter-input" value="${currentFilterDate || TODAY_DATE}" onchange="applyDateFilterAttendnace()">
+                    <button class="btn-add-attendance" onclick="openAttendanceForm()">➕ Add Attendance</button>
                 </div>
             </div>
 
-            <div class="table-container">
-                <table class="data-table">
+            <!-- Table Section -->
+            <div class="header-table-wrapper-staff">
+                <table class="attendance-table-staff">
                     <thead>
                         <tr>
-                            <th>#</th>
+                            <th>Sr No</th>
                             <th>Staff Name</th>
-                            <th>Date</th>
-                            <th>In Time</th>
-                            <th>Out Time</th>
+                            <th>Cap</th>
+                            <th>T Shirt</th>
                             <th>Status</th>
-                            <th>Notes</th>
-                            <th>Actions</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -786,192 +263,187 @@ function generatePageHTML() {
                 </table>
             </div>
 
-            <div class="pagination">
+            <!-- Pagination -->
+            <div class="pagination-section">
                 <div class="pagination-info">
-                    Showing ${showingFrom} to ${showingTo} of ${totalItems} entries
+                    Showing ${showingFrom} to ${showingTo} of ${totalItems} records
                 </div>
-                <div class="pagination-controls">
-                    <button onclick="changePage('prev')" ${currentPage === 1 ? "disabled" : ""}>
-                        ← Previous
-                    </button>
-                    <span class="page-number">Page ${currentPage} of ${totalPages}</span>
-                    <button onclick="changePage('next')" ${currentPage === totalPages ? "disabled" : ""}>
-                        Next →
-                    </button>
+                <div class="pagination-buttons">
+                    <button onclick="previousPage()" ${currentPage === 1 ? 'disabled' : ''} class="btn-pagination">← Previous</button>
+                    <span class="page-indicator">Page ${currentPage} of ${totalPages}</span>
+                    <button onclick="nextPage()" ${currentPage === totalPages ? 'disabled' : ''} class="btn-pagination">Next →</button>
                 </div>
             </div>
         </div>
 
-        <!-- Attendance Form Modal -->
+        <!-- Add Attendance Modal -->
         <div id="attendanceModal" class="modal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3 id="modalTitle">Mark Attendance</h3>
-                    <button class="close-btn" onclick="closeAttendanceForm()">&times;</button>
+            <div class="modal-overlay" onclick="closeAttendanceForm()"></div>
+            <div class="modal-box-staff add-attendance-form">
+                <div class="modal_staff-header">
+                    <h2>Add Staff Attendance</h2>
+                    <input type="date" class="date-display" id="staffAttDate" onchange="staffAttDateChange()" required style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; flex: 0 0 auto;">
+                    <button class="close-btn" onclick="closeAttendanceForm()">✕</button>
                 </div>
-                <div class="modal-body">
-                    <form id="attendanceForm" onsubmit="submitAttendanceForm(event)">
-                        <input type="hidden" id="attendanceId">
-                        
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>Staff Member <span class="required">*</span></label>
-                                <select id="formStaffId" required>
-                                    <option value="">Select Staff</option>
-                                </select>
-                            </div>
+                
+                <form id="attendanceForm" onsubmit="submitAttendanceForm(event)">
+                    <div class="form-header-table-wrapper-staff">
+                        <table class="form-table">
+                            <thead>
+                                <tr>
+                                    <th>Sr No</th>
+                                    <th>Staff Name</th>
+                                    <th>Status</th>
+                                    <th>T-Shirt</th>    
+                                    <th>Cap</th>
+                                </tr>
+                            </thead>
+                            <tbody id="staffTableBody">
+                                <!-- Staff rows will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
 
-                            <div class="form-group">
-                                <label>Date <span class="required">*</span></label>
-                                <input type="date" id="formDate" required>
-                            </div>
-                        </div>
+                    <div class="modal-footer form-footer">
+                        <button type="button" class="btn-cancel" onclick="closeAttendanceForm()">Cancel</button>
+                        <button type="submit" class="btn-submit">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
 
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>In Time <span class="required">*</span></label>
-                                <input type="time" id="formInTime" step="1" required>
-                            </div>
-
-                            <div class="form-group">
-                                <label>Out Time <span class="required">*</span></label>
-                                <input type="time" id="formOutTime" step="1" required>
-                            </div>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>Status <span class="required">*</span></label>
-                                <select id="formStatus" required>
-                                    <option value="">Select Status</option>
-                                    <option value="present">Present</option>
-                                    <option value="absent">Absent</option>
-                                    <option value="halfday">Half Day</option>
-                                    <option value="fullday">Full Day</option>
-                                    <option value="leave">Leave</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group full-width">
-                                <label>Notes</label>
-                                <textarea id="formNotes" placeholder="Add any notes or remarks..."></textarea>
-                            </div>
-                        </div>
-
-                        <div class="form-actions">
-                            <button type="button" class="btn-cancel" onclick="closeAttendanceForm()">
-                                Cancel
-                            </button>
-                            <button type="submit" class="btn-submit">
-                                Save Attendance
-                            </button>
-                        </div>
-                    </form>
+        <!-- Edit Attendance Modal -->
+        <div id="editAttendanceModal" class="modal">
+            <div class="modal-overlay" onclick="closeEditAttendanceForm()"></div>
+            <div class="modal-box-staff edit-attendance-form-container">
+                <div class="edit-modal-header">
+                    <h2>Edit Staff Attendance</h2>
+                    <button class="edit-close-btn" onclick="closeEditAttendanceForm()">✕</button>
                 </div>
+                
+                <form id="editAttendanceForm" class="edit-attendance-form" onsubmit="submitEditAttendanceForm(event)">
+                    <input type="hidden" id="editRecordId">
+                    <input type="hidden" id="editStaffId">
+                    <input type="hidden" id="editRecordDate">
+                    
+                    <div class="edit-form-group">
+                        <label for="editStaffName" class="edit-form-label">Staff Name</label>
+                        <input type="text" id="editStaffName" class="edit-form-input edit-staff-name-input" disabled>
+                    </div>
+
+                    <div class="edit-form-group">
+                        <label for="editAttendanceDate" class="edit-form-label">Date</label>
+                        <input type="date" id="editAttendanceDate" class="edit-form-input edit-attendance-date-input" disabled>
+                    </div>
+
+                    <div class="edit-form-group">
+                        <label for="editStatus" class="edit-form-label">Status</label>
+                        <select id="editStatus" class="edit-form-select edit-status-select" required>
+                            <option value="fullday">Full Day</option>
+                            <option value="halfday">Half Day</option>
+                            <option value="leave">Leave</option>
+                            <option value="absent">Absent</option>
+                        </select>
+                    </div>
+
+                    <div class="edit-form-group edit-checkbox-group">
+                        <label class="edit-checkbox-label">
+                            <input type="checkbox" id="editTShirt" class="edit-form-checkbox edit-tshirt-checkbox">
+                            <span class="edit-checkbox-text">T-Shirt</span>
+                        </label>
+                    </div>
+
+                    <div class="edit-form-group edit-checkbox-group">
+                        <label class="edit-checkbox-label">
+                            <input type="checkbox" id="editCap" class="edit-form-checkbox edit-cap-checkbox">
+                            <span class="edit-checkbox-text">Cap</span>
+                        </label>
+                    </div>
+
+                    <div class="edit-modal-footer">
+                        <button type="button" class="edit-btn-cancel" onclick="closeEditAttendanceForm()">Cancel</button>
+                        <button type="submit" class="edit-btn-submit">Update</button>
+                    </div>
+                </form>
             </div>
         </div>
     `;
 }
 
 // ============================================
-// FILTER FUNCTIONS
+// FILTER & PAGINATION FUNCTIONS
 // ============================================
-function applyFilters() {
-    selectedStaffId = document.getElementById("filterStaff").value || null;
-    selectedDate = document.getElementById("filterDate").value || null;
 
-    currentPage = 1; // Reset to first page
+function applyDateFilterAttendnace() {
+    console.log('[LOG] Applying date filter');
+    const filterInput = document.getElementById("filterDate");
+    const filterDate = filterInput?.value;
 
-    loadAttendanceData().then(() => {
-        const container = document.querySelector(".attendance-container");
-        if (container) {
-            const newHTML = generatePageHTML();
-            container.parentElement.innerHTML = newHTML;
+    if (!validateFilterDate(filterDate)) {
+        filterInput.value = currentFilterDate || TODAY_DATE;
+        return;
+    }
 
-            // Re-populate filter dropdowns with selected values
-            setTimeout(() => {
-                populateStaffDropdown("filterStaff", selectedStaffId);
-                populateStaffDropdown("formStaffId");
-
-                if (selectedDate) {
-                    const filterDateInput = document.getElementById("filterDate");
-                    if (filterDateInput) filterDateInput.value = selectedDate;
-                }
-            }, 100);
-        }
-    });
-}
-
-function clearFilters() {
-    selectedStaffId = null;
-    selectedDate = null;
+    console.log('[LOG] Filter date applied:', filterDate);
+    currentFilterDate = filterDate;
     currentPage = 1;
-
-    document.getElementById("filterStaff").value = "";
-    document.getElementById("filterDate").value = "";
-
-    loadAttendanceData().then(() => {
-        const container = document.querySelector(".attendance-container");
-        if (container) {
-            const newHTML = generatePageHTML();
-            container.parentElement.innerHTML = newHTML;
-
-            // Re-populate dropdowns
-            setTimeout(() => {
-                populateStaffDropdown("filterStaff");
-                populateStaffDropdown("formStaffId");
-            }, 100);
-        }
+    loadAttendanceData(filterDate).then(() => {
+        refreshPage();
     });
 }
 
-// ============================================
-// PAGINATION
-// ============================================
-function changePage(direction) {
-    if (direction === "next" && currentPage < totalPages) {
-        currentPage++;
-    } else if (direction === "prev" && currentPage > 1) {
+function previousPage() {
+    console.log('[LOG] Going to previous page');
+    if (currentPage > 1) {
         currentPage--;
-    }
-
-    const container = document.querySelector(".attendance-container");
-    if (container) {
-        const newHTML = generatePageHTML();
-        container.parentElement.innerHTML = newHTML;
-
-        // Re-populate dropdowns
-        setTimeout(() => {
-            populateStaffDropdown("filterStaff", selectedStaffId);
-            populateStaffDropdown("formStaffId");
-
-            if (selectedDate) {
-                const filterDateInput = document.getElementById("filterDate");
-                if (filterDateInput) filterDateInput.value = selectedDate;
-            }
-        }, 100);
+        refreshPage();
     }
 }
 
+function nextPage() {
+    console.log('[LOG] Going to next page');
+    if (currentPage < totalPages) {
+        currentPage++;
+        refreshPage();
+    }
+}
+
+function refreshPage() {
+    console.log('[LOG] Refreshing page');
+    const container = document.querySelector(".staffAttendance-container");
+    if (container) {
+        container.parentElement.innerHTML = generatePageHTML();
+    }
+}
+
+async function staffAttDateChange() {
+    console.log('[LOG] Staff attendance date changed');
+    let date = document.getElementById("staffAttDate").value;
+
+    if (!validateFilterDate(date)) {
+        document.getElementById("staffAttDate").value = TODAY_DATE;
+        return;
+    }
+
+    await loadStaffData(date);
+    populateStaffTable();
+}
+
 // ============================================
-// FORM FUNCTIONS
+// MODAL FUNCTIONS
 // ============================================
-function openAttendanceForm() {
-    editingAttendanceId = null;
 
-    document.getElementById("modalTitle").textContent = "Mark Attendance";
-    document.getElementById("attendanceForm").reset();
-    document.getElementById("attendanceId").value = "";
+async function openAttendanceForm() {
+    console.log('[LOG] Opening attendance form');
+    const formDate = currentFilterDate || TODAY_DATE;
+    document.getElementById("staffAttDate").value = formDate;
 
-    // Set default values
-    document.getElementById("formDate").value = getTodayDate();
-
-    // Populate staff dropdown
-    populateStaffDropdown("formStaffId");
-
+    await loadStaffData(formDate);
     const modal = document.getElementById("attendanceModal");
+
+    document.getElementById("attendanceForm").reset();
+    populateStaffTable();
+
     modal.style.display = "flex";
     setTimeout(() => {
         modal.classList.add("show");
@@ -979,229 +451,370 @@ function openAttendanceForm() {
 }
 
 function closeAttendanceForm() {
+    console.log('[LOG] Closing attendance form');
     const modal = document.getElementById("attendanceModal");
     modal.classList.remove("show");
     setTimeout(() => {
         modal.style.display = "none";
     }, 300);
-    editingAttendanceId = null;
 }
 
-// ============================================
-// EDIT ATTENDANCE
-// ============================================
-function editAttendance(id) {
-    editingAttendanceId = id;
-    const record = attendanceData.find(a => String(a.id) === String(id));
+function populateStaffTable() {
+    console.log('[LOG] Populating staff attendance table');
+    const tbody = document.getElementById("staffTableBody");
 
-    if (!record) {
-        showNotification("Attendance record not found!", "error");
+    if (!tbody) {
+        console.warn('[LOG] Staff table body not found');
         return;
     }
 
-    document.getElementById("modalTitle").textContent = "Edit Attendance";
-    document.getElementById("attendanceId").value = record.id;
-    document.getElementById("formDate").value = record.date || record.attendance_date;
-    document.getElementById("formInTime").value = record.in_time || "";
-    document.getElementById("formOutTime").value = record.out_time || "";
-    document.getElementById("formStatus").value = record.status || "";
-    document.getElementById("formNotes").value = record.notes || "";
+    tbody.innerHTML = '';
 
-    // Populate and select staff
-    populateStaffDropdown("formStaffId", record.staff_id);
+    staffData.forEach((staff, index) => {
+        const row = document.createElement('tr');
+        row.className = 'staff-row';
+        row.innerHTML = `
+            <td class="sr-no">${index + 1}</td>
+            <td class="staff-name">${staff.name || 'Unknown'}</td>
+            <td class="status-cell">
+                <select class="status-select" id="status_${staff.id}" data-staff-id="${staff.id}">
+                    <option value="fullday" selected>Full Day</option>
+                    <option value="halfday">Half Day</option>
+                    <option value="leave">Leave</option>
+                </select>
+            </td>
+            <td class="checkbox-cell">
+                <input type="checkbox" class="tshirt-check" id="tshirt_${staff.id}" data-staff-id="${staff.id}" checked>
+            </td>
+            <td class="checkbox-cell">
+                <input type="checkbox" class="cap-check" id="cap_${staff.id}" data-staff-id="${staff.id}" checked>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
 
-    const modal = document.getElementById("attendanceModal");
-    modal.style.display = "flex";
-    setTimeout(() => {
-        modal.classList.add("show");
-    }, 10);
+    console.log(`[LOG] Populated ${staffData.length} staff members in attendance table`);
 }
 
 // ============================================
-// DELETE ATTENDANCE
+// SUBMIT FUNCTIONS
 // ============================================
-async function deleteAttendance(id) {
+
+async function submitAttendanceForm(event) {
+    event.preventDefault();
+    console.log('[LOG] Submitting attendance form for all staff');
+
+    const formDate = document.getElementById("staffAttDate").value;
+    const staffArray = [];
+    const staffRows = document.querySelectorAll('.staff-row');
+
+    staffRows.forEach(row => {
+        const staffIdCells = row.querySelectorAll('[data-staff-id]');
+        if (staffIdCells.length === 0) return;
+
+        const staffId = staffIdCells[0].getAttribute('data-staff-id');
+        const statusSelect = row.querySelector(`#status_${staffId}`);
+        const tshirtCheck = row.querySelector(`#tshirt_${staffId}`);
+        const capCheck = row.querySelector(`#cap_${staffId}`);
+
+        const status = statusSelect?.value;
+
+        if (status && status !== '') {
+            staffArray.push({
+                staff_id: parseInt(staffId),
+                status: status,
+                t_shirt: tshirtCheck?.checked ? 1 : 0,
+                cap: capCheck?.checked ? 1 : 0
+            });
+        }
+    });
+
+    if (staffArray.length === 0) {
+        console.warn('[LOG] Validation failed - no staff selected');
+        showNotification("Please select status for at least one staff member!", "warning");
+        return;
+    }
+
+    const attendanceData = {
+        user_id: parseInt(user_id),
+        date: formDate,
+        staffs: staffArray
+    };
+
+    console.log('[LOG] Attendance data prepared:', JSON.stringify(attendanceData, null, 2));
+
     try {
         const confirmed = await showConfirm(
-            "Are you sure you want to delete this attendance record?",
+            `Confirm attendance for ${staffArray.length} staff member(s) on ${formatDateForDisplay(formDate)}?`,
+            "info"
+        );
+
+        if (!confirmed) {
+            console.log('[LOG] Form submission cancelled by user');
+            return;
+        }
+
+        const result = await addItemToAPI(`${attendanceURLphp}?user_id=${user_id}`, attendanceData);
+
+        if (result?.error) {
+            console.error('[LOG] API Error:', result);
+            showNotification(result.message || "Error saving attendance!", "error");
+            return;
+        }
+
+        console.log('[LOG] Attendance submitted successfully');
+        showNotification(`✓ Attendance recorded for ${staffArray.length} staff member(s)!`, "success");
+        closeAttendanceForm();
+
+        await loadAttendanceData(currentFilterDate || TODAY_DATE);
+        refreshPage();
+
+    } catch (error) {
+        console.error('[LOG] Error submitting form:', error);
+        showNotification("Error saving attendance!", "error");
+    }
+}
+
+// ============================================
+// EDIT FUNCTIONS - FIXED
+// ============================================
+
+async function editAttendance(recordId) {
+    console.log('[LOG] ========================================');
+    console.log('[LOG] EDIT ATTENDANCE - START');
+    console.log('[LOG] Record ID:', recordId);
+    console.log(attendanceData);
+
+    try {
+        // CRITICAL FIX: Find by attendance record ID, not staff_id
+        const record = attendanceData.find(r =>
+            String(r.staff_id) === String(recordId)
+        );
+        console.log("record", record);
+
+        if (!record) {
+            console.error('[LOG] ❌ Attendance record not found!');
+            console.error('[LOG] Looking for ID:', recordId);
+            console.error('[LOG] Available records:', attendanceData.map(r => ({ id: r.id, staff_id: r.staff_id, name: r.name })));
+            showNotification("Record not found!", "error");
+            return;
+        }
+
+        console.log('[LOG] ✓ Found attendance record:', record);
+
+        currentEditingRecord = { ...record };
+
+        const modal = document.getElementById("editAttendanceModal");
+        if (!modal) {
+            console.error('[LOG] ❌ Edit modal not found');
+            return;
+        }
+
+        // CRITICAL FIX: Store the attendance record ID, not staff_id
+        document.getElementById("editRecordId").value = record.id;
+        document.getElementById("editStaffId").value = record.staff_id;
+        document.getElementById("editRecordDate").value = mainDate;
+        document.getElementById("editStaffName").value = record.name || '';
+        document.getElementById("editAttendanceDate").value = record.date;
+
+        console.log(mainDate);
+        
+        const statusSelect = document.getElementById("editStatus");
+        const statusValue = (record.status || 'fullday').toLowerCase();
+        statusSelect.value = statusValue;
+
+        const tshirtValue = record.t_shirt === 1 || record.t_shirt === '1' || record.t_shirt === true;
+        const capValue = record.cap === 1 || record.cap === '1' || record.cap === true;
+
+        document.getElementById("editTShirt").checked = tshirtValue;
+        document.getElementById("editCap").checked = capValue;
+
+        console.log('[LOG] Form populated successfully');
+        console.log('[LOG] ========================================');
+
+        modal.style.display = "flex";
+        setTimeout(() => {
+            modal.classList.add("show");
+        }, 10);
+
+    } catch (error) {
+        console.error('[LOG] ❌ Error editing attendance:', error);
+        showNotification("Error loading attendance record!", "error");
+    }
+}
+
+async function submitEditAttendanceForm(event) {
+    event.preventDefault();
+    console.log('[LOG] ========================================');
+    console.log('[LOG] SUBMIT EDIT FORM - START');
+
+    try {
+        // CRITICAL FIX: Get the attendance record ID, not staff_id
+        const recordId = document.getElementById("editRecordId").value;
+        const staff_id = document.getElementById("editStaffId").value;
+        const status = document.getElementById("editStatus").value;
+        const tshirt = document.getElementById("editTShirt").checked;
+        const cap = document.getElementById("editCap").checked;
+
+        console.log('[LOG] Form Values Retrieved:');
+        console.log('[LOG] - Record ID:', recordId);
+        console.log('[LOG] - Staff ID:', staff_id);
+        console.log('[LOG] - Status:', status);
+        console.log('[LOG] - T-Shirt:', tshirt);
+        console.log('[LOG] - Cap:', cap);
+
+            // if (!recordId) {
+            //     console.error('[LOG] ❌ Record ID not found');
+            //     showNotification("Error: Record ID not found!", "error");
+            //     return;
+            // }
+
+        // CRITICAL FIX: Build update data with proper structure
+        const editData = {
+            // user_id: parseInt(user_id),
+            // staff_id: parseInt(staff_id),
+            status: status,
+            t_shirt: tshirt ? 1 : 0,
+            cap: cap ? 1 : 0
+        };
+
+        console.log('[LOG] Update Data Prepared:', JSON.stringify(editData, null, 2));
+
+        const confirmed = await showConfirm(
+            "Are you sure you want to update this attendance record?",
+            "info"
+        );
+
+        if (!confirmed) {
+            console.log('[LOG] ⚠ Edit cancelled by user');
+            return;
+        }
+
+        console.log('[LOG] Calling updateItem API...');
+        console.log('[LOG] URL:', attendanceURLphp);
+        // console.log('[LOG] Record ID:', recordId);
+
+        // CRITICAL FIX: Use the attendance record ID for update
+        const result = await updateItem(attendanceURLphp, recordId, editData);
+
+        console.log('[LOG] API Response:', result);
+
+        if (result?.error) {
+            console.error('[LOG] ❌ API Error:', result);
+            showNotification(result.message || "Error updating attendance!", "error");
+            return;
+        }
+
+        console.log('[LOG] ✓ Attendance updated successfully');
+        showNotification("✓ Attendance updated successfully!", "success");
+        closeEditAttendanceForm();
+
+        await loadAttendanceData(currentFilterDate || TODAY_DATE);
+        refreshPage();
+        console.log('[LOG] ========================================');
+
+    } catch (error) {
+        console.error('[LOG] ❌ Error updating attendance:', error);
+        showNotification("Error updating attendance!", "error");
+    }
+}
+
+function closeEditAttendanceForm() {
+    console.log('[LOG] Closing edit attendance form');
+    currentEditingRecord = null;
+    const modal = document.getElementById("editAttendanceModal");
+    modal.classList.remove("show");
+    setTimeout(() => {
+        modal.style.display = "none";
+    }, 300);
+}
+
+// ============================================
+// DELETE FUNCTION - NEW IMPLEMENTATION
+// ============================================
+
+async function deleteAttendance(recordId) {
+    console.log('[LOG] ========================================');
+    console.log('[LOG] DELETE ATTENDANCE - START');
+    console.log('[LOG] Record ID:', recordId);
+
+    try {
+        // Find the record to get staff name for confirmation
+        const record = attendanceData.find(r =>
+            String(r.id) === String(recordId) ||
+            String(r.attendance_id) === String(recordId)
+        );
+
+        if (!record) {
+            console.error('[LOG] ❌ Record not found');
+            showNotification("Record not found!", "error");
+            return;
+        }
+
+        console.log('[LOG] Record to delete:', record);
+
+        const confirmed = await showConfirm(
+            `Are you sure you want to delete attendance for ${record.name || 'this staff'} on ${formatDateForDisplay(record.date)}?`,
             "warning"
         );
 
-        if (!confirmed) return;
+        if (!confirmed) {
+            console.log('[LOG] ⚠ Delete cancelled by user');
+            return;
+        }
 
-        const res = await fetch(`${attendanceURLphp}?id=${id}`, {
-            method: "DELETE",
-            headers: { "Content-Type": "application/json" }
+        console.log('[LOG] Deleting record with ID:', recordId);
+
+        // Make DELETE request
+        const url = `${attendanceURLphp}?id=${recordId}`;
+        console.log('[LOG] Delete URL:', url);
+
+        const response = await fetch(url, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
         });
 
-        if (!res.ok) {
-            throw new Error("Delete failed with status " + res.status);
+        console.log('[LOG] Delete response status:', response.status);
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('[LOG] ❌ Delete failed:', errorText);
+            throw new Error(`Delete failed: ${response.status}`);
         }
 
-        showNotification("Attendance deleted successfully!", "success");
+        const result = await response.json();
+        console.log('[LOG] Delete result:', result);
 
-        // Reload data
-        await loadAttendanceData();
-        const container = document.querySelector(".attendance-container");
-        if (container) {
-            const newHTML = generatePageHTML();
-            container.parentElement.innerHTML = newHTML;
-
-            setTimeout(() => {
-                populateStaffDropdown("filterStaff", selectedStaffId);
-                populateStaffDropdown("formStaffId");
-
-                if (selectedDate) {
-                    const filterDateInput = document.getElementById("filterDate");
-                    if (filterDateInput) filterDateInput.value = selectedDate;
-                }
-            }, 100);
+        if (result?.error) {
+            console.error('[LOG] ❌ API Error:', result);
+            showNotification(result.message || "Error deleting attendance!", "error");
+            return;
         }
+
+        console.log('[LOG] ✓ Attendance deleted successfully');
+        showNotification("✓ Attendance deleted successfully!", "success");
+
+        // Reload data and refresh
+        await loadAttendanceData(currentFilterDate || TODAY_DATE);
+        refreshPage();
+        console.log('[LOG] ========================================');
+
     } catch (error) {
-        console.error("Error deleting attendance:", error);
+        console.error('[LOG] ❌ Error deleting attendance:', error);
         showNotification("Error deleting attendance!", "error");
     }
 }
 
 // ============================================
-// SUBMIT ATTENDANCE FORM
+// GLOBAL FUNCTION EXPORTS
 // ============================================
-async function submitAttendanceForm(event) {
-    event.preventDefault();
 
-    const staffId = document.getElementById("formStaffId").value;
-    const date = document.getElementById("formDate").value;
-    const inTime = document.getElementById("formInTime").value;
-    const outTime = document.getElementById("formOutTime").value;
-    const status = document.getElementById("formStatus").value;
-    const notes = document.getElementById("formNotes").value;
-
-    // Validate required fields
-    const staffValidation = validateRequiredField(staffId, "Staff");
-    const dateValidation = validateRequiredField(date, "Date");
-    const inTimeValidation = validateRequiredField(inTime, "In Time");
-    const outTimeValidation = validateRequiredField(outTime, "Out Time");
-    const statusValidation = validateRequiredField(status, "Status");
-
-    const formValidation = validateForm([
-        staffValidation,
-        dateValidation,
-        inTimeValidation,
-        outTimeValidation,
-        statusValidation
-    ]);
-
-    if (!formValidation.status) {
-        showNotification(formValidation.message, "error");
-        return;
-    }
-
-    // Convert time format from HH:MM to HH:MM:SS if needed
-    const inTimeFull = inTime.length === 5 ? inTime + ":00" : inTime;
-    const outTimeFull = outTime.length === 5 ? outTime + ":00" : outTime;
-
-    const formData = {
-        user_id: user_id,
-        staff_id: parseInt(staffId),
-        date: date,
-        in_time: inTimeFull,
-        out_time: outTimeFull,
-        status: status,
-        notes: notes || null
-    };
-
-    try {
-        const confirmed = await showConfirm(
-            editingAttendanceId ? "Are you sure you want to update this attendance?" : "Are you sure you want to mark this attendance?",
-            "warning"
-        );
-
-        if (!confirmed) return;
-
-        let res;
-        if (editingAttendanceId) {
-            res = await fetch(`${attendanceURLphp}?id=${editingAttendanceId}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(formData)
-            });
-        } else {
-            res = await fetch(attendanceURLphp, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(formData)
-            });
-        }
-
-        if (!res.ok) {
-            const errorText = await res.text();
-            console.error("API Error:", errorText);
-            throw new Error(`Request failed with status ${res.status}`);
-        }
-
-        const result = await res.json();
-
-        if (result?.error) {
-            showNotification(result.message || "Error saving attendance!", "error");
-            return;
-        }
-
-        showNotification(
-            editingAttendanceId ? "Attendance updated successfully!" : "Attendance marked successfully!",
-            "success"
-        );
-
-        closeAttendanceForm();
-
-        // Reload data
-        await loadAttendanceData();
-        const container = document.querySelector(".attendance-container");
-        if (container) {
-            const newHTML = generatePageHTML();
-            container.parentElement.innerHTML = newHTML;
-
-            setTimeout(() => {
-                populateStaffDropdown("filterStaff", selectedStaffId);
-                populateStaffDropdown("formStaffId");
-
-                if (selectedDate) {
-                    const filterDateInput = document.getElementById("filterDate");
-                    if (filterDateInput) filterDateInput.value = selectedDate;
-                }
-            }, 100);
-        }
-    } catch (error) {
-        console.error("Error saving attendance:", error);
-        showNotification(error?.message || "Error saving attendance!", "error");
-    }
-}
-
-// Close modal when clicking outside
-window.addEventListener("click", function (event) {
-    const modal = document.getElementById("attendanceModal");
-    if (event.target === modal) {
-        closeAttendanceForm();
-    }
-});
-
-// ============================================
-// MAKE FUNCTIONS GLOBALLY ACCESSIBLE
-// ============================================
 window.openAttendanceForm = openAttendanceForm;
 window.closeAttendanceForm = closeAttendanceForm;
 window.editAttendance = editAttendance;
+window.submitEditAttendanceForm = submitEditAttendanceForm;
+window.closeEditAttendanceForm = closeEditAttendanceForm;
 window.deleteAttendance = deleteAttendance;
-window.renderStaffAttendancePage = renderStaffAttendancePage;
-window.submitAttendanceForm = submitAttendanceForm;
-window.applyFilters = applyFilters;
-window.clearFilters = clearFilters;
-window.changePage = changePage;
-
-// Initialize dropdowns on load
-setTimeout(() => {
-    populateStaffDropdown("filterStaff");
-    populateStaffDropdown("formStaffId");
-}, 100);
-
-// Setup ESC key handler for modal
-setupEscKeyHandler();
+window.applyDateFilterAttendnace = applyDateFilterAttendnace;

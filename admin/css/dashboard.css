@@ -45,11 +45,36 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 24px;
+    padding: 10px 16px;
+    gap: 10px;
 }
 
 .navbar-logo {
     width: 10%;
+    max-width: 50px;
+    height: auto;
+}
+
+@media (max-width: 768px) {
+    .navbar-content {
+        padding: 8px 12px;
+    }
+
+    .navbar-logo {
+        width: 40px;
+        min-width: 40px;
+    }
+}
+
+@media (max-width: 480px) {
+    .navbar-content {
+        padding: 6px 10px;
+    }
+
+    .navbar-logo {
+        width: 35px;
+        min-width: 35px;
+    }
 }
 
 /* Hamburger Menu Button */
@@ -518,12 +543,42 @@ body {
    ============================================ */
 .main-content {
     margin-top: 64px;
-    /* padding: 24px; */
+    padding: 20px;
     transition: margin-left 0.3s;
+    min-height: calc(100vh - 64px);
 }
 
 .main-content.sidebar-open {
     margin-left: 260px;
+}
+
+/* Content Card - Responsive Wrapper */
+.content-card {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 768px) {
+    .main-content {
+        padding: 12px;
+    }
+
+    .content-card {
+        padding: 16px;
+        border-radius: 6px;
+    }
+}
+
+@media (max-width: 480px) {
+    .main-content {
+        padding: 8px;
+    }
+
+    .content-card {
+        padding: 12px;
+    }
 }
 
 /* ============================================
@@ -875,7 +930,7 @@ input:checked+.slider:before {
 /* Form Styles */
 .form-responsive {
     display: grid;
-    gap: 20px;
+    /* gap: 20px; */
 }
 
 .form-row {
@@ -902,7 +957,7 @@ input:checked+.slider:before {
 
 .form-group input,
 .form-group textarea {
-    width: 200%;
+    width: 100%;
     padding: 10px 12px;
     border: 1px solid #d1d5db;
     border-radius: 6px;
@@ -1120,8 +1175,8 @@ input:checked+.slider:before {
 }
 
 .profile-avatar {
-    width: 80px;
-    height: 80px;
+    width: 100px;
+    /* height: 80px; */
     background: #667eea;
     color: white;
     border-radius: 50%;
@@ -2030,6 +2085,74 @@ input:checked+.slider:before {
     .users-layout {
         grid-template-columns: 1fr;
         gap: 16px;
+    }
+
+    /* Mobile specific improvements */
+    .main-content {
+        padding: 0px;
+    }
+
+    .content-card {
+        padding: 16px;
+    }
+
+    .navbar-content {
+        padding: 12px 12px;
+    }
+
+    .navbar-logo {
+        width: 40px;
+        max-width: 50px;
+    }
+
+    .sidebar {
+        width: 70%;
+        max-width: 260px;
+    }
+
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+        font-size: 16px !important;
+        padding: 12px 10px !important;
+        min-height: 44px;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .modal-content {
+        width: 95%;
+        max-width: 95vw;
+    }
+
+    .modal .form-actions {
+        flex-direction: column-reverse;
+        margin-top: 0px;
+        padding: 0px;
+    }
+
+    .modal .btn-cancel,
+    .modal .btn-submit {
+        width: 100%;
+        min-height: 44px;
+    }
+
+    .notification {
+        right: 10px;
+        left: 10px;
+        top: 10px;
+    }
+
+    .data-table {
+        font-size: 12px;
+    }
+
+    .data-table th,
+    .data-table td {
+        padding: 10px 8px;
     }
 }
 

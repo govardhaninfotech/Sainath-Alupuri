@@ -11,7 +11,7 @@ let itemsData = [];
 
 // Server-side pagination meta
 let currentItemsPage = 1;   // matches API "page"
-let itemsPerPage = 10;      // matches API "per_page"
+let itemsPerPage = 15;      // matches API "per_page"
 let itemsTotal = 0;         // API "total"
 let itemsTotalPages = 1;    // API "total_pages"
 
@@ -88,14 +88,14 @@ function generateItemsTableHTML() {
         tableRows += `
             <tr>
                 <td>${serialNo}</td>
-                <td>${imageCell}</td>
+                <!-- <td>${imageCell}</td> -->
                 <td>${item.name}</td>
                 <td>${item.unit}</td>
                 <td>${item.price}</td>
                 <td>${item.visible_to_all === "True" ? "Yes" : "No"}</td>
                 <td>
                     <button class="btn-icon btn-edit"
-                            onclick="editItem('${item.id}')"
+                            onclick="editItems('${item.id}')"
                             title="Edit">
                         <i class="icon-edit">✎</i>
                     </button>
@@ -108,7 +108,12 @@ function generateItemsTableHTML() {
         <div class="content-card">
             <div class="items-header">
                 <h2>Items Management</h2>
-                <button class="btn-add" onclick="openItemForm()">Add Item</button>
+                <button class="btn-add" onclick="openItemForm()">
+                    <svg class="btn-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                    <span class="btn-text">Add Item</span>
+                </button>
             </div>
 
             <div class="table-container">
@@ -116,7 +121,7 @@ function generateItemsTableHTML() {
                     <thead>
                         <tr>
                             <th>Sr No</th>
-                            <th>Image</th>
+                            <!-- <th>Image</th> -->
                             <th>Item Name</th>
                             <th>Unit</th>
                             <th>Price</th>
@@ -135,9 +140,9 @@ function generateItemsTableHTML() {
                     Showing ${total === 0 ? 0 : showingFrom} to ${showingTo} of ${total} entries
                 </div>
                 <div class="pagination-controls">
-                    <button onclick="changeItemPage('prev')" ${page === 1 ? "disabled" : ""}>Previous</button>
+                    <button onclick="changeItemsPage('prev')" ${page === 1 ? "disabled" : ""}>Previous</button>
                     <span class="page-number">Page ${page} of ${totalPages}</span>
-                    <button onclick="changeItemPage('next')" ${page === totalPages ? "disabled" : ""}>Next</button>
+                    <button onclick="changeItemsPage('next')" ${page === totalPages ? "disabled" : ""}>Next</button>
                 </div>
             </div>
         </div>
@@ -171,16 +176,12 @@ function generateItemsTableHTML() {
                                 <input type="text" id="itemUnit" required placeholder="e.g., kg, liter, piece">
                             </div>
 
-                            <div class="form-group">
-                                <label for="itemImagePath">Image Path <span class="required">*</span></label>
-                                <input type="text" id="itemImagePath" required placeholder="e.g., /uploads/items/image.jpg">
-                            </div>
                         </div>
 
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="itemDescription">Description <span>(Optional)</span></label>
-                                <textarea id="itemDescription" placeholder="Enter description (optional)" style="width: 200%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-family: Arial, sans-serif; resize: vertical; min-height: 80px;"></textarea>
+                                <textarea id="itemDescription" placeholder="Enter description (optional)" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-family: Arial, sans-serif; resize: vertical; min-height: 80px; box-sizing: border-box;"></textarea>
                             </div>
                         </div>
 
@@ -209,12 +210,40 @@ function generateItemsTableHTML() {
                                 </div>
                             </div>
                         </div>
+                        <div class="form-row">
+                           <div class="form-group">
+                                <label for="itemStatusCity">Show all City</label>
+                                <div style="display: flex; align-items: center; padding: 10px 0;">
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="itemStatusCity" checked>
+                                        <span class="slider"></span>
+                                    </label>
+                                    <span id="cityText" style="margin-left: 10px; font-weight: 500;">Yes</span>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="itemStockStatus">Add to Stock</label>
+                                <div style="display: flex; align-items: center; padding: 10px 0;">
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="itemStockStatus" checked>
+                                        <span class="slider"></span>
+                                    </label>
+                                    <span id="stockText" style="margin-left: 10px; font-weight: 500;">Yes</span>
+                                </div>
+                            </div>
+
+                        </div>
 
 
 
                         <div class="form-actions">
-                            <button type="button" class="btn-cancel" onclick="closeItemForm()">Cancel</button>
-                            <button type="submit" class="btn-submit">Save</button>
+                            <button type="button" class="btn-cancel" onclick="closeItemForm()">
+                                <span class="btn-text">Cancel</span>
+                            </button>
+                            <button type="submit" class="btn-submit">
+                                <span class="btn-text">Add Item</span>
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -226,7 +255,7 @@ function generateItemsTableHTML() {
 // ============================================
 // PAGINATION FUNCTIONS (SERVER-SIDE)
 // ============================================
-function changeItemPage(direction) {
+function changeItemsPage(direction) {
     if (direction === "next" && currentItemsPage < itemsTotalPages) {
         currentItemsPage++;
     } else if (direction === "prev" && currentItemsPage > 1) {
@@ -254,7 +283,24 @@ function changeItemPerPage(value) {
         }
     });
 }
-
+function checkBoxEvent(chkBox, lable, statusTrue, statusFalse, value) {
+    if (value == true) {
+        chkBox.checked = true;
+        lable.textContent = statusTrue;
+    }
+    else {
+        chkBox.checked = false;
+        lable.textContent = statusFalse;
+    }
+    chkBox.onchange = function () {
+        if (this.checked) {
+            lable.textContent = statusTrue;
+        }
+        else {
+            lable.textContent = statusFalse;
+        }
+    }
+}
 // ============================================
 // FORM FUNCTIONS
 // ============================================
@@ -266,19 +312,21 @@ function openItemForm() {
 
     // Status default ON
     const statusCheckbox = document.getElementById("itemStatus");
-    statusCheckbox.checked = true;
-    document.getElementById("statusText").textContent = "Enable";
+    let statusLable = document.getElementById("statusText");
+    checkBoxEvent(statusCheckbox, statusLable, "Enable", "Disable", true)
+    //Visiable to all clients
+    const visiableCheckbox = document.getElementById("itemVisibleToAll");
+    let visibleLable = document.getElementById("visibleText");
+    checkBoxEvent(visiableCheckbox, visibleLable, "Yes", "No", true)
 
-    // ✅ Visible to All → DEFAULT TRUE (ADD MODE)
-    const visibleCheckbox = document.getElementById("itemVisibleToAll");
-    const visibleText = document.getElementById("visibleText");
-
-    visibleCheckbox.checked = true;
-    visibleText.textContent = "Yes";
-
-    visibleCheckbox.onchange = function () {
-        visibleText.textContent = this.checked ? "Yes" : "No";
-    };
+    //show items in stock
+    const itemStockchkBox = document.getElementById("itemStockStatus");
+    let stockLable = document.getElementById("stockText");
+    checkBoxEvent(itemStockchkBox, stockLable, "Yes", "No", true)
+    //Visiable to all clients
+    const itemCitychkBox = document.getElementById("itemStatusCity");
+    let cityLable = document.getElementById("cityText");
+    checkBoxEvent(itemCitychkBox, cityLable, "Surat - Local", "Non - Local", true)
 
     document.getElementById("itemPrice").value = 0;
 
@@ -299,44 +347,68 @@ function closeItemForm() {
 let currentlyEditingStaffStatus = 'Active';
 let currentlyEditingStaffVisibleStatus = 'Active';
 
-function editItem(id) {
+function editItems(id) {
+    console.log("item editI found");
+
     editingItemId = id;
 
     const item = itemsData.find(i => String(i.id) === String(id));
+    console.log(id, item);
+
     if (!item) {
         showNotification("Item not found!", "error");
         return;
     }
-
+    currentlyEditingStaffStatus = item.status;
     document.getElementById("formTitle").textContent = "Update Item";
     document.getElementById("itemId").value = item.id;
     document.getElementById("itemName").value = item.name;
     document.getElementById("itemDescription").value = item.description;
     document.getElementById("itemPrice").value = item.price;
     document.getElementById("itemUnit").value = item.unit;
-    document.getElementById("itemImagePath").value = item.image_path;
+    document.getElementById("itemStockStatus").value = item.allow_stock_adjustment;
+    document.getElementById("itemStatusCity").value = item.visiable_to_surat;
+    // document.getElementById("itemImagePath").value = item.image_path;
 
-    // Status from API
     const statusCheckbox = document.getElementById("itemStatus");
     const statusText = document.getElementById("statusText");
-    statusCheckbox.checked = item.status === "enable";
-    statusText.textContent = statusCheckbox.checked ? "Enable" : "Disable";
-    currentlyEditingStaffStatus = item.status;
-    statusCheckbox.onchange = function () {
-        statusText.textContent = this.checked ? "Enable" : "Disable";
-    };
+
+    if (item.status === "enable")
+        checkBoxEvent(statusCheckbox, statusText, "Enable", "Disable", true)
+    else
+        checkBoxEvent(statusCheckbox, statusText, "Enable", "Disable", false)
 
     // ✅ Visible to All FROM API ONLY
     const visibleCheckbox = document.getElementById("itemVisibleToAll");
     const visibleText = document.getElementById("visibleText");
+    if (item.visible_to_all === "True")
+        checkBoxEvent(visibleCheckbox, visibleText, "Yes", "No", true)
+    else
+        checkBoxEvent(visibleCheckbox, visibleText, "Yes", "No", false)
 
-    visibleCheckbox.checked = item.visible_to_all === "True";
-    visibleText.textContent = visibleCheckbox.checked ? "Yes" : "No";
-    currentlyEditingStaffVisibleStatus = item.visible_to_all;
+    const itemStockchkBox = document.getElementById("itemStockStatus");
+    let stockLable = document.getElementById("stockText");
+    if (item.allow_stock_adjustment === "true")
+        checkBoxEvent(itemStockchkBox, stockLable, "Yes", "No", true)
+    else
+        checkBoxEvent(itemStockchkBox, stockLable, "Yes", "No", false)
+    const itemCitychkBox = document.getElementById("itemStatusCity");
+    let cityLable = document.getElementById("cityText");
+    console.log(item.visible_to_surat,itemCitychkBox,cityLable);
+    
+    if (item.visible_to_surat === "true")
+        checkBoxEvent(itemCitychkBox, cityLable, "Surat - Local", "Non - Local", true)
+    else
+        checkBoxEvent(itemCitychkBox, cityLable, "Surat - Local", "Non - Local", false)
 
-    visibleCheckbox.onchange = function () {
-        visibleText.textContent = this.checked ? "Yes" : "No";
-    };
+
+    // visibleCheckbox.checked = item.visible_to_all === "True";
+    // visibleText.textContent = visibleCheckbox.checked ? "Yes" : "No";
+    // currentlyEditingStaffVisibleStatus = item.visible_to_all;
+
+    // visibleCheckbox.onchange = function () {
+    //     visibleText.textContent = this.checked ? "Yes" : "No";
+    // };
 
     const modal = document.getElementById("itemsFormModal");
     modal.style.display = "flex";
@@ -349,16 +421,20 @@ async function submitItemForm(event) {
     const statusCheckbox = document.getElementById("itemStatus");
     const description = document.getElementById("itemDescription").value.trim();
     const visibleCheckbox = document.getElementById("itemVisibleToAll");
+    const itemStockStatus = document.getElementById("itemStockStatus");
+    const itemStatusCity = document.getElementById("itemStatusCity");
 
     const formData = {
         name: document.getElementById("itemName").value,
         description: description || "",
         price: parseFloat(document.getElementById("itemPrice").value) || 0,
         unit: document.getElementById("itemUnit").value,
-        image_path: document.getElementById("itemImagePath").value,
         status: statusCheckbox.checked ? "enable" : "disable",
-        visible_to_all: visibleCheckbox.checked ? "True" : "False"
+        visible_to_all: visibleCheckbox.checked ? "True" : "False",
+        allow_stock_adjustment: itemStockStatus.checked ? "True" : "False",
+        visible_to_surat: itemStatusCity.checked ? "True" : "False"
     };
+    console.log("item data", formData);
 
     const currentUser = JSON.parse(sessionStorage.getItem("rememberedUser")) || JSON.parse(localStorage.getItem("rememberedUser"));
     let user_id = currentUser ? currentUser.id : null;
@@ -459,12 +535,12 @@ window.addEventListener("click", function (event) {
 // ============================================
 // MAKE FUNCTIONS GLOBALLY ACCESSIBLE (ITEMS-ONLY NAMES)
 // ============================================
-window.editItem = editItem;
+window.editItems = editItems;
 window.toggleItemStatusItems = toggleItemStatusItems;
 window.openItemForm = openItemForm;
 window.closeItemForm = closeItemForm;
 window.submitItemForm = submitItemForm;
-window.changeItemPage = changeItemPage;
+window.changeItemsPage = changeItemsPage;
 window.changeItemPerPage = changeItemPerPage;
 window.showNotification = showNotification;
 window.generateItemsTableHTML = generateItemsTableHTML;

@@ -3,7 +3,7 @@
 // ============================================
 
 import { expenseCategoriesURLphp } from "../apis/api.js";
-import { getItemsData, addItemToAPI, deleteItemFromAPI } from "../apis/master_api.js";
+import { getItemsData, addItemToAPI, deleteItemFromAPI,updateItem } from "../apis/master_api.js";
 import { showNotification, showConfirm } from "./notification.js";
 import { validateRequiredField } from "./validation.js";
 
@@ -104,6 +104,13 @@ function generateTableHTML() {
                     <td>${serialNo}</td>
                     <td>${category.name || category.category_name || "-"}</td>
                     <td>${category.notes || "-"}</td>
+                     <td>
+                        <button class="btn-icon btn-edit"
+                                onclick="editCategory('${category.id}')"
+                                title="Edit">
+                            <i class="icon-edit">✎</i>
+                        </button>
+                    </td>
                     <td>
                         <button class="btn-icon btn-delete-icon" onclick="deleteExpenseCategory('${category.id}')" title="Delete">
                             <i class="icon-delete">🗑</i>
@@ -128,6 +135,7 @@ function generateTableHTML() {
                             <th>Sr No</th>
                             <th>Category Name</th>
                             <th>Notes</th>
+                            <th>Edit</th>
                             <th>Delete</th>
                         </tr>
                     </thead>
@@ -149,14 +157,14 @@ function generateTableHTML() {
                     <form id="expenseCategoryForm" onsubmit="submitExpenseCategoryForm(event)" class="form-responsive">
                         <input type="hidden" id="expenseCategoryId">
                         
-                        <div class="form-row">
+                        <div class="form-row" style="grid-template-columns: 1fr;">
                             <div class="form-group" style="width: 100%;">
                                 <label for="expenseCategoryName">Category Name <span class="required">*</span></label>
                                 <input type="text" id="expenseCategoryName" required placeholder="Enter category name">
                             </div>
                         </div>
 
-                        <div class="form-row">
+                        <div class="form-row" style="grid-template-columns: 1fr;">
                             <div class="form-group" style="width: 100%;">
                                 <label for="expenseCategoryNotes">Notes <span class="optional">(Optional)</span></label>
                                 <textarea id="expenseCategoryNotes" placeholder="Enter notes (optional)" rows="4" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-family: Arial, sans-serif; resize: vertical; min-height: 100px;"></textarea>
@@ -198,6 +206,30 @@ function closeExpenseCategoryForm() {
     }, 300);
     editingItemId = null;
 }
+// Edit
+
+function editCategory(id) {
+    console.log("item editI found");
+
+    console.log(id);
+    console.log(expenseCategoryData);
+    editingItemId = id;
+
+    const item = expenseCategoryData.find(i => String(i.id) === String(id));
+    console.log(id, item);
+
+
+
+    document.getElementById("expenseCategoryName").value = item.name;
+    document.getElementById("expenseCategoryNotes").value = item.notes;
+
+    const modal = document.getElementById("expenseCategoryFormModal");
+    modal.style.display = "flex";
+    setTimeout(() => modal.classList.add("show"), 10);
+}
+
+
+
 
 async function submitExpenseCategoryForm(event) {
     event.preventDefault();
@@ -226,29 +258,66 @@ async function submitExpenseCategoryForm(event) {
     };
 
     const mainContent = document.getElementById("mainContent");
-
-    return showConfirm(
-        "Are you sure you want to add this expense category?",
-        "warning"
-    ).then(confirmed => {
-        if (!confirmed) return;
-
-        return addItemToAPI(expenseCategoriesURLphp, formData).then(result => {
-            if (result && !result.error) {
-                showNotification("Expense category added successfully!", "success");
-                closeExpenseCategoryForm();
-
-                if (mainContent) {
-                    return loadExpenseCategoryData().then(() => {
-                        mainContent.innerHTML = generateTableHTML();
-                    });
-                }
-            } else {
-                const errorMsg = result?.message || result?.error || "Error adding expense category!";
-                showNotification(errorMsg, "error");
+    console.log("item form edit",editingItemId);
+        
+    if (editingItemId) {
+        return showConfirm(
+            "Are you sure you want to update this item?",
+            "warning"
+        ).then(confirmed => {
+            if (!confirmed) {
+                statusCheckbox.checked = currentlyEditingStaffStatus;
+                visibleCheckbox.checked = currentlyEditingStaffVisibleStatus;
+                return;
             }
+            return updateItem(expenseCategoriesURLphp, editingItemId, formData)
+                .then(result => {
+                    // ❗ Only fail if API explicitly says error
+                    if (result?.error) {
+                        showNotification(result.message );
+                        return;
+                    }
+
+                    // ✅ SUCCESS DEFAULT
+                    showNotification("Item updated successfully!", "success");
+                    closeExpenseCategoryForm();
+
+                    if (mainContent) {
+                        return loadExpenseCategoryData().then(() => {
+                            mainContent.innerHTML = generateTableHTML();
+                        });
+                    }
+                })
+                .catch(err => {
+                    console.error("Update item error:", err);
+                    showNotification("Error updating item!", "error");
+                });
+
         });
-    });
+    } else {
+        return showConfirm(
+            "Are you sure you want to add this expense category?",
+            "warning"
+        ).then(confirmed => {
+            if (!confirmed) return;
+
+            return addItemToAPI(expenseCategoriesURLphp, formData).then(result => {
+                if (result && !result.error) {
+                    showNotification("Expense category added successfully!", "success");
+                    closeExpenseCategoryForm();
+
+                    if (mainContent) {
+                        return loadExpenseCategoryData().then(() => {
+                            mainContent.innerHTML = generateTableHTML();
+                        });
+                    }
+                } else {
+                    const errorMsg = result?.message || result?.error || "Error adding expense category!";
+                    showNotification(errorMsg, "error");
+                }
+            });
+        });
+    }
 }
 
 // ============================================
@@ -318,4 +387,5 @@ window.deleteExpenseCategory = deleteExpenseCategory;
 window.showNotification = showNotification;
 window.generateTableHTML = generateTableHTML;
 window.showConfirm = showConfirm;
+window.editCategory = editCategory;
 

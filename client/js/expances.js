@@ -1,8 +1,8 @@
 // ============================================
-// USER PAGE - CRUD OPERATIONS WITH PAGINATION
+// GENERAL EXPENSE PAGE - CRUD OPERATIONS WITH PAGINATION
 // ============================================
 
-import { userURLphp, shopURLphp } from "../apis/api.js";
+import { expenseURLphp, expenseCategoriesURLphp, bankURLphp } from "../apis/api.js";
 import {
     getItemsData,
     updateItem,
@@ -12,125 +12,332 @@ import {
 import { showNotification, showConfirm } from "./notification.js";
 import {
     validateRequiredField,
-    validateIndianMobile,
-    validatePassword,
-    validateUniqueMobile,
     validateForm,
     setupEscKeyHandler
 } from "./validation.js";
 
-// User Data Storage
-let userData = [];
+// Get user from localStorage or sessionStorage
+let currentUser = JSON.parse(localStorage.getItem("rememberedUser") || sessionStorage.getItem("rememberedUser"));
+let user_id = currentUser?.id || '22';
+
+// Expense Data Storage
+let expenseData = [];
 
 // Server-side pagination meta
-let currentUserPage = 1;   // current page (matches API "page")
-let userPerPage = 10;      // matches API "per_page"
-let userTotal = 0;         // API "total"
-let userTotalPages = 1;    // API "total_pages"
+let currentExpensePage = 1;
+let expensePerPage = 10;
+let expenseTotal = 0;
+let expenseTotalPages = 1;
 
-let editingUserId = null;
+let editingExpenseId = null;
 
-// Shop data (for dropdown + mapping shop_id → shop_name)
-let shopData = [];
-let shopDataLoaded = false;
+// Category and Bank Account data
+let categoryData = [];
+let bankAccountData = [];
+let categoryDataLoaded = false;
+let bankAccountDataLoaded = false;
+let currentDate = null;
+let month = 0;
+let year = 0;
 
 // ============================================
-// LOAD USER DATA FROM API (SERVER PAGINATION)
+// LOAD EXPENSE DATA FROM API (SERVER PAGINATION)
 // ============================================
-function loadExpanceData() {
-    // Build URL with query params for server-side pagination
-    const url = `${userURLphp}?page=${currentUserPage}&per_page=${userPerPage}`;
+async function loadExpenseData() {
+    try {
+        if (month === 0 || year === 0) {
+            let today = new Date();
+            month = today.getMonth() + 1;
+            year = today.getFullYear();
+        }
+        month = currentDate ? parseInt(currentDate.split("-")[1], 10) : month;
+        year = currentDate ? parseInt(currentDate.split("-")[0], 10) : year;
+        
+        const url = `${expenseURLphp}?user_id=${user_id}&staff_id=null&month=${month}&year=${year}&page=${currentExpensePage}&per_page=${expensePerPage}`;
+        console.log( url);
 
-    return getItemsData(url).then(data => {
-
-        // Expected API shape:
-        // { page, per_page, total, total_pages, users: [...] }
-        userData = data.users || [];
-        userTotal = data.total ?? userData.length;
-        userPerPage = data.per_page ?? userPerPage;
-        userTotalPages = data.total_pages ?? Math.max(1, Math.ceil(userTotal / userPerPage));
-        currentUserPage = data.page ?? currentUserPage;
-    });
+        const data = await getItemsData(url);
+        console.log(data);
+        
+        // Extract expenses from response
+        expenseData = data?.expenses || [];
+        expenseTotal = data?.total ?? expenseData.length;
+        expensePerPage = data?.per_page ?? expensePerPage;
+        expenseTotalPages = data?.total_pages ?? Math.max(1, Math.ceil(expenseTotal / expensePerPage));
+        currentExpensePage = data?.page ?? currentExpensePage;
+        
+        console.log("Loaded expenses:", expenseData.length, "Total:", expenseTotal);
+    } catch (error) {
+        console.error("Error loading expenses:", error);
+        expenseData = [];
+        expenseTotal = 0;
+        expenseTotalPages = 1;
+    }
 }
 
 // ============================================
-// LOAD SHOP DATA (FOR DROPDOWN + TABLE DISPLAY)
+// LOAD CATEGORY DATA (FOR DROPDOWN)
 // ============================================
-// LOAD SHOP DATA (FOR DROPDOWN + TABLE DISPLAY)
-function loadShopData() {
-    if (shopDataLoaded && shopData.length > 0) return Promise.resolve(shopData);
+async function loadCategoryData() {
+    if (categoryDataLoaded && categoryData.length > 0) {
+        return categoryData;
+    }
 
-    const url = `${shopURLphp}?page=1&per_page=1000`;
-    return getItemsData(url).then(data => {
-        const allShops = data.shops || [];
+    try {
+        const res = await fetch(`${expenseCategoriesURLphp}?user_id=${user_id}`);
+        if (!res.ok) throw new Error(`Categories API returned ${res.status}`);
 
-        // ✅ KEEP ALL SHOPS (do NOT filter here)
-        shopData = allShops;
-        shopDataLoaded = true;
+        const json = await res.json();
+        console.log("Expense Categories API Response:", json);
 
-        return shopData;
-    }).catch(error => {
-        console.error("Error loading shop data:", error);
-        showNotification("Error loading shops!", "error");
+        if (Array.isArray(json)) {
+            categoryData = json;
+        } else if (json?.categories && Array.isArray(json.categories)) {
+            categoryData = json.categories;
+        } else if (json?.data && Array.isArray(json.data)) {
+            categoryData = json.data;
+        } else {
+            categoryData = [];
+            console.warn("No categories found in response");
+        }
+
+        categoryDataLoaded = true;
+        console.log("Expense categories loaded:", categoryData.length);
+        return categoryData;
+    } catch (error) {
+        console.error("Error loading category data:", error);
+        showNotification("Error loading categories!", "error");
+        categoryData = [];
         return [];
-    });
+    }
 }
 
+// ============================================
+// LOAD BANK ACCOUNT DATA (FOR DROPDOWN)
+// ============================================
+async function loadBankAccountData() {
+    if (bankAccountDataLoaded && bankAccountData.length > 0) {
+        return bankAccountData;
+    }
 
-// Helper: get shop_name from shop_id
-function getShopCodeById(shopId) {
-    if (!shopId) return "";
-    const shop = shopData.find(s => String(s.id) === String(shopId));
-    console.log("shop male 6", shopData);
+    try {
+        const res = await fetch(`${bankURLphp}?user_id=${user_id}`);
+        if (!res.ok) throw new Error(`Bank API returned ${res.status}`);
 
-    if (shop) return shop.shop_name || "";
+        const json = await res.json();
+        console.log("Bank Accounts API Response:", json);
+
+        let allBanks = [];
+        if (Array.isArray(json)) {
+            allBanks = json;
+        } else if (json?.bank_accounts && Array.isArray(json.bank_accounts)) {
+            allBanks = json.bank_accounts;
+        } else if (json?.data && Array.isArray(json.data)) {
+            allBanks = json.data;
+        } else if (json?.accounts && Array.isArray(json.accounts)) {
+            allBanks = json.accounts;
+        } else {
+            allBanks = [];
+            console.warn("No bank accounts found in response");
+        }
+
+        bankAccountData = allBanks;
+        bankAccountDataLoaded = true;
+        console.log("Bank accounts loaded:", bankAccountData.length);
+        return bankAccountData;
+    } catch (error) {
+        console.error("Error loading bank account data:", error);
+        showNotification("Error loading bank accounts!", "error");
+        bankAccountData = [];
+        return [];
+    }
+}
+
+// Helper: get category name from category_id
+function getCategoryNameById(categoryId) {
+    if (!categoryId) return "";
+    const category = categoryData.find(c => String(c.id) === String(categoryId));
+    if (category) {
+        return category.category_name || category.name || "";
+    }
     return "";
 }
 
+// Helper: get bank name from bank_account_id
+function getBankNameById(bankId) {
+    if (!bankId) return "";
+    const bank = bankAccountData.find(b => String(b.id) === String(bankId));
+    if (bank) {
+        return bank.bank_name || bank.account_name || bank.name || "";
+    }
+    return "";
+}
 
-// Populate the Shop Code dropdown in the form
-function populateShopDropdown(selectedShopIdOrCode = "") {
-    const select = document.getElementById("userShopId");
-    if (!select) return Promise.resolve();
+// Populate Category dropdown
+function populateCategoryDropdown(selectedCategoryId = "") {
+    const select = document.getElementById("expenseCategory");
+    if (!select) {
+        console.error("Category select element not found");
+        return;
+    }
 
-    return loadShopData().then(shops => {
+    console.log("Populating category dropdown with", categoryData.length, "categories");
 
-        // ✅ Filter ONLY for dropdown
-        const availableShops = shops.filter(
-            shop => shop.status === "active" && shop.user_id === "null"
-        );
+    select.innerHTML = `<option value="">Select Category</option>`;
 
-        select.innerHTML = `<option value="">Select shop code</option>`;
+    if (categoryData.length === 0) {
+        const opt = document.createElement("option");
+        opt.value = "";
+        opt.textContent = "No categories available";
+        opt.disabled = true;
+        select.appendChild(opt);
+        console.warn("No categories to populate");
+        return;
+    }
 
-        availableShops.forEach(shop => {
-            const option = document.createElement("option");
-            option.value = shop.id;
-            option.textContent = shop.shop_name;
-            select.appendChild(option);
-        });
+    categoryData.forEach((cat) => {
+        const opt = document.createElement("option");
+        opt.value = cat.id || cat.category_id;
+        opt.textContent = cat.category_name || cat.name || `Category ${cat.id}`;
+        select.appendChild(opt);
+    });
 
-        if (selectedShopIdOrCode) {
-            select.value = String(selectedShopIdOrCode);
-        }
+    if (selectedCategoryId) {
+        select.value = String(selectedCategoryId);
+    }
+
+    console.log("Category dropdown populated with", select.options.length - 1, "categories");
+}
+
+// Filter bank accounts by payment mode
+function getAccountsByPaymentMode(paymentMode) {
+    if (!paymentMode) return [];
+
+    const modeMap = {
+        'cash': 'cash',
+        'bank_transfer': 'bank',
+        'upi': 'upi',
+        'bank': 'bank'
+    };
+
+    const accountType = modeMap[paymentMode.toLowerCase()];
+    console.log(`Filtering banks for payment mode: ${paymentMode} (type: ${accountType})`);
+
+    if (!accountType) return [];
+
+    return bankAccountData.filter(account => {
+        const type = (account.type || account.account_type || '').toLowerCase();
+        return type === accountType;
     });
 }
 
-// ============================================
-// RENDER USER TABLE WITH PAGINATION
-// ============================================
-export function renderInventoryExpancesPage() {
-    return loadExpanceData().then(() => loadShopData()).then(() => generateTableHTML());
+// Populate Bank Account dropdown based on payment mode
+function populateBankAccountDropdown(selectedBankId = "", paymentMode = "") {
+    const select = document.getElementById("expenseBankAccount");
+    if (!select) {
+        console.error("Bank account select element not found");
+        return;
+    }
+
+    // If cash is selected, disable the bank account field
+    if (paymentMode.toLowerCase() === 'cash') {
+        select.disabled = true;
+        select.innerHTML = `<option value="">Not applicable for Cash</option>`;
+        select.value = "";
+        return;
+    }
+
+    select.disabled = false;
+
+    // Get filtered accounts based on payment mode
+    const filteredAccounts = paymentMode ? getAccountsByPaymentMode(paymentMode) : bankAccountData;
+
+    console.log(`Populating bank account dropdown with ${filteredAccounts.length} accounts for mode: ${paymentMode}`);
+
+    select.innerHTML = `<option value="">Select Bank Account</option>`;
+
+    if (filteredAccounts.length === 0) {
+        const opt = document.createElement("option");
+        opt.value = "";
+        opt.textContent = "No bank accounts available";
+        opt.disabled = true;
+        select.appendChild(opt);
+        console.warn("No bank accounts to populate");
+        return;
+    }
+
+    filteredAccounts.forEach((bank) => {
+        const opt = document.createElement("option");
+        opt.value = bank.id || bank.account_id;
+
+        const bankName = bank.bank_name || bank.account_name || bank.name || 'Account';
+        const accountNumber = bank.account_number || bank.acc_number || bank.number || '';
+
+        opt.textContent = `${bankName}${accountNumber ? ' - ' + accountNumber : ''}`;
+        select.appendChild(opt);
+    });
+
+    if (selectedBankId) {
+        select.value = String(selectedBankId);
+    }
+
+    console.log("Bank dropdown populated with", select.options.length - 1, "accounts");
 }
 
-// Generate table HTML (no client-side slicing now)
-// We already get just one page from API in userData
-function generateTableHTML() {
-    const page = currentUserPage;
-    const perPage = userPerPage;
-    const total = userTotal;
-    const totalPages = userTotalPages || 1;
+// ============================================
+// RENDER EXPENSE TABLE WITH PAGINATION
+// ============================================
+export function renderInventoryExpancesPage() {
+    console.log("renderInventoryExpancesPage: Starting");
 
-    // Compute "Showing X to Y"
+    return Promise.all([
+        loadExpenseData(),
+        loadCategoryData(),
+        loadBankAccountData()
+    ]).then(() => {
+        console.log("All data loaded successfully");
+        console.log("Bank accounts available:", bankAccountData.length);
+        console.log("Expense categories available:", categoryData.length);
+        return generateTableHTML();
+    }).catch(error => {
+        console.error("Error in renderInventoryExpancesPage:", error);
+        showNotification("Error loading data. Please refresh the page.", "error");
+        return generateTableHTML();
+    });
+}
+
+// Format date for display (YYYY-MM-DD to DD/MM/YYYY)
+function formatDateForDisplay(dateStr) {
+    if (!dateStr || dateStr === "0000-00-00") return "N/A";
+
+    if (dateStr.includes("-")) {
+        const parts = dateStr.split("-");
+        if (parts[0].length === 4) {
+            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        } else {
+            return dateStr.replace(/-/g, '/');
+        }
+    }
+
+    return dateStr;
+}
+
+// Get today's date in YYYY-MM-DD format
+function getTodayDate() {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+// Generate table HTML
+function generateTableHTML() {
+    const page = currentExpensePage;
+    const perPage = expensePerPage;
+    const total = expenseTotal;
+    const totalPages = expenseTotalPages || 1;
+
     let showingFrom = 0;
     let showingTo = 0;
 
@@ -140,50 +347,57 @@ function generateTableHTML() {
     }
 
     let tableRows = "";
-    userData.forEach(user => {
-        tableRows += `
+
+    if (expenseData.length === 0) {
+        tableRows = `
             <tr>
-                <td>${user.name}</td>
-                <td>${user.mobile}</td>
-                <td>${getShopCodeById(user.shop_id)}</td>
-               
-                <td style="width: 150px;">
-                    <div style="display: flex; align-items: center; justify-content: center;">
-                        <label class="toggle-switch">
-                            <input type="checkbox"
-                                   onchange="toggleExpanceStatus('${user.id}', '${user.status}')"
-                                   ${user.status === 'active' ? 'checked' : ''}>
-                            <span class="slider"></span>
-                        </label>
-                        <span class="status-text" style="margin-left: 10px; font-weight: 500; min-width: 60px;">
-                        </span>
+                <td colspan="6" style="text-align: center; padding: 40px;">
+                    <div style="color: #6b7280;">
+                        <p style="font-size: 18px; margin-bottom: 8px;">No expenses found</p>
+                        <p style="font-size: 14px;">Click "Add Expense" to create your first expense.</p>
                     </div>
-                </td>
-                <td>
-                    <button class="btn-icon btn-edit" onclick="editExpance('${user.id}')" title="Edit">
-                        <i class="icon-edit">✎</i>
-                    </button>
                 </td>
             </tr>
         `;
-    });
+    } else {
+        expenseData.forEach((expense, index) => {
+            const serialNo = (page - 1) * perPage + index + 1;
+            tableRows += `
+                <tr>
+                    <td>${serialNo}</td>
+                    <td>${getCategoryNameById(expense.category_id)}</td>
+                    <td>₹${parseFloat(expense.amount || 0).toFixed(2)}</td>
+                    <td>${formatDateForDisplay(expense.expense_date)}</td>
+                    <td>${expense.bank_name || "Cash"}</td>
+                    <td>${expense.notes || 'N/A'}</td>
+                    <td>
+                        <button class="btn-icon btn-edit" onclick="editExpense(${expense.id})" title="Edit">
+                            <i class="icon-edit">✎</i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
 
     return `
         <div class="content-card">
             <div class="staff-header">
-                <h2>User Management</h2>
-                <button class="btn-add" onclick="openExpanceForm()">Add User</button>
+                <h2>Expense Management</h2>
+                <button class="btn-add" onclick="openExpenseForm()">Add Expense</button>
             </div>
             
             <div class="table-container">
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>Name</th>
-                            <th>Mobile</th>
-                            <th>Shop Code</th>
-                            <th>Status</th>
-                            <th>Edit</th>
+                            <th>Sr No</th>
+                            <th>Category</th>
+                            <th>Amount</th>
+                            <th>Date</th>
+                            <th>Bank Account</th>
+                            <th>Notes</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -197,78 +411,70 @@ function generateTableHTML() {
                     Showing ${total === 0 ? 0 : showingFrom} to ${showingTo} of ${total} entries
                 </div>
                 <div class="pagination-controls">
-                    <button onclick="changeExpancePage('prev')" ${page === 1 ? "disabled" : ""}>Previous</button>
+                    <button onclick="changeExpensePage('prev')" ${page === 1 ? "disabled" : ""}>Previous</button>
                     <span class="page-number">Page ${page} of ${totalPages}</span>
-                    <button onclick="changeExpancePage('next')" ${page === totalPages ? "disabled" : ""}>Next</button>
+                    <button onclick="changeExpensePage('next')" ${page === totalPages ? "disabled" : ""}>Next</button>
                 </div>
             </div>
         </div>
 
-        <!-- User Form Modal -->
-        <div id="userFormModal" class="modal">
+        <!-- Expense Form Modal -->
+        <div id="expenseFormModal" class="modal">
             <div class="modal-content modal-responsive">
                 <div class="modal-header">
-                    <h3 id="userFormTitle">Add New User</h3>
-                    <button class="close-btn" onclick="closeExpanceForm()">&times;</button>
+                    <h3 id="expenseFormTitle">Add New Expense</h3>
+                    <input type="date" id="expenseDate" style="font-size: 14px; border: 1px solid #ccc; padding: 5px; border-radius: 4px;" value="" required>
+                    <button class="close-btn" onclick="closeExpenseForm()">&times;</button>
                 </div>
                 <div class="modal-body">
-                    <form id="userForm" onsubmit="submitExpanceForm(event)" class="form-responsive">
-                        <input type="hidden" id="userId">
+                    <form id="expenseForm" onsubmit="submitExpenseForm(event)" class="form-responsive">
+                        <input type="hidden" id="expenseId">
                         
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="userName">User Name <span class="required">*</span></label>
-                                <input type="text" id="userName" required placeholder="Enter user name">
+                                <label for="expenseCategory">Category <span class="required">*</span></label>
+                                <select id="expenseCategory" required>
+                                    <option value="">Select category</option>
+                                </select>
                             </div>
 
                             <div class="form-group">
-                                <label for="userMobile">Mobile <span class="required">*</span></label>
-                                <input type="text" id="userMobile" required placeholder="Enter mobile number" pattern="[0-9]{10}" title="Mobile number must be 10 digits">
+                                <label for="expenseAmount">Amount <span class="required">*</span></label>
+                                <input type="number" id="expenseAmount" required placeholder="Enter amount" step="0.01" min="0">
                             </div>
                         </div>
 
                         <div class="form-row">
-                          <div class="form-group" id="passwordGroup">
-                            <label for="userPassword">Password <span class="required">*</span></label>
-                            <input type="password" id="userPassword" required placeholder="Enter password (min 6 characters)">
-                          </div>
-
-
                             <div class="form-group">
-                                <label for="userShopId">Shop Code <span class="required">*</span></label>
-                                <select id="userShopId" required>
-                                    <option value="">Select shop code</option>
-                                    <!-- Options will be loaded from shops API -->
+                                <label for="expensePaymentMode">Payment Mode <span class="required">*</span></label>
+                                <select id="expensePaymentMode" required>
+                                    <option value="cash">Cash</option>
+                                    <option value="upi">UPI</option>
+                                    <option value="bank">Bank</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="expenseBankAccount">Bank Account</label>
+                                <select id="expenseBankAccount">
+                                    <option value="">Select bank account</option>
                                 </select>
                             </div>
                         </div>
 
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="userStatus">Status</label>
-                                <div style="display: flex; align-items: center; padding: 10px 0;">
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="userStatus" checked>
-                                        <span class="slider"></span>
-                                    </label>
-                                    <span id="userStatusText" style="margin-left: 10px; font-weight: 500;">Active</span>
-                                </div>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="userIsFamilyMember">Is Family Member</label>
-                                <div style="display: flex; align-items: center; padding: 10px 0;">
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="userIsFamilyMember">
-                                        <span class="slider"></span>
-                                    </label>
-                                    <span id="userIsFamilyMemberText" style="margin-left: 10px; font-weight: 500;">No</span>
-                                </div>
-                            </div>
+                                <label for="expenseNotes">Notes</label>
+                                <textarea
+                                    id="expenseNotes"
+                                    rows="2"
+                                    placeholder="Enter notes (optional)"
+                                    style="resize: vertical;"
+                                ></textarea>
+                            </div>                                                        
                         </div>
 
                         <div class="form-actions">
-                            <button type="button" class="btn-cancel" onclick="closeExpanceForm()">Cancel</button>
+                            <button type="button" class="btn-cancel" onclick="closeExpenseForm()">Cancel</button>
                             <button type="submit" class="btn-submit">Save</button>
                         </div>
                     </form>
@@ -279,362 +485,229 @@ function generateTableHTML() {
 }
 
 // ============================================
-// PAGINATION FUNCTIONS (SERVER-SIDE)
+// PAGINATION FUNCTIONS
 // ============================================
-function changeExpancePage(direction) {
-    if (direction === "next" && currentUserPage < userTotalPages) {
-        currentUserPage++;
-    } else if (direction === "prev" && currentUserPage > 1) {
-        currentUserPage--;
+async function changeExpensePage(direction) {
+    if (direction === "next" && currentExpensePage < expenseTotalPages) {
+        currentExpensePage++;
+    } else if (direction === "prev" && currentExpensePage > 1) {
+        currentExpensePage--;
     } else {
-        return Promise.resolve(); // nothing to do
+        return;
     }
 
-    return loadExpanceData().then(() => {
-        const mainContent = document.getElementById("mainContent");
-        if (mainContent) {
-            mainContent.innerHTML = generateTableHTML();
-        }
-    });
-}
-
-function changeExpancePerPage(value) {
-    userPerPage = parseInt(value, 10) || 10;
-    currentUserPage = 1; // reset to first page when per-page changes
-
-    return loadExpanceData().then(() => {
-        const mainContent = document.getElementById("mainContent");
-        if (mainContent) {
-            mainContent.innerHTML = generateTableHTML();
-        }
-    });
+    await loadExpenseData();
+    const mainContent = document.getElementById("mainContent");
+    if (mainContent) {
+        mainContent.innerHTML = generateTableHTML();
+    }
 }
 
 // ============================================
 // FORM FUNCTIONS
 // ============================================
-function openExpanceForm() {
-    if (shopData.length === 0) {
-        showNotification("No shops found!", "error");
-        return;
+function openExpenseForm() {
+    editingExpenseId = null;
+    document.getElementById("expenseFormTitle").textContent = "Add New Expense";
+    document.getElementById("expenseForm").reset();
+    document.getElementById("expenseId").value = "";
+
+    document.getElementById("expenseDate").value = getTodayDate();
+
+    console.log("Opening expense form, populating dropdowns...");
+    populateCategoryDropdown();
+
+    const paymentModeSelect = document.getElementById("expensePaymentMode");
+    if (paymentModeSelect) {
+        paymentModeSelect.value = "";
     }
-    editingUserId = null;
-    document.getElementById("userFormTitle").textContent = "Add New User";
-    document.getElementById("userForm").reset();
-    document.getElementById("userId").value = "";
+    populateBankAccountDropdown("", "Cash");
 
-    const statusCheckbox = document.getElementById("userStatus");
-    statusCheckbox.checked = true;
-    document.getElementById("userStatusText").textContent = "Active";
+    setupPaymentModeChangeHandler();
 
-    // Set is_family_member checkbox to false (unchecked) by default
-    const isFamilyMemberCheckbox = document.getElementById("userIsFamilyMember");
-    isFamilyMemberCheckbox.checked = false;
-    document.getElementById("userIsFamilyMemberText").textContent = "No";
-
-    // Add change handler for is_family_member checkbox
-    isFamilyMemberCheckbox.onchange = function () {
-        document.getElementById("userIsFamilyMemberText").textContent = this.checked ? "Yes" : "No";
-    };
-
-    // Load shop codes into dropdown
-    return populateShopDropdown().then(() => {
-        const modal = document.getElementById("userFormModal");
-        modal.style.display = "flex";
-        setTimeout(() => {
-            modal.classList.add("show");
-        }, 10);
-    });
+    const modal = document.getElementById("expenseFormModal");
+    modal.style.display = "flex";
+    setTimeout(() => {
+        modal.classList.add("show");
+    }, 10);
 }
 
-function closeExpanceForm() {
-    const modal = document.getElementById("userFormModal");
+function closeExpenseForm() {
+    const modal = document.getElementById("expenseFormModal");
     modal.classList.remove("show");
     setTimeout(() => {
         modal.style.display = "none";
     }, 300);
-    editingUserId = null;
+    editingExpenseId = null;
 }
 
 // ============================================
-// DELETE USER FUNCTION WITH CONFIRMATION
+// EDIT EXPENSE FUNCTION
 // ============================================
-function deleteExpance(id) {
-    return showConfirm(
-        "Are you sure you want to delete this user?",
-        "warning"
-    ).then(confirmed => {
-        if (!confirmed) return;
+function editExpense(id) {
+    editingExpenseId = id;
+    const item = expenseData.find(i => String(i.id) === String(id));
 
-        return deleteItemFromAPI(userURLphp, id).then(result => {
-            if (result) {
-                showNotification("User deleted successfully!", "success");
-                const mainContent = document.getElementById("mainContent");
-                if (mainContent) {
-                    return loadExpanceData().then(() => {
-                        mainContent.innerHTML = generateTableHTML();
-                    });
-                }
-            } else {
-                showNotification("Error deleting user!", "error");
-            }
-        });
-    });
-}
-
-// ============================================
-// EDIT USER FUNCTION
-// ============================================
-function editExpance(id) {
-    // Hide password field on edit
-    const passwordGroup = document.getElementById("passwordGroup");
-    const passwordInput = document.getElementById("userPassword");
-
-    passwordGroup.style.display = "none";
-    passwordInput.required = false;
-    passwordInput.value = "";
-
-    editingUserId = id;
-    const item = userData.find(i => String(i.id) === String(id));
     if (!item) {
-        console.error("User not found for edit:", id);
-        showNotification("User not found!", "error");
+        console.error("Expense not found for edit:", id);
+        showNotification("Expense not found!", "error");
         return;
     }
 
-    document.getElementById("userFormTitle").textContent = "Update User";
-    document.getElementById("userId").value = item.id;
-    document.getElementById("userName").value = item.name;
-    document.getElementById("userMobile").value = item.mobile || "";
-    document.getElementById("userPassword").value = item.password || "";
+    document.getElementById("expenseFormTitle").textContent = "Update Expense";
+    document.getElementById("expenseId").value = item.id;
+    document.getElementById("expenseAmount").value = item.amount || "";
+    document.getElementById("expenseDate").value = item.expense_date || getTodayDate();
+    document.getElementById("expenseNotes").value = item.notes || "";
 
-    // Make sure shop dropdown is populated and select current user's shop
-    return populateShopDropdown(item.shop_id || "").then(() => {
-        const statusCheckbox = document.getElementById("userStatus");
-        const statusText = document.getElementById("userStatusText");
-        statusCheckbox.checked = item.status === "active";
-        statusText.textContent = item.status === "active" ? "Active" : "Inactive";
+    console.log("Editing expense, populating dropdowns...");
+    
+    // First populate category dropdown
+    populateCategoryDropdown(item.category_id || "");
+    
+    // Set payment mode first
+    const paymentMode = item.payment_mode || "";
+    document.getElementById("expensePaymentMode").value = paymentMode;
+    
+    // Then populate bank account dropdown based on payment mode and select the bank
+    populateBankAccountDropdown(item.bank_account_id || "", paymentMode);
 
-        statusCheckbox.onchange = function () {
-            statusText.textContent = this.checked ? "Active" : "Inactive";
-        };
+    setupPaymentModeChangeHandler();
 
-        // Set is_family_member checkbox based on API value
-        const isFamilyMemberCheckbox = document.getElementById("userIsFamilyMember");
-        const isFamilyMemberText = document.getElementById("userIsFamilyMemberText");
-        // Handle both string "True"/"False" and boolean true/false from API
-        const isFamilyMemberValue = item.is_family_member;
-        const isFamilyMember = isFamilyMemberValue === "True" || isFamilyMemberValue === true || isFamilyMemberValue === "true";
-        isFamilyMemberCheckbox.checked = isFamilyMember;
-        isFamilyMemberText.textContent = isFamilyMember ? "Yes" : "No";
-
-        isFamilyMemberCheckbox.onchange = function () {
-            isFamilyMemberText.textContent = this.checked ? "Yes" : "No";
-        };
-
-        const modal = document.getElementById("userFormModal");
-        modal.style.display = "flex";
-        setTimeout(() => {
-            modal.classList.add("show");
-        }, 10);
-    });
+    const modal = document.getElementById("expenseFormModal");
+    modal.style.display = "flex";
+    setTimeout(() => {
+        modal.classList.add("show");
+    }, 10);
 }
 
-function submitExpanceForm(event) {
+async function submitExpenseForm(event) {
     event.preventDefault();
-    const statusCheckbox = document.getElementById("userStatus");
-    const isFamilyMemberCheckbox = document.getElementById("userIsFamilyMember");
+    console.log("Submitting expense form");
 
-    // Ensure is_family_member checkbox exists and get its value
-    // Default to false if checkbox is not found
-    const isFamilyMember = isFamilyMemberCheckbox ? isFamilyMemberCheckbox.checked : false;
+    const categoryId = document.getElementById("expenseCategory").value;
+    const amount = document.getElementById("expenseAmount").value;
+    const date = document.getElementById("expenseDate").value;
+    const bankAccountId = document.getElementById("expenseBankAccount").value;
+    const paymentMode = document.getElementById("expensePaymentMode").value;
+    const notes = document.getElementById("expenseNotes").value;
 
-    // Validate all fields
-    const nameValidation = validateRequiredField(
-        document.getElementById("userName").value,
-        "User name",
-        3
-    );
-    const mobileValidation = validateIndianMobile(
-        document.getElementById("userMobile").value
-    );
-
-    // Check unique mobile only if mobile validation passed
-    let uniqueMobileValidation = { status: true };
-    if (mobileValidation.status) {
-        uniqueMobileValidation = validateUniqueMobile(
-            document.getElementById("userMobile").value,
-            userData,
-            editingUserId
-        );
+    if (parseFloat(amount) <= 0) {
+        showNotification("Amount must be greater than zero.", "error");
+        return;
     }
 
-    const passwordValidation = validatePassword(
-        document.getElementById("userPassword").value
-    );
-    const shopIdValidation = validateRequiredField(
-        document.getElementById("userShopId").value,
-        "Shop code"
-    );
-
-    // Check all validations
-    const formValidation = validateForm([
-        nameValidation,
-        mobileValidation,
-        uniqueMobileValidation,
-        passwordValidation,
-        shopIdValidation
-    ]);
-
-    if (!formValidation.status) {
-        showNotification(formValidation.message, "error");
+    if (paymentMode !== "cash" && !bankAccountId) {
+        showNotification("Please select a bank account for non-cash payments.", "error");
         return;
     }
 
     const formData = {
-        name: document.getElementById("userName").value,
-        mobile: document.getElementById("userMobile").value,
-        password: document.getElementById("userPassword").value,
-        // Still send shop_id to backend, but selected via shop code dropdown
-        shop_id: document.getElementById("userShopId").value,
-        status: statusCheckbox.checked ? "active" : "inactive",
-        // Always send as string "True" or "False" to match API format, never null/undefined
-        is_family_member: isFamilyMember ? "True" : "False"
+        user_id: user_id,
+        category_id: parseInt(categoryId),
+        amount: parseFloat(amount),
+        expense_date: date,
+        bank_account_id: bankAccountId ? parseInt(bankAccountId) : null,
+        payment_mode: paymentMode,
+        notes: notes || "N/A",
+        shop_id: null
     };
+
+    console.log("Form data:", formData);
 
     const mainContent = document.getElementById("mainContent");
 
-    if (editingUserId) {
-        return showConfirm(
-            "Are you sure you want to update this user?",
+    if (editingExpenseId) {
+        const confirmed = await showConfirm(
+            "Are you sure you want to update this expense?",
             "warning"
-        ).then(confirmed => {
-            if (!confirmed) return;
+        );
 
-            return updateItem(userURLphp, editingUserId, formData).then(result => {
-                // Handle error response
-                if (result?.error) {
-                    let errorMessage = result.message || "Error updating user!";
+        if (!confirmed) return;
 
-                    // Check for specific database constraint violations
-                    if (result.detail) {
-                        if (result.detail.includes("Duplicate entry") && result.detail.includes("fk_users_shop_owner_link")) {
-                            errorMessage = "This shop already has a user assigned! Each shop can only have one user.";
-                        } else if (result.detail.includes("Duplicate entry")) {
-                            errorMessage = result.detail;
-                        }
-                    }
+        try {
+            const result = await updateItem(expenseURLphp, editingExpenseId, formData);
+            console.log("Update result:", result);
 
-                    showNotification(errorMessage, "error");
-                } else if (result) {
-                    showNotification("User updated successfully!", "success");
-                    closeExpanceForm();
-                    if (mainContent) {
-                        return loadExpanceData().then(() => {
-                            mainContent.innerHTML = generateTableHTML();
-                        });
-                    }
-                } else {
-                    showNotification("Error updating user!", "error");
+            if (result?.error) {
+                showNotification(result.message || "Error updating expense!", "error");
+            } else if (result) {
+                showNotification("Expense updated successfully!", "success");
+                closeExpenseForm();
+                await loadExpenseData();
+                if (mainContent) {
+                    mainContent.innerHTML = generateTableHTML();
                 }
-            }).catch(error => {
-                console.error("Update error:", error);
-                const errorMessage = error?.message || "Error updating user! Please try again.";
-                showNotification(errorMessage, "error");
-            });
-        });
+            } else {
+                showNotification("Error updating expense!", "error");
+            }
+        } catch (error) {
+            console.error("Update error:", error);
+            showNotification(error?.message || "Error updating expense!", "error");
+        }
     } else {
-        return showConfirm(
-            "Are you sure you want to add this user?",
+        const confirmed = await showConfirm(
+            "Are you sure you want to add this expense?",
             "warning"
-        ).then(confirmed => {
-            if (!confirmed) return;
+        );
 
-            return addItemToAPI(userURLphp, formData).then(result => {
-                // Handle error response
-                if (result?.error) {
-                    let errorMessage = result.message || "Error adding user!";
+        if (!confirmed) return;
 
-                    // Check for specific database constraint violations
-                    if (result.detail) {
-                        if (result.detail.includes("Duplicate entry") && result.detail.includes("fk_users_shop_owner_link")) {
-                            errorMessage = "This shop already has a user assigned! Each shop can only have one user.";
-                        } else if (result.detail.includes("Duplicate entry")) {
-                            errorMessage = result.detail;
-                        }
-                    }
+        try {
+            const result = await addItemToAPI(`${expenseURLphp}?user_id=${user_id}`, formData);
+            console.log("Add result:", result);
 
-                    showNotification(errorMessage, "error");
-                } else if (result) {
-                    showNotification("User added successfully!", "success");
-                    closeExpanceForm();
-
-                    if (mainContent) {
-                        return loadExpanceData().then(() => {
-                            mainContent.innerHTML = generateTableHTML();
-                        });
-                    }
-                } else {
-                    showNotification("Error adding user!", "error");
+            if (result?.status === "ok" || result?.success) {
+                showNotification("Expense added successfully!", "success");
+                closeExpenseForm();
+                await loadExpenseData();
+                if (mainContent) {
+                    mainContent.innerHTML = generateTableHTML();
                 }
-            }).catch(error => {
-                console.error("Add error:", error);
-                const errorMessage = error?.message || "Error adding user! Please try again.";
-                showNotification(errorMessage, "error");
-            });
-        });
+            } else {
+                showNotification(result?.message || "Error adding expense!", "error");
+            }
+        } catch (error) {
+            console.error("Add error:", error);
+            showNotification(error?.message || "Error adding expense!", "error");
+        }
     }
 }
 
 // ============================================
-// TOGGLE USER STATUS
+// PAYMENT MODE CHANGE HANDLER
 // ============================================
-function toggleExpanceStatus(id, currentStatus) {
-    return showConfirm(
-        `Are you sure you want to change this user's status to ${currentStatus === "active" ? "inactive" : "active"}?`,
-        "warning"
-    ).then(confirmed => {
-        if (!confirmed) return;
+function setupPaymentModeChangeHandler() {
+    const paymentModeSelect = document.getElementById("expensePaymentMode");
+    if (!paymentModeSelect) return;
 
-        const newStatus = currentStatus === "active" ? "inactive" : "active";
-        return updateItem(userURLphp, id, { status: newStatus }).then(result => {
-            if (result) {
-                const mainContent = document.getElementById("mainContent");
-                if (mainContent) {
-                    return loadExpanceData().then(() => {
-                        mainContent.innerHTML = generateTableHTML();
-                        showNotification(`User status changed to ${newStatus}!`, "success");
-                    });
-                }
-            } else {
-                showNotification("Error updating user status!", "error");
-            }
-        });
+    // Remove existing listeners by cloning
+    const newSelect = paymentModeSelect.cloneNode(true);
+    paymentModeSelect.parentNode.replaceChild(newSelect, paymentModeSelect);
+
+    newSelect.addEventListener("change", function () {
+        const selectedMode = this.value;
+        console.log("Payment mode changed to:", selectedMode);
+        populateBankAccountDropdown("", selectedMode);
     });
 }
 
 // Close modal when clicking outside
 window.addEventListener("click", function (event) {
-    const modal = document.getElementById("userFormModal");
+    const modal = document.getElementById("expenseFormModal");
     if (event.target === modal) {
-        closeExpanceForm();
+        closeExpenseForm();
     }
 });
 
 // ============================================
 // MAKE FUNCTIONS GLOBALLY ACCESSIBLE
 // ============================================
-window.deleteExpance = deleteExpance;
-window.editExpance = editExpance;
-window.toggleExpanceStatus = toggleExpanceStatus;
-window.openExpanceForm = openExpanceForm;
-window.closeExpanceForm = closeExpanceForm;
-window.submitExpanceForm = submitExpanceForm;
-window.changeExpancePage = changeExpancePage;
-window.changeExpancePerPage = changeExpancePerPage;
-window.showNotification = showNotification;
-window.generateTableHTML = generateTableHTML;
-window.showConfirm = showConfirm;
+window.editExpense = editExpense;
+window.openExpenseForm = openExpenseForm;
+window.closeExpenseForm = closeExpenseForm;
+window.submitExpenseForm = submitExpenseForm;
+window.changeExpensePage = changeExpensePage;
 
 // Setup ESC key handler for modal
 setupEscKeyHandler();

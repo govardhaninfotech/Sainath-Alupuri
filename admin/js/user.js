@@ -22,7 +22,7 @@ let userData = [];
 
 // Server-side pagination meta
 let currentUserPage = 1;   // current page (matches API "page")
-let userPerPage = 10;      // matches API "per_page"
+let userPerPage = 15;      // matches API "per_page"
 let userTotal = 0;         // API "total"
 let userTotalPages = 1;    // API "total_pages"
 
@@ -84,7 +84,7 @@ function generateTableHTML() {
                 <td>${user.email}</td>
                 <td>${user.mobile}</td>
                 <td>${user.shop_code}</td>
-                <td>${user.current_balance}</td>
+               <!-- <td>${user.current_balance}</td> -->
                 <td>${user.is_family_member}</td>
                 <td>
                     <button class="btn-icon btn-edit" onclick="editUser('${user.id}')" title="Edit">
@@ -110,8 +110,8 @@ function generateTableHTML() {
                             <th>Name</th>
                             <th>Email</th>
                             <th>Mobile</th>
-                            <th>Shop Code</th>
-                            <th>Balance</th>
+                            <th>Franchise Code</th>
+                           <!-- <th>Balance</th> -->
                             <th>Family Member?</th>
                             <th>Edit</th>
                         </tr>
@@ -165,23 +165,23 @@ function generateTableHTML() {
                               <input type="email" id="userEmail" required placeholder="Enter Email id">
                           </div>
                           <div class="form-group">
-                              <label for="userShopCode">Shop Code <span class="required">*</span></label>
-                              <input type="text" id="userShopCode" required placeholder="Enter shop code">
+                              <label for="userShopCode">Franchise Code <span class="required">*</span></label>
+                              <input type="text" id="userShopCode" required placeholder="Enter Franchise code">
                           </div>
                           </div>
                           
-                          <div class="form-row">
+                          <!-- <div class="form-row">
                           
                           
-                                                    <div class="form-group">
-                                                        <label for="userCreditLimit">Credit Limit</label>
-                                                        <input type="number" id="userCreditLimit" min="0" placeholder="Enter credit limit">
-                                                    </div>
+                            <div class="form-group">
+                                <label for="userCreditLimit">Credit Limit</label>
+                                <input type="number" id="userCreditLimit" min="0" placeholder="Enter credit limit">
+                            </div>
                           <div class="form-group">
-                          <label for="userCurrentBalance">Current Balance</label>
-                          <input type="number" id="userCurrentBalance" min="0" placeholder="Enter current balance">
-                          </div>
-                    </div>
+                            <label for="userCurrentBalance">Current Balance</label>
+                            <input type="number" id="userCurrentBalance" min="0" placeholder="Enter current balance">
+                          </div> 
+                    </div> -->
 
                     <div class="form-row">
 
@@ -191,7 +191,7 @@ function generateTableHTML() {
                                 id="userAddress"
                                 rows="2"
                                 placeholder="Enter address"
-                                style="resize: vertical;"
+                                style="resize: vertical; height: 100px;"
                             ></textarea>
                         </div>
                     </div>
@@ -349,8 +349,8 @@ function editUser(id) {
     document.getElementById("userEmail").value = item.email;
     document.getElementById("userMobile").value = item.mobile || "";
     document.getElementById("userShopCode").value = item.shop_code || "";
-    document.getElementById("userCreditLimit").value = item.credit_limit || 0;
-    document.getElementById("userCurrentBalance").value = item.current_balance || 0;
+    // document.getElementById("userCreditLimit").value = item.credit_limit || 0;
+    // document.getElementById("userCurrentBalance").value = item.current_balance || 0;
     document.getElementById("userAddress").value = item.address || "";
 
 
@@ -435,8 +435,8 @@ function submitUserForm(event) {
         email: document.getElementById("userEmail").value,
         mobile: document.getElementById("userMobile").value,
         shop_code: document.getElementById("userShopCode").value,
-        credit_limit: document.getElementById("userCreditLimit").value || 0,
-        current_balance: document.getElementById("userCurrentBalance").value || 0,
+        credit_limit:  0,
+        current_balance: 0,
         address: document.getElementById("userAddress").value || "",
         status: statusCheckbox.checked ? "active" : "inactive",
         is_family_member: isFamilyMember ? "True" : "False"

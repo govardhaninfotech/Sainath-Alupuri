@@ -7,19 +7,30 @@ import { rendershopTable } from "./shops.js";
 import { renderHomePage, initHomePage } from "./home.js";
 import { renderExpenseCategoryTable } from "./expense_category.js";
 import { renderInventoryExpancesPage } from "./expances.js";
+import { renderStaffExpensePage } from "./staffExpense.js";
+import { renderProfilePage } from "./profile.js";
 
 // 🔹 NEW: Inventory module imports
 import { renderInventoryStaffPage, initInventoryStaffPage } from "./inventory.js";
 import { renderInventoryOrdersPage } from "./inventory_orders.js";
-// import { renderStaffAttendancePage } from "./inventory_attendance.js";
+import { renderStaffAttendancePage } from "./inventory_attendance.js";
+import { renderKitchenSummary } from "./kitchenSummary.js";
+import { initClientMothlyReportCard, initClientMonthDropdown } from "./clientMonthlyReports.js";
+import { initStaffAttendanceReportsCard, initStaffMonthDropdown } from "./staffAttendanceReports.js";
+import { initStaffExpMothlyReportCard, initStaffExpMonthDropdown } from "./staffExpancesReport.js";
+import { initGeneralMothlyReportCard, initGeneralMonthDropdown } from "./General_Expenses_Report.js";
+import { renderCurrentStockPage } from "./currentStock.js";
+import { renderCurrentStockMovementPage } from "./stockMovement.js";
+import { renderStockAdjustmentPage } from "./stockAdjustment.js";
+import { initClientDuesReportCard, initClientDuesDropdown } from "./Billing/clientDue.js";
+import { initPaymentHistoryCard, initClientDropdown } from "./Billing/payment_history.js";
+import { initPaymentHistoryCard as initPaymentCard, initClientDropdown as initPaymentClientDropdown } from "./Billing/payment.js";
 
 // GLOBAL VARIABLES
 // ============================================
 let currentUser = null;
 let currentPage = "home";
 let sidebarOpen = false;
-
-
 
 currentUser = JSON.parse(localStorage.getItem("rememberedUser") || sessionStorage.getItem("rememberedUser") || "null");
 const user_id = currentUser?.id || "";
@@ -28,16 +39,15 @@ if (!user_id) {
     localStorage.removeItem("rememberedUser");
     window.location.replace("../index.html");
 }
+
 // ============================================
 // INITIALIZATION - Runs when page loads
 // ============================================
 document.addEventListener("DOMContentLoaded", function () {
     console.log("📌 Dashboard DOMContentLoaded");
 
-    // Check localStorage first (if remember me was checked)
     let userData = localStorage.getItem("rememberedUser");
 
-    // If not in localStorage, check sessionStorage (if remember me was NOT checked)
     if (!userData) {
         userData = sessionStorage.getItem("rememberedUser");
     }
@@ -51,13 +61,11 @@ document.addEventListener("DOMContentLoaded", function () {
         window.location.href = "../index.html";
     }
 
-    // Hook close button
     const sidebarCloseBtn = document.getElementById("sidebarCloseBtn");
     if (sidebarCloseBtn) {
         sidebarCloseBtn.addEventListener("click", closeSidebar);
     }
 
-    // Initialize sidebar state based on screen size
     initializeSidebarState();
 });
 
@@ -73,7 +81,6 @@ function initializeSidebarState() {
 
     if (!sidebar || !overlay || !mainContent) return;
 
-    // Always start with sidebar closed
     sidebarOpen = false;
     sidebar.classList.remove("open");
     overlay.classList.remove("active");
@@ -84,22 +91,82 @@ function initializeSidebarState() {
 // INITIALIZE DASHBOARD
 // ============================================
 function initializeDashboard() {
+    // Validate user profile and set avatar
     const userAvatar = document.getElementById("userAvatar");
-    if (userAvatar && currentUser?.name) {
-        userAvatar.textContent = currentUser.name.charAt(0).toUpperCase();
+    if (userAvatar) {
+        if (currentUser && (currentUser.name || currentUser.username || currentUser.mobile)) {
+            // Try to get name from different possible fields
+            const userName = currentUser.name || currentUser.username || currentUser.mobile || "U";
+            const firstLetter = String(userName).charAt(0).toUpperCase();
+            userAvatar.textContent = firstLetter;
+            userAvatar.title = userName; // Show full name on hover
+            console.log("✅ User avatar set:", firstLetter, "for user:", userName);
+        } else {
+            console.warn("⚠️ No valid user name found");
+            userAvatar.textContent = "U";
+        }
+    } else {
+        console.error("❌ User avatar element not found");
     }
 
-    // ✅ Try to restore last opened page
-    const savedPage = localStorage.getItem("lastPage") || "home";
-    console.log("🔁 Restoring last page:", savedPage);
-    navigateTo(savedPage);
+    // Load home page on first login
+    // Check URL parameters first
+    const urlParams = new URLSearchParams(window.location.search);
+    const pageParam = urlParams.get('page');
+
+    // If page parameter exists in URL, use it (first login with ?page=home)
+    // Otherwise use saved page from localStorage (reload behavior)
+    const pageToLoad = pageParam || localStorage.getItem("lastPage") || "home";
+    console.log("🔁 Loading page:", pageToLoad);
+
+    // Remove the URL parameter after first use so subsequent reloads use lastPage
+    if (pageParam) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    navigateTo(pageToLoad);
 }
+
+// ============================================
+// LOADING INDICATOR
+// ============================================
+function showLoadingSpinner() {
+    const mainContent = document.getElementById("mainContent");
+    if (mainContent) {
+        mainContent.innerHTML = `
+            <div style="display: flex; justify-content: center; align-items: center; height: 60vh;">
+                <div style="text-align: center;">
+                    <div style="
+                        width: 50px;
+                        height: 50px;
+                        border: 4px solid #f3f4f6;
+                        border-top: 4px solid #667eea;
+                        border-radius: 50%;
+                        animation: spin 1s linear infinite;
+                        margin: 0 auto 20px;
+                    "></div>
+                    <p style="color: #6b7280; font-size: 16px;">Loading...</p>
+                    <style>
+                        @keyframes spin {
+                            0% { transform: rotate(0deg); }
+                            100% { transform: rotate(360deg); }
+                        }
+                    </style>
+                </div>
+            </div>
+        `;
+    }
+}
+
+function hideLoadingSpinner() {
+    // Spinner is replaced by actual content
+}
+
 
 // ============================================
 // SIDEBAR FUNCTIONS
 // ============================================
 
-// Toggle sidebar open/close
 export function toggleSidebar() {
     sidebarOpen = !sidebarOpen;
 
@@ -121,7 +188,6 @@ export function toggleSidebar() {
     }
 }
 
-// Close sidebar
 function closeSidebar() {
     sidebarOpen = false;
 
@@ -134,57 +200,171 @@ function closeSidebar() {
     if (mainContent) mainContent.classList.remove("sidebar-open");
 }
 
-// MASTER submenu toggle
+// ============================================
+// HELPER FUNCTION TO CLOSE ALL MENUS
+// ============================================
+function closeAllMenus() {
+    const allMenus = [
+        { menu: document.getElementById("masterSubmenu"), btn: "toggleSubmenu", type: "master" },
+        { menu: document.getElementById("inventorySubmenu"), btn: "toggleInventorySubmenu", type: "inventory" },
+        { menu: document.getElementById("stockSubmenu"), btn: "toggleStockSubmenu", type: "stock" },
+        { menu: document.getElementById("reportSubMenu"), btn: "toggleReportSubmenu", type: "report" },
+        { menu: document.getElementById("billingSubMenu"), btn: "toggleBillingSubmenu", type: "billing" },
+        { menu: document.getElementById("paymentSubmenu"), btn: "togglePaymentSubmenu", type: "payment" }
+    ];
+
+    allMenus.forEach(({ menu, type }) => {
+        if (menu && menu.classList.contains("open")) {
+            menu.classList.remove("open");
+
+            // Find and reset chevron
+            const btn = menu.previousElementSibling;
+            if (btn) {
+                const chevron = btn.querySelector(".chevron");
+                if (chevron) chevron.classList.remove("down");
+                // Remove highlight from menu button
+                btn.classList.remove("active");
+            }
+        }
+    });
+}
+
+// ============================================
+// MENU TOGGLE FUNCTIONS
+// ============================================
+
+function toggleStockSubmenu() {
+    console.log("📦 Stock submenu toggle");
+
+    const stockSubmenu = document.getElementById("stockSubmenu");
+    const isCurrentlyOpen = stockSubmenu.classList.contains("open");
+
+    // Toggle this submenu
+    stockSubmenu.classList.toggle("open");
+
+    const btn = stockSubmenu.previousElementSibling;
+    if (btn) {
+        const chevron = btn?.querySelector(".chevron");
+        chevron?.classList.toggle("down");
+
+        // Highlight when open, remove highlight when closed
+        if (isCurrentlyOpen) {
+            btn.classList.remove("active");
+        } else {
+            btn.classList.add("active");
+        }
+    }
+}
+
 function toggleSubmenu() {
     console.log("🔽 Master submenu toggle clicked");
 
     const masterMenu = document.getElementById("masterSubmenu");
-    const inventoryMenu = document.getElementById("inventorySubmenu");
+    const isCurrentlyOpen = masterMenu.classList.contains("open");
 
-    // Close inventory submenu when master opens
-    if (inventoryMenu.classList.contains("open")) {
-        inventoryMenu.classList.remove("open");
-        const invBtn = inventoryMenu.previousElementSibling;
-        if (invBtn) {
-            const chev = invBtn.querySelector(".chevron");
-            chev?.classList.remove("down");
+    // Close all other main menus
+    closeAllMenus();
+
+    // Toggle master menu
+    if (!isCurrentlyOpen) {
+        masterMenu.classList.add("open");
+        const masterBtn = masterMenu.previousElementSibling;
+        if (masterBtn) {
+            const chevron = masterBtn.querySelector(".chevron");
+            chevron?.classList.add("down");
+            // Highlight the active menu button
+            masterBtn.classList.add("active");
         }
-    }
-
-    // Toggle master submenu
-    masterMenu.classList.toggle("open");
-
-    const masterBtn = masterMenu.previousElementSibling;
-    if (masterBtn) {
-        const chevron = masterBtn.querySelector(".chevron");
-        chevron?.classList.toggle("down");
     }
 }
 
-// 🔹 NEW: INVENTORY submenu toggle
 function toggleInventorySubmenu() {
     console.log("🔽 Inventory submenu toggle clicked");
 
     const inventoryMenu = document.getElementById("inventorySubmenu");
-    const masterMenu = document.getElementById("masterSubmenu");
+    const isCurrentlyOpen = inventoryMenu.classList.contains("open");
 
-    // Close master submenu when inventory opens
-    if (masterMenu.classList.contains("open")) {
-        masterMenu.classList.remove("open");
-        const masterBtn = masterMenu.previousElementSibling;
-        if (masterBtn) {
-            const chev = masterBtn.querySelector(".chevron");
-            chev?.classList.remove("down");
+    // Close all other main menus
+    closeAllMenus();
+
+    // Toggle inventory menu
+    if (!isCurrentlyOpen) {
+        inventoryMenu.classList.add("open");
+        const inventoryBtn = inventoryMenu.previousElementSibling;
+        if (inventoryBtn) {
+            const chevron = inventoryBtn.querySelector(".chevron");
+            chevron?.classList.add("down");
+            // Highlight the active menu button
+            inventoryBtn.classList.add("active");
         }
     }
+}
 
-    // Toggle inventory submenu
-    inventoryMenu.classList.toggle("open");
+function toggleBillingSubmenu() {
+    console.log("🔽 Billing submenu toggle clicked");
 
-    const inventoryBtn = inventoryMenu.previousElementSibling;
-    if (inventoryBtn) {
-        const chevron = inventoryBtn.querySelector(".chevron");
+    const billingSubmenu = document.getElementById("billingSubMenu");
+    const isCurrentlyOpen = billingSubmenu.classList.contains("open");
+
+    // Close all other main menus
+    closeAllMenus();
+
+    // Toggle billing menu
+    if (!isCurrentlyOpen) {
+        billingSubmenu.classList.add("open");
+        const billingBtn = billingSubmenu.previousElementSibling;
+        if (billingBtn) {
+            const chevron = billingBtn.querySelector(".chevron");
+            chevron?.classList.add("down");
+            // Highlight the active menu button
+            billingBtn.classList.add("active");
+        }
+    }
+}
+
+function toggleReportSubmenu() {
+    console.log("🔽 Report submenu toggle clicked");
+
+    const reportSubMenu = document.getElementById("reportSubMenu");
+    const isCurrentlyOpen = reportSubMenu.classList.contains("open");
+
+    // Close all other main menus
+    closeAllMenus();
+
+    // Toggle report menu
+    if (!isCurrentlyOpen) {
+        reportSubMenu.classList.add("open");
+        const reportBtn = reportSubMenu.previousElementSibling;
+        if (reportBtn) {
+            const chevron = reportBtn.querySelector(".chevron");
+            chevron?.classList.add("down");
+            // Highlight the active menu button
+            reportBtn.classList.add("active");
+        }
+    }
+}
+
+// 🔹 NEW: Payment submenu toggle
+function togglePaymentSubmenu() {
+    console.log("💳 Payment submenu toggle");
+
+    const paymentSubmenu = document.getElementById("paymentSubmenu");
+    const isCurrentlyOpen = paymentSubmenu.classList.contains("open");
+
+    // Toggle this submenu (don't close parent billing menu)
+    paymentSubmenu.classList.toggle("open");
+
+    const btn = paymentSubmenu.previousElementSibling;
+    if (btn) {
+        const chevron = btn?.querySelector(".chevron");
         chevron?.classList.toggle("down");
+
+        // Highlight when open, remove highlight when closed
+        if (isCurrentlyOpen) {
+            btn.classList.remove("active");
+        } else {
+            btn.classList.add("active");
+        }
     }
 }
 
@@ -234,10 +414,8 @@ async function navigateTo(page) {
     console.log(`➡️ navigateTo("${page}")`);
     currentPage = page;
 
-    // ✅ store this page so after reload we come back here
     localStorage.setItem("lastPage", page);
 
-    // Clear active classes
     const menuItems = document.querySelectorAll(".menu-item");
     menuItems.forEach((item) => item.classList.remove("active"));
 
@@ -248,284 +426,153 @@ async function navigateTo(page) {
         case "home":
             mainContent.innerHTML = renderHomePage();
             initHomePage();
-            document
-                .querySelector('.menu-item[onclick*="home"]')
-                ?.classList.add("active");
+            document.querySelector('.menu-item[onclick*="home"]')?.classList.add("active");
             break;
-
 
         case "items":
             mainContent.innerHTML = await renderItemsTable();
-            document
-                .querySelector('.submenu-item[onclick*="items"]')
-                ?.classList.add("active");
+            document.querySelector('.submenu-item[onclick*="items"]')?.classList.add("active");
             break;
-
-        // case "client":
-        //     mainContent.innerHTML = await renderclientTable();
-        //     document
-        //         .querySelector('.submenu-item[onclick*="client"]')
-        //         ?.classList.add("active");
-        //     break;
 
         case "user":
             if (typeof renderuserTable === "function") {
                 mainContent.innerHTML = await renderuserTable();
             }
-            document
-                .querySelector('.submenu-item[onclick*="user"]')
-                ?.classList.add("active");
+            document.querySelector('.submenu-item[onclick*="user"]')?.classList.add("active");
             break;
 
         case "shop":
             if (typeof rendershopTable === "function") {
                 mainContent.innerHTML = await rendershopTable();
             }
-            document
-                .querySelector('.submenu-item[onclick*="shop"]')
-                ?.classList.add("active");
+            document.querySelector('.submenu-item[onclick*="shop"]')?.classList.add("active");
+            break;
+
+        case "inventory_staff_attendance":
+            // showLoadingSpinner();
+            if (typeof renderStaffAttendancePage === "function") {
+                mainContent.innerHTML = await renderStaffAttendancePage();
+            }
+            document.querySelector('.submenu-item[onclick*="Staff_Attendance"]')?.classList.add("active");
+            break;
+
+        case "inventory_staff":
+            mainContent.innerHTML = await renderInventoryStaffPage();
+            document.querySelector('.submenu-item[onclick*="inventory_staff"]')?.classList.add("active");
+            initInventoryStaffPage();
             break;
 
         case "bank":
             mainContent.innerHTML = await renderbankTable();
-            document
-                .querySelector('.submenu-item[onclick*="bank"]')
-                ?.classList.add("active");
+            document.querySelector('.submenu-item[onclick*="bank"]')?.classList.add("active");
             break;
 
         case "expense_category":
             mainContent.innerHTML = await renderExpenseCategoryTable();
-            document
-                .querySelector('.submenu-item[onclick*="expense_category"]')
-                ?.classList.add("active");
+            document.querySelector('.submenu-item[onclick*="expense_category"]')?.classList.add("active");
             break;
-
-        // case "row_matireal":
-        //     mainContent.innerHTML = getRowMatirealContent();
-        //     document
-        //         .querySelector('.submenu-item[onclick*="row_matireal"]')
-        //         ?.classList.add("active");
-        //     break;
 
         case "staff":
             mainContent.innerHTML = await renderstaffTable();
-            document
-                .querySelector('.submenu-item[onclick*="staff"]')
-                ?.classList.add("active");
+            document.querySelector('.submenu-item[onclick*="staff"]')?.classList.add("active");
             break;
 
-        // 🔹 OLD Inventory page (can keep for future)
-        case "inventory":
-            mainContent.innerHTML = getInventoryContent();
-            document
-                .querySelector('.menu-item[onclick*="inventory"]')
-                ?.classList.add("active");
+        case "staff_expense":
+            mainContent.innerHTML = await renderStaffExpensePage();
+            document.querySelector('.submenu-item[onclick*="staff_expense"]')?.classList.add("active");
             break;
 
-        // 🔹 NEW: Inventory → Staff page
-        case "inventory_staff":
-            mainContent.innerHTML = await renderInventoryStaffPage();
-            document
-                .querySelector('.submenu-item[onclick*="inventory_staff"]')
-                ?.classList.add("active");
-            // After HTML inject, hook up events
-            initInventoryStaffPage();
-            break;
-
-        // 🔹 NEW: Inventory → Orders
         case "inventory_orders":
             mainContent.innerHTML = await renderInventoryOrdersPage();
-            document
-                .querySelector('.submenu-item[onclick*="inventory_orders"]')
-                ?.classList.add("active");
-
+            document.querySelector('.submenu-item[onclick*="inventory_orders"]')?.classList.add("active");
             break;
+
         case "expances":
             mainContent.innerHTML = await renderInventoryExpancesPage();
-            document
-                .querySelector('.submenu-item[onclick*="inventory_orders"]')
-                ?.classList.add("active");
-            // After HTML inject, hook up events
-            // initInventoryOrdersPage();
+            document.querySelector('.submenu-item[onclick*="expances"]')?.classList.add("active");
             break;
 
-        // 🔹 NEW: Inventory → Staff Attendance
-        // case "inventory_staff_attendance":
-        //     // Load the external HTML file
-        //     try {
-        //         mainContent.innerHTML = await renderStaffAttendancePage();
-        //         document
-        //             .querySelector('.submenu-item[onclick*="inventory_staff_attendance"]')
-        //             ?.classList.add("active");
-        //         // After HTML inject, hook up events
-        //         initInventoryStaffAttendancePage();
-        //         break;
+        case "kitchenSummary":
+            mainContent.innerHTML = await renderKitchenSummary();
+            document.querySelector('.submenu-item[onclick*="kitchenSummary"]')?.classList.add("active");
+            break;
 
-        //     } catch (err) {
-        //         console.error("Error loading Staff Attendance page:", err);
-        //         mainContent.innerHTML = "<p>Error loading page</p>";
-        //     }
+        case "clientMonthlyReport":
+            // console.log(400);
+            // mainContent.innerHTML = "";
+            mainContent.innerHTML = await initClientMothlyReportCard();
+            document.querySelector('.submenu-item[onclick*="clientMonthlyReport"]')?.classList.add("active");
+            initClientMonthDropdown();
+            break;
+
+        case "staffAttendanceReports":
+            mainContent.innerHTML = await initStaffAttendanceReportsCard();
+            document.querySelector('.submenu-item[onclick*="staffAttendanceReports"]')?.classList.add("active");
+            initStaffMonthDropdown();
+            break;
+
+        case "staffExpReports":
+            mainContent.innerHTML = await initStaffExpMothlyReportCard();
+            document.querySelector('.submenu-item[onclick*="staffExpReports"]')?.classList.add("active");
+            initStaffExpMonthDropdown();
+            break;
+
+        case "expancesReport":
+            mainContent.innerHTML = await initGeneralMothlyReportCard();
+            document.querySelector('.submenu-item[onclick*="expancesReport"]')?.classList.add("active");
+            initGeneralMonthDropdown();
+            break;
+
+        case "currentStock":
+            mainContent.innerHTML = await renderCurrentStockPage();
+            document.querySelector('.submenu-item[onclick*="currentStock"]')?.classList.add("active");
+            // initMonthDropdown();
+            break;
+
+
+        case "stockMovement":
+            mainContent.innerHTML = await renderCurrentStockMovementPage();
+            document.querySelector('.submenu-item[onclick*="stockMovement"]')?.classList.add("active");
+            // initMonthDropdown();
+            break;
+
+        case "stockAdjustment":
+            mainContent.innerHTML = await renderStockAdjustmentPage();
+            document.querySelector('.submenu-item[onclick*="stockMovement"]')?.classList.add("active");
+            break;
+
+        case "clientDues":
+            mainContent.innerHTML = await initClientDuesReportCard();
+            document.querySelector('.submenu-item[onclick*="stockMovement"]')?.classList.add("active");
+            initClientDuesDropdown();
+            break;
+
+        // 🔹 NEW: Payment pages
+        case "addPayment":
+            mainContent.innerHTML = await initPaymentCard();
+            document.querySelector('.submenu-item[onclick*="addPayment"]')?.classList.add("active");
+            initPaymentClientDropdown();
+            break;
+
+        case "paymentHistory":
+            mainContent.innerHTML = await initPaymentHistoryCard();
+            document.querySelector('.submenu-item[onclick*="stockMovement"]')?.classList.add("active");
+            initClientDropdown();
+            break;
 
         case "profile":
-            mainContent.innerHTML = getProfileContent();
+            mainContent.innerHTML = renderProfilePage();
             break;
-
-        // case "inventory_staff_attendance":
-        //     // Load the external HTML file
-        //     try {
-        //         const response = await fetch("inventory_staff_attendance.html");
-        //         const html = await response.text();
-        //         mainContent.innerHTML = html;
-        //         document
-        //             .querySelector('.submenu-item[onclick*="inventory_staff_attendance"]')
-        //             ?.classList.add("active");
-        //         // Dynamic import and initialize the JS module
-        //         const module = await import("./inventory_attendance.js");
-        //     } catch (err) {
-        //         console.error("Error loading Staff Attendance page:", err);
-        //         mainContent.innerHTML = "<p>Error loading page</p>";
-        //     }
-        //     break;
-
     }
 
-    // ALWAYS close sidebar after navigation (on all screen sizes)
     closeSidebar();
 
-    // Close user dropdown
     const dropdown = document.getElementById("userDropdown");
     if (dropdown) dropdown.classList.add("hidden");
 }
 
-// ============================================
-// CONTENT TEMPLATES
-// ============================================
-
-function getHomeContent() {
-    return `
-            <div class="content-card">
-                <h2>Welcome to Dashboard</h2>
-                <p>Hello, ${currentUser.name}! This is your home page.</p>
-            </div>
-
-            <div class="stats-grid">
-                <div class="stat-card blue">
-                    <h3>Total Users</h3>
-                    <div class="stat-value">1,234</div>
-                </div>
-                <div class="stat-card green">
-                    <h3>Active Sessions</h3>
-                    <div class="stat-value">89</div>
-                </div>
-                <div class="stat-card purple">
-                    <h3>Total Revenue</h3>
-                    <div class="stat-value">$45,678</div>
-                </div>
-            </div>
-        `;
-}
-
-function getRowMatirealContent() {
-    return `
-            <div class="content-card">
-                <h2>Raw Material</h2>
-                <p style="margin-bottom: 20px;">
-                    This is the Raw Material page. You can configure it later with real data.
-                </p>
-            </div>
-        `;
-}
-
-function getInventoryContent() {
-    // Old generic inventory placeholder (can be removed later)
-    return `
-            <div class="content-card">
-                <h2>Inventory Management</h2>
-                <p style="margin-bottom: 20px;">Manage your inventory items here.</p>
-                
-                <div style="overflow-x: auto;">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Item Name</th>
-                                <th>SKU</th>
-                                <th>Quantity</th>
-                                <th>Price</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>Product A</td>
-                                <td>SKU-001</td>
-                                <td>150</td>
-                                <td>$25.99</td>
-                                <td><span class="badge success">In Stock</span></td>
-                            </tr>
-                            <tr>
-                                <td>Product B</td>
-                                <td>SKU-002</td>
-                                <td>5</td>
-                                <td>$45.50</td>
-                                <td><span class="badge warning">Low Stock</span></td>
-                            </tr>
-                            <tr>
-                                <td>Product C</td>
-                                <td>SKU-003</td>
-                                <td>200</td>
-                                <td>$15.00</td>
-                                <td><span class="badge success">In Stock</span></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        `;
-}
-
-
-
 export function getProfileContent() {
-    return `
-            <div class="content-card">
-                <h2>User Profile</h2>
-                
-                <div class="profile-header">
-                    <div class="profile-avatar">
-                        ${currentUser.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div class="profile-info">
-                        <h3>${currentUser.name}</h3>
-                        <p>${currentUser.email}</p>
-                    </div>
-                </div>
-
-                <div style="margin-top: 30px;">
-                    <div class="form-group">
-                        <label>Full Name</label>
-                        <input type="text" value="${currentUser.name}" readonly style="background: #f5f5f5;">
-                    </div>
-
-                    <div class="form-group">
-                        <label>Email Address</label>
-                        <input type="email" value="${currentUser.email}" readonly style="background: #f5f5f5;">
-                    </div>
-
-                    <div class="form-group">
-                        <label>User ID</label>
-                        <input type="text" value="${currentUser.id}" readonly style="background: #f5f5f5;">
-                    </div>
-
-                    <div style="margin-top: 30px; padding: 16px; background: #f0f9ff; border-radius: 8px; border-left: 4px solid #667eea;">
-                        <p style="color: #1e40af; font-weight: 500; margin-bottom: 8px;">Account Information</p>
-                        <p style="color: #666; font-size: 14px;">
-                            Your account is active and all features are enabled. 
-                            For any account-related queries, please contact support.
-                        </p>
-                    </div>
-                </div>
-            </div>
-        `;
+    return renderProfilePage();
 }
 
 // ============================================
@@ -534,21 +581,21 @@ export function getProfileContent() {
 window.toggleSidebar = toggleSidebar;
 window.closeSidebar = closeSidebar;
 window.toggleSubmenu = toggleSubmenu;
-window.toggleInventorySubmenu = toggleInventorySubmenu; // 🔹 NEW
+window.toggleInventorySubmenu = toggleInventorySubmenu;
+window.toggleReportSubmenu = toggleReportSubmenu;
+window.toggleBillingSubmenu = toggleBillingSubmenu;
+window.togglePaymentSubmenu = togglePaymentSubmenu;
 window.toggleUserMenu = toggleUserMenu;
 window.logout = logout;
 window.navigateTo = navigateTo;
 window.getProfileContent = getProfileContent;
+window.toggleStockSubmenu = toggleStockSubmenu;
 
 // ============================================
 // RESPONSIVE HANDLING
 // ============================================
 window.addEventListener("resize", function () {
-    // If sidebar is open and user resizes, keep the current state
-    // No automatic adjustments based on screen size
     const mainContent = document.getElementById("mainContent");
-
-    // Remove margin class on resize to prevent layout issues
     if (mainContent && !sidebarOpen) {
         mainContent.classList.remove("sidebar-open");
     }

@@ -1,5 +1,5 @@
 // ============================================
-// ORDERS PAGE - WITH VIEW ORDER DETAILS
+// ORDERS PAGE - WITH DATE RANGE FILTER
 // ============================================
 
 import { ordersURLphp, itemURLphp, orderItemsURLphp } from "../apis/api.js";
@@ -28,10 +28,11 @@ let orderItems = [];
 
 // Server-side pagination meta
 let currentstaffPage = 1;
-let staffPerPage = 10;
+let staffPerPage = 15;
 let staffTotal = 0;
 let staffTotalPages = 1;
-let currentDate = null
+let currentStartDate = null;
+let currentEndDate = null;
 let editingItemId = null;
 
 // EXPENSE MANAGEMENT STATE
@@ -48,28 +49,34 @@ if (!user_id) {
 }
 
 // ============================================
-// LOAD ORDER DATA FROM API (SERVER PAGINATION)
+// LOAD ORDER DATA FROM API (WITH DATE RANGE)
 // ============================================
 function loadorderData() {
-    var date = "";
-    const dateEle = document.querySelector("#btnDate");
-    if (dateEle == null) {
-        date = new Date().toISOString().split("T")[0];
+    let startDate = "";
+    let endDate = "";
+    
+    const startDateEle = document.querySelector("#startDate");
+    const endDateEle = document.querySelector("#endDate");
+    
+    if (startDateEle == null || endDateEle == null) {
+        // Default to today if elements don't exist
+        const today = new Date().toISOString().split("T")[0];
+        startDate = today;
+        endDate = today;
     } else {
-        date = dateEle.value || new Date().toISOString().split("T")[0];
+        startDate = startDateEle.value || new Date().toISOString().split("T")[0];
+        endDate = endDateEle.value || new Date().toISOString().split("T")[0];
     }
-    console.log(date);
+    
+    // Validate date range
+    if (new Date(startDate) > new Date(endDate)) {
+        showNotification("Start date cannot be after end date!", "error");
+        return Promise.resolve({ orders: [], total: 0 });
+    }
+    
+    console.log("Loading orders from:", startDate, "to:", endDate);
 
-    const regex = /^\d{4}-\d{2}-\d{2}$/;
-
-    // if (!regex.test(date)) {
-    //     console.log("Invalid date format. Expected YYYY-MM-DD.");
-    //     date = new Date().toISOString().split("T")[0];
-    // } else {
-    //     console.log("Format valid:", date);
-    // }
-
-    const url = `${ordersURLphp}?user_id=${user_id}&date=${date}`;
+    const url = `${ordersURLphp}?user_id=${user_id}&start_date=${startDate}&end_date=${endDate}`;
     console.log("Loading orders from URL:", url);
 
     return getItemsData(url).then(data => {
@@ -164,10 +171,10 @@ function displayOrderDetailsModal(order, orderItemsList) {
                                         <span class="inv-status-badge inv-status-${order.status.toLowerCase()}">${order.status.toUpperCase()}</span>
                                     </span>
                                 </div>
-                                <div class="info-item">
+                               <!-- <div class="info-item">
                                     <span class="info-label">Delivery Type</span>
                                     <span class="info-value">${order.delivery_type === 'urgent' ? 'Same Day Delivery' : 'Next Day Delivery'}</span>
-                                </div>
+                                </div> -->
                                 <div class="info-item">
                                     <span class="info-label">Total Amount</span>
                                     <span class="info-value" style="font-weight: 700; color: #667eea; font-size: 16px;">₹${parseFloat(order.total_amount).toFixed(2)}</span>
@@ -277,6 +284,56 @@ function formatDateTime(dateString) {
 }
 
 // ============================================
+// VALIDATE DATE RANGE
+// ============================================
+function validateDateRange() {
+    const startDateEle = document.getElementById("startDate");
+    const endDateEle = document.getElementById("endDate");
+    
+    if (!startDateEle || !endDateEle) {
+        return false;
+    }
+    
+    const startDate = startDateEle.value;
+    const endDate = endDateEle.value;
+    
+    // Validation 1: Check if both dates are selected
+    if (!startDate || !endDate) {
+        showNotification("Please select both start and end dates!", "error");
+        return false;
+    }
+    
+    // Validation 2: Check if start date is before end date
+    const startDateObj = new Date(startDate);
+    const endDateObj = new Date(endDate);
+    
+    if (startDateObj > endDateObj) {
+        showNotification("Start date cannot be after end date. Please correct the date range.", "error");
+        // Reset end date to start date
+        endDateEle.value = startDate;
+        return false;
+    }
+    
+    // Validation 3: Check if date range is too large (max 90 days)
+    const daysDiff = Math.ceil((endDateObj - startDateObj) / (1000 * 60 * 60 * 24));
+    if (daysDiff > 90) {
+        showNotification("Date range cannot exceed 90 days! Please select a smaller range.", "warning");
+        return false;
+    }
+    
+    // Validation 4: Prevent selecting dates in the future
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (endDateObj > today) {
+        showNotification("End date cannot be in the future!", "error");
+        endDateEle.value = today.toISOString().split('T')[0];
+        return false;
+    }
+    
+    return true;
+}
+
+// ============================================
 // FORM FUNCTIONS
 // ============================================
 export function openorderform() {
@@ -301,11 +358,7 @@ export function openorderform() {
     totalAmountInput.value = "0.00";
     totalAmountInput.setAttribute('disabled', 'true');
 
-    // Set delivery type checkbox to checked (Same Day Delivery)
-    const deliveryCheckbox = document.getElementById("stafftatus");
-    const statusText = document.getElementById("statusText");
-    deliveryCheckbox.checked = true;
-    statusText.textContent = "Same Day Delivery";
+ 
 
     const modal = document.getElementById("orderFormModal");
     modal.style.display = "flex";
@@ -340,10 +393,10 @@ function generateTableHTML() {
     if (orderData.length === 0) {
         tableRows = `
             <tr>
-                <td colspan="6" style="text-align: center; padding: 40px; color: #9ca3af;">
+                <td colspan="7" style="text-align: center; padding: 40px; color: #9ca3af;">
                     <div style="font-size: 48px; margin-bottom: 16px;">📦</div>
-                    <div style="font-size: 16px; font-weight: 600; color: #6b7280;">No orders found for this date</div>
-                    <div style="font-size: 14px; color: #9ca3af; margin-top: 8px;">Try selecting a different date or add a new order</div>
+                    <div style="font-size: 16px; font-weight: 600; color: #6b7280;">No orders found for this date range</div>
+                    <div style="font-size: 14px; color: #9ca3af; margin-top: 8px;">Try selecting a different date range or add a new order</div>
                 </td>
             </tr>
         `;
@@ -355,6 +408,8 @@ function generateTableHTML() {
             tableRows += `
                 <tr>
                     <td><a href="javascript:void(0)" class="order-link" onclick="viewOrderDetails(${order.id})">${serialNo}</a></td>
+                    <td><a href="javascript:void(0)" class="order-link" onclick="viewOrderDetails(${order.id})">${order.order_no}</a></td>
+                    <td>${formatDate(order.expected_delivery)}</td>
                     <td>₹${parseFloat(order.total_amount).toFixed(2)}</td>
                     <td>${order.delivery_type === 'urgent' ? 'Same Day' : 'Next Day'}</td>
                     <td><span class="inv-status-badge inv-status-${order.status.toLowerCase()}">${order.status.toUpperCase()}</span></td>
@@ -363,21 +418,29 @@ function generateTableHTML() {
             `;
         }
     }
-    console.log(currentDate);
-    if (currentDate == null) {
-        console.log(currentDate);
-        currentDate = new Date().toISOString().split("T")[0];
-
+    
+    // Set default dates if not set
+    if (currentStartDate == null || currentEndDate == null) {
+        const today = new Date().toISOString().split("T")[0];
+        currentStartDate = today;
+        currentEndDate = today;
     }
-
 
     return `
         <div class="content-card">
             <div class="staff-header">
                 <h2>Order Management</h2>
-                <input type="date" id="btnDate" value="${currentDate}" onchange="refreshOrdersTable()"/>
-                <input type="date" id="btnDate" value="${currentDate}" onchange="refreshOrdersTable()"/>
-                <button class="btn-add" onclick="openorderform()">Add Order</button>
+                <div class="date-range-container">
+                    <div class="date-input-group">
+                        <label for="startDate">From Date:</label>
+                        <input type="date" id="startDate" value="${currentStartDate}" onchange="validateAndRefreshOrders()" max="" required/>
+                    </div>
+                    <div class="date-input-group">
+                        <label for="endDate">To Date:</label>
+                        <input type="date" id="endDate" value="${currentEndDate}" onchange="validateAndRefreshOrders()" max="" required/>
+                    </div>
+                </div>
+                <button class="btn-add" onclick="openorderform()">+ Add Order</button>
             </div>
             
             <div class="table-container">
@@ -385,7 +448,8 @@ function generateTableHTML() {
                     <thead>
                         <tr>
                             <th>Sr No</th>
-                            <!-- <th>Order No</th> -->
+                            <th>Order No</th>
+                            <th>Delivery Date</th>
                             <th>Amount</th>
                             <th>Delivery Type</th>
                             <th>Status</th>
@@ -418,7 +482,7 @@ function generateTableHTML() {
                     <button class="close-btn" onclick="closeorderForm()">&times;</button>
                 </div>
                 <div class="modal-body">
-                    <form id="staffForm" onsubmit="submitstaffForm(event)" class="form-responsive">
+                    <form id="staffForm" onsubmit="submitOrderForm (event)" class="form-responsive">
                         <input type="hidden" id="itemId">
                         
                         <div class="form-row">
@@ -437,33 +501,65 @@ function generateTableHTML() {
                             <ul id="itemList" class="item-list">
                             </ul>
                         </div>
-                          <div class="form-row">
-                            <div class="form-group">
-                                <label for="notes">Notes <span class="required">*</span></label>
-                                <input type="textarea" id="notes" readonly >
-                            </div>
-                        </div>
                         <div class="form-row">
-                            <div class="form-group" style="width: 100%;">
-                                <label for="stafftatus">Delivery Type</label>
-                                <div class="delivery-type-container">
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="stafftatus" checked onchange="updateDeliveryStatusText()">
-                                        <span class="slider"></span>
-                                    </label>
-                                    <span id="statusText" class="delivery-status-text">Same Day Delivery</span>
-                                </div>
+                            <div class="form-group">
+                                <label for="notes">Notes</label>
+                                <textarea id="notes" rows="3" placeholder="Add any additional notes..."></textarea>
                             </div>
                         </div>
+                      
 
                         <div class="form-actions" id="formActions">
-                            <button type="button" class="btn-cancel" id="cancelBtn" onclick="closestaffForm()">Cancel</button>
+                            <button type="button" class="btn-cancel" id="cancelBtn" onclick="closeOrderForm()">Cancel</button>
                             <button type="submit" class="btn-submit" id="submitBtn">Place Order</button>
                         </div>
                     </form>
                 </div>
             </div>
         </div>
+                <style>
+            .filter-group {
+                display: flex;
+                align-items: center;
+            }
+
+            .status-select {
+                padding: 6px 10px;
+                border: 1px solid #d1d5db;
+                border-radius: 6px;
+                font-size: 13px;
+                font-weight: 500;
+                background-color: white;
+                cursor: pointer;
+                transition: all 0.2s;
+            }
+
+            .status-select:not(:disabled):hover {
+                border-color: #667eea;
+                background-color: #f9fafb;
+            }
+
+            .status-select:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+            }
+
+            .status-select option {
+                padding: 8px;
+            }
+
+            .staff-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 24px;
+            }
+
+            .staff-header > div {
+                display: flex;
+                gap: 12px;
+            }
+        </style>
     `;
 }
 
@@ -472,7 +568,7 @@ function generateTableHTML() {
 // ============================================
 async function loadItemData() {
     let currentUser = null;
-
+    
     try {
         currentUser =
             JSON.parse(sessionStorage.getItem("rememberedUser")) ||
@@ -496,7 +592,7 @@ async function loadItemData() {
 }
 
 // ============================================
-// CALCULATE ITEM TOTAL - YOUR ORIGINAL LOGIC PRESERVED
+// CALCULATE ITEM TOTAL
 // ============================================
 export function calculateItemTotal(itemId) {
     const priceInput = document.getElementById(`price_${itemId}`).textContent;
@@ -517,7 +613,7 @@ export function calculateItemTotal(itemId) {
         }
 
         // Check if item already exists in orderItems
-        const existingIndex = orderItems.findIndex(i => String(i.id) === String(itemId));
+        const existingIndex = orderItems.findIndex(i => String(i.item_id) === String(itemId));
         if (existingIndex !== -1) {
             // Update existing item
             orderItems[existingIndex] = data;
@@ -528,14 +624,14 @@ export function calculateItemTotal(itemId) {
     }
 
     if (quantityInput == 0) {
-        orderItems = orderItems.filter(i => String(i.id) !== String(itemId));
+        orderItems = orderItems.filter(i => String(i.item_id) !== String(itemId));
     }
 
     console.log(orderItems);
 }
 
 // ============================================
-// CALCULATE ORDER TOTAL - YOUR ORIGINAL LOGIC PRESERVED
+// CALCULATE ORDER TOTAL
 // ============================================
 export function calculateOrderTotal() {
     let total = 0;
@@ -550,7 +646,7 @@ export function calculateOrderTotal() {
 }
 
 // ============================================
-// RENDER ITEMS DATA - YOUR ORIGINAL LOGIC PRESERVED
+// RENDER ITEMS DATA
 // ============================================
 async function renderItemsData(itemData) {
     let tableRows = "";
@@ -622,15 +718,33 @@ function changestaffPerPage(value) {
 }
 
 // ============================================
-// REFRESH ORDERS TABLE ON DATE CHANGE
+// VALIDATE AND REFRESH ON DATE CHANGE
+// ============================================
+function validateAndRefreshOrders() {
+    if (validateDateRange()) {
+        refreshOrdersTable();
+    }
+}
+
+// ============================================
+// REFRESH ORDERS TABLE ON DATE RANGE CHANGE
 // ============================================
 function refreshOrdersTable() {
     console.log("Refreshing orders table...");
-    const dateInput = document.getElementById("btnDate");
-    if (dateInput) {
-        console.log("Selected date:", dateInput.value);
-        currentDate = dateInput.value;
+    const startDateInput = document.getElementById("startDate");
+    const endDateInput = document.getElementById("endDate");
+    
+    if (startDateInput && endDateInput) {
+        currentStartDate = startDateInput.value;
+        currentEndDate = endDateInput.value;
+        console.log("Selected date range:", currentStartDate, "to", currentEndDate);
+        
+        // Validate before loading
+        if (!validateDateRange()) {
+            return Promise.resolve();
+        }
     }
+    
     // Reset to first page when filtering
     currentstaffPage = 1;
 
@@ -647,21 +761,9 @@ function refreshOrdersTable() {
 }
 
 // ============================================
-// UPDATE DELIVERY STATUS TEXT
-// ============================================
-function updateDeliveryStatusText() {
-    const deliveryCheckbox = document.getElementById("stafftatus");
-    const statusText = document.getElementById("statusText");
-
-    if (deliveryCheckbox && statusText) {
-        statusText.textContent = deliveryCheckbox.checked ? "Same Day Delivery" : "Next Day Delivery";
-    }
-}
-
-// ============================================
 // CLOSE FORM
 // ============================================
-function closestaffForm() {
+function closeOrderForm() {
     const modal = document.getElementById("orderFormModal");
     modal.classList.remove("show");
     setTimeout(() => {
@@ -672,18 +774,25 @@ function closestaffForm() {
 }
 
 // ============================================
+// CLOSE ORDER FORM (ALIAS)
+// ============================================
+function closeorderForm() {
+    closeOrderForm();
+}
+
+// ============================================
 // DELETE STAFF FUNCTION WITH CONFIRMATION
 // ============================================
 function deletestaff(id) {
     return showConfirm(
-        "Are you sure you want to delete this staff member?",
+        "Are you sure you want to delete this order?",
         "warning"
     ).then(confirmed => {
         if (!confirmed) return;
 
         return deleteItemFromAPI(ordersURLphp, id).then(result => {
             if (result) {
-                showNotification("Staff deleted successfully!", "success");
+                showNotification("Order deleted successfully!", "success");
                 const mainContent = document.getElementById("mainContent");
                 if (mainContent) {
                     return loadorderData().then(() => {
@@ -691,56 +800,16 @@ function deletestaff(id) {
                     });
                 }
             } else {
-                showNotification("Error deleting staff!", "error");
+                showNotification("Error deleting order!", "error");
             }
         });
     });
 }
 
 // ============================================
-// EDIT STAFF FUNCTION
-// ============================================
-let currentlyEditingStaffStatus = 'Active';
-function editstaff(id) {
-    editingItemId = id;
-
-    const item = orderData.find(i => String(i.id) === String(id));
-    if (!item) {
-        console.error("Staff not found for edit:", id);
-        showNotification("Staff not found!", "error");
-        return;
-    }
-
-    document.getElementById("formTitle").textContent = "Update Staff";
-    document.getElementById("itemId").value = item.id;
-    document.getElementById("itemName").value = item.name;
-    document.getElementById("itemDescription").value = item.address || "";
-    document.getElementById("itemPrice").value = item.mobile || "";
-    document.getElementById("itemUnit").value = item.role || "";
-    document.getElementById("itemImagePath").value = item.salary || 0;
-    document.getElementById("staffDate").value = item.start_date || "";
-    document.getElementById("staffReference").value = item.reference || "";
-
-    const statusCheckbox = document.getElementById("stafftatus");
-    const statusText = document.getElementById("statusText");
-    statusCheckbox.checked = item.status === "active";
-    statusText.textContent = item.status === "active" ? "Active" : "Inactive";
-    currentlyEditingStaffStatus = item.status;
-    statusCheckbox.onchange = function () {
-        statusText.textContent = this.checked ? "Active" : "Inactive";
-    };
-
-    const modal = document.getElementById("orderFormModal");
-    modal.style.display = "flex";
-    setTimeout(() => {
-        modal.classList.add("show");
-    }, 10);
-}
-
-// ============================================
 // SUBMIT FORM
 // ============================================
-async function submitstaffForm(event) {
+async function submitOrderForm (event) {
     event.preventDefault();
     const date = document.getElementById("orderDate").value.trim();
     const total_amount = document.getElementById("totalAmount").value.trim();
@@ -764,15 +833,13 @@ async function submitstaffForm(event) {
     }
 
     // Determine delivery type based on checkbox
-    const deliveryType = deliveryCheckbox.checked ? "urgent" : "nextday";
-    console.log();
 
     const formData = {
         user_id: user_id,
         expected_delivery: date,
         total_amount: total_amount,
         items: orderItems,
-        delivery_type: deliveryType,
+        delivery_type: "Next Day Delivery",
         notes: document.getElementById("notes").value || "N/A"
     };
 
@@ -787,7 +854,6 @@ async function submitstaffForm(event) {
             if (!confirmed) {
                 return;
             }
-            console.log(user_id);
 
             return updateItem(ordersURLphp, editingItemId, formData, user_id).then(result => {
                 console.log(result);
@@ -798,7 +864,7 @@ async function submitstaffForm(event) {
                     showNotification(result.detail, "error");
                 }
 
-                closestaffForm();
+                closeOrderForm();
                 if (mainContent) {
                     return loadorderData().then(() => {
                         mainContent.innerHTML = generateTableHTML();
@@ -818,7 +884,7 @@ async function submitstaffForm(event) {
 
                 if (result.status === "ok") {
                     showNotification("Order placed successfully!", "success");
-                    closestaffForm();
+                    closeOrderForm();
 
                     if (mainContent) {
                         return loadorderData().then(() => {
@@ -833,53 +899,13 @@ async function submitstaffForm(event) {
     }
 }
 
-
-// ============================================
-// TOGGLE STAFF STATUS
-// ============================================
-function togglestafftatus(id, currentStatus) {
-    let staff_status_element = document.getElementById(id);
-    return showConfirm(
-        `Are you sure you want to change this staff member's status to ${currentStatus === "active" ? "inactive" : "active"}?`,
-        "warning"
-    ).then(confirmed => {
-
-        if (!confirmed) {
-            if (currentStatus === "active")
-                staff_status_element.checked = true;
-            else
-                staff_status_element.checked = false;
-            return;
-        }
-
-        const newStatus = currentStatus === "active" ? "inactive" : "active";
-        return updateItem(orderItemsURLphp, id, { status: newStatus }, user_id).then(result => {
-            if (result) {
-                const mainContent = document.getElementById("mainContent");
-                if (mainContent) {
-                    return loadorderData().then(() => {
-                        mainContent.innerHTML = generateTableHTML();
-                        showNotification(`Staff status changed to ${newStatus}!`, "success");
-                    });
-                }
-            } else {
-                if (currentStatus === "active")
-                    staff_status_element.checked = true;
-                else
-                    staff_status_element.checked = false;
-                showNotification("Error updating staff status!", "error");
-            }
-        });
-    });
-}
-
 // Close modal when clicking outside
 window.addEventListener("click", function (event) {
     const addOrderModal = document.getElementById("orderFormModal");
     const viewOrderModal = document.getElementById("viewOrderModal");
 
     if (event.target === addOrderModal) {
-        closestaffForm();
+        closeOrderForm();
     }
     if (event.target === viewOrderModal) {
         closeViewOrderModal();
@@ -901,17 +927,15 @@ function navigateToInventoryStaff(staffId) {
 }
 
 // ============================================
-// ============================================
 // MAKE FUNCTIONS GLOBALLY ACCESSIBLE
 // ============================================
 window.deletestaff = deletestaff;
-window.editstaff = editstaff;
-window.togglestafftatus = togglestafftatus;
 window.calculateItemTotal = calculateItemTotal;
 window.calculateOrderTotal = calculateOrderTotal;
 window.openorderform = openorderform;
-window.closestaffForm = closestaffForm;
-window.submitstaffForm = submitstaffForm;
+window.closeOrderForm = closeOrderForm;
+window.closeorderForm = closeorderForm;
+window.submitOrderForm  = submitOrderForm ;
 window.changestaffPage = changestaffPage;
 window.changestaffPerPage = changestaffPerPage;
 window.showNotification = showNotification;
@@ -919,6 +943,7 @@ window.generateTableHTML = generateTableHTML;
 window.showConfirm = showConfirm;
 window.navigateToInventoryStaff = navigateToInventoryStaff;
 window.refreshOrdersTable = refreshOrdersTable;
-window.updateDeliveryStatusText = updateDeliveryStatusText;
 window.viewOrderDetails = viewOrderDetails;
 window.closeViewOrderModal = closeViewOrderModal;
+window.validateDateRange = validateDateRange;
+window.validateAndRefreshOrders = validateAndRefreshOrders;

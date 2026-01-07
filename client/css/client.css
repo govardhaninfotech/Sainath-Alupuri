@@ -16,7 +16,7 @@
 
 /* Buttons */
 .btn-add {
-    background: #667eea;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
     border: none;
     width: 150px !important;
@@ -375,7 +375,7 @@ input:checked+.slider:before {
 /* Form Styles */
 .form-responsive {
     display: grid;
-    gap: 20px;
+    /* gap: 20px; */
 }
 
 .form-row {

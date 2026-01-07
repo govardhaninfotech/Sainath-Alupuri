@@ -353,7 +353,29 @@
     }
 
     .btn-add {
-        width: 100%;
+        width: auto;
+        padding: 10px;
+        justify-content: center;
+    }
+
+    .btn-add .btn-text {
+        display: none;
+    }
+
+    .btn-enable,
+    .btn-disable,
+    .btn-update,
+    .btn-delete {
+        padding: 6px 8px;
+        font-size: 0;
+    }
+
+    .btn-enable .btn-icon-svg,
+    .btn-disable .btn-icon-svg,
+    .btn-update .btn-icon-svg,
+    .btn-delete .btn-icon-svg {
+        width: 16px;
+        height: 16px;
     }
 
     #itemDescription {
@@ -376,12 +398,32 @@
     }
 
     .form-actions {
-        flex-direction: column;
+        flex-direction: row;
+        gap: 10px;
+        justify-content: flex-end;
     }
 
     .btn-cancel,
     .btn-submit {
-        width: 100%;
+        width: auto;
+        padding: 10px;
+        font-size: 0;
+        min-width: 44px;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .btn-cancel .btn-text,
+    .btn-submit .btn-text {
+        display: none;
+    }
+
+    .btn-cancel .btn-icon-svg,
+    .btn-submit .btn-icon-svg {
+        width: 18px;
+        height: 18px;
     }
 
     .notification {

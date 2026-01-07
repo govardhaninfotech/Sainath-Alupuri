@@ -58,7 +58,7 @@ export async function updateItem(url, itemId, itemData, userId = null) {
 // ------------------------------------------------------------------------------------------------------------------------------------
 // Add new item using php
 export async function addItemToAPI(url, itemData) {
-    console.log(itemData);
+    console.log(url,itemData);
 
     try {
         const response = await fetch(url, {

@@ -13,7 +13,6 @@ function loadclientData() {
         console.log('client loaded:', clientData);
     });
 }
-
 // Pagination settings
 let currentclientPage = 1;
 let clientPerPage = 10;

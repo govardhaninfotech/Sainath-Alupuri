@@ -10,7 +10,7 @@ import { showNotification, showConfirm } from "./notification.js";
 let bankData = [];
 let paginationInfo = {
     page: 1,
-    per_page: 10,
+    per_page: 15,
     total: 0,
     total_pages: 1
 };
@@ -30,7 +30,7 @@ let user_id = getLoggedInUserId();
 // ============================================
 // LOAD BANK DATA WITH SERVER-SIDE PAGINATION
 // ============================================
-function loadBankData(page = 1, perPage = 10) {
+function loadBankData(page = 1, perPage = 15) {
 
     if (!user_id) {
         showNotification("User not logged in!", "error");
@@ -40,11 +40,12 @@ function loadBankData(page = 1, perPage = 10) {
     const url = `${bankURLphp}?user_id=${user_id}&page=${page}&per_page=${perPage}`;
 
     return getItemsData(url).then(data => {
+        console.log(data);
         bankData = data.accounts || [];
 
         paginationInfo = {
             page: data.page || 1,
-            per_page: data.per_page || 10,
+            per_page: data.per_page || 15,
             total: data.total || 0,
             total_pages: data.total_pages || 1
         };
@@ -93,10 +94,12 @@ function generateBankTableHTML() {
             </tr>
         `;
     }
+    console.log(paginationInfo);
 
-    // Calculate display range
-    const start = (paginationInfo.page - 1) * paginationInfo.per_page;
-    const end = Math.min(start + bankData.length, paginationInfo.total);
+    const total = paginationInfo.total || bankData.length;
+    const start = total === 0 ? 0 : (paginationInfo.page - 1) * paginationInfo.per_page;
+    const end = total === 0 ? 0 : start + bankData.length;
+
 
     return `
         <div class="content-card">

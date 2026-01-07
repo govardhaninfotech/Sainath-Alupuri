@@ -41,25 +41,26 @@ export function loginUers(mobile, password, remember) {
 
             const data = res.user;
 
-            const currentUser = {
-                id: data.id,
-                mobile: data.mobile,
-                role: data.role,
-                shop_id: data.shop_id,
-                is_family_member: data.is_family_member
-            };
+            // const currentUser = {
+            //     id: data.id,
+            //     mobile: data.mobile,
+            //     role: data.role,
+            //     shop_id: data.shop_id,
+            //     is_family_member: data.is_family_member
+            // };
 
-            setCurrentUser(currentUser, remember);
+            setCurrentUser(data, remember);
 
             if (data.role === "admin") {
                 showMessage('loginMessage', 'Admin login successful!', 'success');
-                window.location.href = './admin/dashboard.html';
+                // Redirect to dashboard home page
+                window.location.href = './admin/dashboard.html?page=home';
                 return;
             }
 
             if (data.role === "client") {
                 showMessage('loginMessage', 'Client login successful!', 'success');
-                window.location.href = './client/dashboard.html';
+                window.location.href = './client/dashboard.html?page=home';
                 return;
             }
 
@@ -152,7 +153,7 @@ export async function forgotUserPassword(user_id, password) {
             sessionStorage.removeItem('email');
 
             setTimeout(() => {
-                window.location.replace('../../index.html');
+                window.location.href = './index.html';
             }, 1000);
 
 
