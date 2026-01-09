@@ -325,7 +325,7 @@ function generateTableHTML() {
                         <div class="form-row">
                             <div class="form-group full-width">
                                 <label for="itemDescription">Address <span class="required">*</span></label>
-                                <textarea id="itemDescription" placeholder="Enter staff address" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-family: inherit; min-height: 100px; box-sizing: border-box;"></textarea>
+                                <textarea id="itemDescription" placeholder="Enter staff address" style=" padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-family: inherit; min-height: 100px; box-sizing: border-box;"></textarea>
                             </div>
                         </div>
 

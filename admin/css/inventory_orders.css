@@ -650,6 +650,7 @@ input:checked~.delivery-status-text {
         padding: 0px;
 
     }
+
     .inv-orders-header {
         align-items: stretch;
         gap: 20px;
@@ -1044,6 +1045,10 @@ input:checked~.delivery-status-text {
     gap: 12px;
 }
 
+.form-group textarea {
+    width: 200%;
+}
+
 /* ============================================
    COMPREHENSIVE RESPONSIVE DESIGN
    ============================================ */
@@ -1071,10 +1076,7 @@ input:checked~.delivery-status-text {
         grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
         gap: 12px;
     }
-    
-    .form-group textarea{
-        width: 100%;
-    }
+
 }
 
 @media (max-width: 1024px) {
@@ -1107,7 +1109,7 @@ input:checked~.delivery-status-text {
         max-height: 500px;
     }
 
-  
+
     .staff-header {
         flex-wrap: wrap;
         gap: 12px;
@@ -1262,6 +1264,10 @@ input:checked~.delivery-status-text {
     .ord-orders-table td:last-child {
         display: none;
     }
+
+    .form-group textarea {
+        width: 100%;
+    }
 }
 
 @media (max-width: 480px) {
@@ -1332,7 +1338,7 @@ input:checked~.delivery-status-text {
         font-size: 12px;
     }
 
-  
+
 
     .staff-header h2 {
         font-size: 16px;
@@ -1377,7 +1383,8 @@ input:checked~.delivery-status-text {
         font-size: 16px !important;
         min-height: 44px;
     }
-    .form-group textarea{
+
+    .form-group textarea {
         min-height: 80px;
     }
 

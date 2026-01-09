@@ -392,7 +392,7 @@ function generateTableHTML() {
         <div class="content-card">
             <div class="staff-header">
                 <h2>Expense Management</h2>
-                <button class="btn-add" onclick="openExpenseForm()">Add Expense</button>
+                <button class="btn-add" onclick="openGeneralExpenseForm()">Add Expense</button>
             </div>
             
             <div class="table-container">
@@ -432,65 +432,61 @@ function generateTableHTML() {
             <div class="modal-content modal-responsive">
                 <div class="modal-header">
                     <h3 id="expenseFormTitle">Add New Expense</h3>
+                    <input type="date" id="expenseDate" required>
                     <button class="close-btn" onclick="closeExpenseForm()">&times;</button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body" style="padding = 0px !importent;">
                     <form id="expenseForm" onsubmit="submitExpenseForm(event)" class="form-responsive">
                         <input type="hidden" id="expenseId">
                         
                         <div class="form-row">
-                            <div class="form-group">
-                                <label for="expenseDate">Date <span class="required">*</span></label>
-                                <input type="date" id="expenseDate" required>
-                            </div>
-
                             <div class="form-group">
                                 <label for="expenseCategory">Category <span class="required">*</span></label>
                                 <select id="expenseCategory" required>
                                     <option value="">Select category</option>
                                 </select>
                             </div>
-                        </div>
 
-                        <div class="form-row">
                             <div class="form-group">
                                 <label for="expenseAmount">Amount <span class="required">*</span></label>
                                 <input type="number" id="expenseAmount" required placeholder="Enter amount" step="0.01" min="0">
                             </div>
+                        </div>
 
+                        <div class="form-row">
                             <div class="form-group">
                                 <label for="expensePaymentMode">Payment Mode <span class="required">*</span></label>
                                 <select id="expensePaymentMode" required>
                                     <option value="">Select Payment Mode</option>
-                                    <option value="cash">Cash</option>
+                                    <option value="cash" selected>Cash</option>
                                     <option value="upi">UPI</option>
                                     <option value="bank">Bank</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="expenseBankAccount">Bank Account</label>
+                                <select id="expenseBankAccount" disabled>
+                                    <option value="">Not applicable for Cash</option>
                                 </select>
                             </div>
                         </div>
 
                         <div class="form-row">
-                            <div class="form-group">
-                                <label for="expenseBankAccount">Bank Account</label>
-                                <select id="expenseBankAccount">
-                                    <option value="">Select bank account</option>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
+                            <div class="form-group form-group-full">
                                 <label for="expenseNotes">Notes</label>
                                 <textarea
                                     id="expenseNotes"
-                                    rows="2"
+                                    rows="3"
                                     placeholder="Enter notes (optional)"
-                                    style="resize: vertical;"
+                                    style="resize: vertical; width: 100%;"
                                 ></textarea>
                             </div>
                         </div>
 
                         <div class="form-actions">
                             <button type="button" class="btn-cancel" onclick="closeExpenseForm()">Cancel</button>
-                            <button type="submit" class="btn-submit">Save Expense</button>
+                            <button type="submit" class="btn-submit">Save</button>
                         </div>
                     </form>
                 </div>
@@ -521,7 +517,7 @@ async function changeExpensePage(direction) {
 // ============================================
 // FORM FUNCTIONS
 // ============================================
-function openExpenseForm() {
+function openGeneralExpenseForm() {
     editingExpenseId = null;
     document.getElementById("expenseFormTitle").textContent = "Add New Expense";
     document.getElementById("expenseForm").reset();
@@ -533,14 +529,14 @@ function openExpenseForm() {
     console.log("Opening expense form, populating dropdowns...");
     populateCategoryDropdown();
 
-    // Reset payment mode and bank account
+    // Set default payment mode to cash
     const paymentModeSelect = document.getElementById("expensePaymentMode");
     if (paymentModeSelect) {
-        paymentModeSelect.value = "";
+        paymentModeSelect.value = "cash";
     }
     
-    // Initialize bank account dropdown as disabled (no payment mode selected)
-    populateBankAccountDropdown("", "");
+    // Initialize bank account dropdown as disabled for cash
+    populateBankAccountDropdown("", "cash");
 
     setupPaymentModeChangeHandler();
 
@@ -584,7 +580,7 @@ function editExpense(id) {
     // First populate category dropdown
     populateCategoryDropdown(item.category_id || "");
     
-    // Set payment mode first
+    // Set payment mode first (default to cash if not set)
     const paymentMode = item.payment_mode || "cash";
     document.getElementById("expensePaymentMode").value = paymentMode;
     
@@ -739,7 +735,7 @@ window.addEventListener("click", function (event) {
 // MAKE FUNCTIONS GLOBALLY ACCESSIBLE
 // ============================================
 window.editExpense = editExpense;
-window.openExpenseForm = openExpenseForm;
+window.openGeneralExpenseForm = openGeneralExpenseForm;
 window.closeExpenseForm = closeExpenseForm;
 window.submitExpenseForm = submitExpenseForm;
 window.changeExpensePage = changeExpensePage;

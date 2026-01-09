@@ -181,7 +181,7 @@ function generateItemsTableHTML() {
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="itemDescription">Description <span>(Optional)</span></label>
-                                <textarea id="itemDescription" placeholder="Enter description (optional)" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-family: Arial, sans-serif; resize: vertical; min-height: 80px; box-sizing: border-box;"></textarea>
+                                <textarea id="itemDescription" placeholder="Enter description (optional)" style=" padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-family: Arial, sans-serif; resize: vertical; min-height: 80px; box-sizing: border-box;"></textarea>
                             </div>
                         </div>
 

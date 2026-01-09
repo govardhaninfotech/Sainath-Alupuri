@@ -897,7 +897,7 @@ body {
     .edit-btn-submit,
     .edit-btn-cancel {
         flex: 1;
-        min-width: auto;
+        /* min-width: auto; */
         padding: 10px 12px;
     }
 
