@@ -6,6 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Staff Expense - Sainath</title>
     <link rel="stylesheet" href="css/inventory.css">
+    <!-- For PDF Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <!-- For Excel Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 
 <body>
@@ -72,84 +76,71 @@
             </div>
         </div>
 
-        <!-- Summary Cards Row - Staff Statistics -->
-        <div class="summary-cards-row">
-            <!-- Cap Card -->
+        <!-- UPDATED Summary Cards Row - 3 Cards in First Row -->
+        <div class="summary-cards-row summary-cards-row-new" style="grid-template-columns: repeat(3, 1fr);">
+            <!-- Cap Card - Shows only days wear -->
             <div class="summary-card">
-                <div class="summary-card-header">
-                    <span class="summary-card-icon">👒</span>
-                    <h3>Cap Management</h3>
-                </div>
-                <div class="summary-card-content">
-                    <div class="summary-stat">
-                        <span class="summary-label">First Cap</span>
-                        <span class="summary-value" id="capFirstCount">0</span>
+                <div class="summary-card-content" style="text-align: center; padding: 10px;">
+                    <div style="font-size: 14px; color: #1f2937; font-weight: 600; line-height: 1.4;">
+                        🧢 Cap
                     </div>
-                    <div class="summary-stat">
-                        <span class="summary-label">Total Cap Count</span>
-                        <span class="summary-value" id="capTotalCount">0</span>
+                    <div style="font-size: 18px; font-weight: 700; margin-top: 6px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                        <span id="capDaysWear">0</span> days wear
                     </div>
                 </div>
             </div>
 
-            <!-- 25 Days Card -->
+            <!-- T-Shirt Card - Shows only days wear -->
             <div class="summary-card">
-                <div class="summary-card-header">
-                    <span class="summary-card-icon">📅</span>
-                    <h3>25 Days Tracking</h3>
-                </div>
-                <div class="summary-card-content">
-                    <div class="summary-stat">
-                        <span class="summary-label">Days Completed</span>
-                        <span class="summary-value" id="daysCompleted">0</span>
+                <div class="summary-card-content" style="text-align: center; padding: 10px;">
+                    <div style="font-size: 14px; color: #1f2937; font-weight: 600; line-height: 1.4;">
+                        👕 T-Shirt
                     </div>
-                    <div class="summary-stat">
-                        <span class="summary-label">Remaining</span>
-                        <span class="summary-value-secondary" id="daysRemaining">25</span>
+                    <div style="font-size: 18px; font-weight: 700; margin-top: 6px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                        <span id="tshirtDaysWear">0</span> days wear
                     </div>
                 </div>
             </div>
 
-            <!-- T-Shirt Card -->
+            <!-- Attendance Card - Shows only present days -->
             <div class="summary-card">
-                <div class="summary-card-header">
-                    <span class="summary-card-icon">👕</span>
-                    <h3>T-Shirt Uniform</h3>
-                </div>
-                <div class="summary-card-content">
-                    <div class="summary-stat">
-                        <span class="summary-label">Same T-Shirt</span>
-                        <span class="summary-value" id="sameShirtCount">0</span>
+                <div class="summary-card-content" style="text-align: center; padding: 10px;">
+                    <div style="font-size: 14px; color: #1f2937; font-weight: 600; line-height: 1.4;">
+                        ✅ Attendance
                     </div>
-                    <div class="summary-stat">
-                        <span class="summary-label">Changed</span>
-                        <span class="summary-value-secondary" id="changedShirtCount">0</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Attendance Card -->
-            <div class="summary-card">
-                <div class="summary-card-header">
-                    <span class="summary-card-icon">✓</span>
-                    <h3>Attendance Summary</h3>
-                </div>
-                <div class="summary-card-content">
-                    <div class="summary-stat attendance-present">
-                        <span class="summary-label">Present</span>
-                        <span class="summary-value" id="presentCount">0</span>
-                    </div>
-                    <div class="summary-stat attendance-absent">
-                        <span class="summary-label">Absent</span>
-                        <span class="summary-value-secondary" id="absentCount">0</span>
-                    </div>
-                    <div class="summary-stat attendance-leave">
-                        <span class="summary-label">Leaves</span>
-                        <span class="summary-value-secondary" id="leaveCount">0</span>
+                    <div style="font-size: 18px; font-weight: 700; margin-top: 6px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                        Present day <span id="presentDayCount">0</span>
                     </div>
                 </div>
             </div>
         </div>
+
+        <style>
+            /* Responsive styles for new summary cards */
+            @media (max-width: 768px) {
+                .summary-cards-row-new {
+                    grid-template-columns: repeat(2, 1fr) !important;
+                }
+                .summary-cards-row-new .summary-card:last-child {
+                    grid-column: 1 / -1;
+                }
+            }
+
+            @media (max-width: 480px) {
+                .summary-cards-row-new {
+                    grid-template-columns: 1fr !important;
+                }
+                .summary-cards-row-new .summary-card:last-child {
+                    grid-column: auto;
+                }
+                .summary-cards-row-new .summary-card-content > div:first-child {
+                    font-size: 13px !important;
+                }
+                .summary-cards-row-new .summary-card-content > div:last-child {
+                    font-size: 16px !important;
+                }
+            }
+        </style>
 
         <!-- Main Content - Display Expenses Table -->
         <div class="expense-content" style="grid-template-columns: 1fr;">

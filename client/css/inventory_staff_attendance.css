@@ -2,7 +2,7 @@
    STAFF ATTENDANCE - ENHANCED RESPONSIVE DESIGN
    ============================================ */
 
-* {
+   * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
@@ -897,7 +897,7 @@ body {
     .edit-btn-submit,
     .edit-btn-cancel {
         flex: 1;
-        min-width: auto;
+        /* min-width: auto; */
         padding: 10px 12px;
     }
 

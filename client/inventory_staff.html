@@ -4,140 +4,237 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Staff Inventory - Sainath</title>
+    <title>Staff Expense - Sainath</title>
     <link rel="stylesheet" href="css/inventory.css">
+    <!-- For PDF Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <!-- For Excel Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 
 <body>
-    <div class="inv-wrapper">
-        <!-- Page Header -->
-        <div class="inv-page-header">
-            <h1>Staff Expense Management</h1>
-            <p class="inv-subtitle">Track and manage staff expenses efficiently</p>
+    <div class="staff-expense-container">
+        <!-- Header with Add Button, Print and Export -->
+        <div class="staff-expense-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h1 style="font-size: 22px; font-weight: 600; margin: 0; color: #1f2937;">Staff Expense</h1>
+            <div class="header-actions" style="display: flex; gap: 10px; align-items: center;">
+                <button onclick="printReport()" class="btn-print" title="Print Report">
+                    <span style="font-size: 18px;">🖨️</span> Print
+                </button>
+                <div class="export-dropdown-wrapper">
+                    <button onclick="toggleExportDropdown()" class="btn-export" title="Export Report">
+                        <span style="font-size: 18px;">📥</span> Export
+                    </button>
+                    <div id="exportDropdown" class="export-dropdown-menu">
+                        <button onclick="exportToPDF()" class="export-option">
+                            <span>📄</span> PDF
+                        </button>
+                        <button onclick="exportToExcel()" class="export-option">
+                            <span>📊</span> Excel
+                        </button>
+                    </div>
+                </div>
+                <button onclick="openExpenseForm()" class="btn-add-expense">
+                    + Add Expense
+                </button>
+            </div>
         </div>
 
-        <!-- Main Grid Layout -->
-        <div class="inv-staff-layout">
+        <!-- Selection Cards Row (4 columns) -->
+        <div class="selection-row">
+            <!-- Staff Selection -->
+            <div class="selection-card">
+                <label>Staff Selection</label>
+                <select id="invStaffSelect" onchange="handleStaffChange(this.value)" class="selection-input">
+                    <option value="">Select Staff</option>
+                </select>
+            </div>
 
-            <!-- TOP LEFT: Filters -->
-            <div class="inv-left-panel">
-                <div class="inv-filters-card">
-                    <h3 class="card-title">
-                        <span class="card-title-icon">🔍</span>
-                        Staff & Month Selection
-                    </h3>
+            <!-- Month Selection -->
+            <div class="selection-card">
+                <label>Month Selection</label>
+                <select id="invMonthSelect" onchange="handleMonthChange(this.value)" class="selection-input">
+                    <option value="">Select Month</option>
+                </select>
+            </div>
 
-                    <div class="inv-filter-group">
-                        <label for="invStaffSelect">👤 Staff Selection</label>
-                        <select id="invStaffSelect"></select>
+            <!-- Balance Card -->
+            <div class="selection-card">
+                <label>Balance</label>
+                <div id="staffBalanceCard" class="stat-display">
+                    <div style="text-align: center; color: #999;">Select staff</div>
+                </div>
+            </div>
+
+            <!-- Salary Card -->
+            <div class="selection-card">
+                <label>Salary</label>
+                <div class="stat-display" id="invStaffSalary"
+                    style="font-size: 20px; font-weight: bold; color: #667eea; text-align: center;">
+                    ₹0.00
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Cards Row - Staff Statistics -->
+        <div class="summary-cards-row">
+            <!-- Cap Card -->
+            <div class="summary-card">
+                <div class="summary-card-header">
+                    <span class="summary-card-icon">👒</span>
+                    <h3>Cap Management</h3>
+                </div>
+                <div class="summary-card-content">
+                    <div class="summary-stat">
+                        <span class="summary-label">First Cap</span>
+                        <span class="summary-value" id="capFirstCount">0</span>
                     </div>
-
-                    <div class="inv-filter-group">
-                        <label for="invMonthSelect">📅 Month Selection</label>
-                        <select id="invMonthSelect"></select>
-                    </div>
-
-                    <div class="inv-filter-group">
-                        <label for="invStatusSelect">🎯 Status Selection</label>
-                        <select id="invStatusSelect">
-                            <option value="all">All</option>
-                            <option value="active">Active</option>
-                            <option value="deactive">Inactive</option>
-                        </select>
+                    <div class="summary-stat">
+                        <span class="summary-label">Total Cap Count</span>
+                        <span class="summary-value" id="capTotalCount">0</span>
                     </div>
                 </div>
             </div>
 
-            <!-- TOP RIGHT: Balance & Salary Cards -->
-            <div class="inv-right-panel">
-                <div class="inv-summary-cards">
-                    <div class="inv-summary-card balance-card">
-                        <div class="summary-icon">⚖️</div>
-                        <div class="summary-content">
-                            <p class="summary-label">Balance</p>
-                            <h2 id="invFinalBalance" class="summary-value">₹0</h2>
-                        </div>
+            <!-- 25 Days Card -->
+            <div class="summary-card">
+                <div class="summary-card-header">
+                    <span class="summary-card-icon">📅</span>
+                    <h3>25 Days Tracking</h3>
+                </div>
+                <div class="summary-card-content">
+                    <div class="summary-stat">
+                        <span class="summary-label">Days Completed</span>
+                        <span class="summary-value" id="daysCompleted">0</span>
                     </div>
-
-                    <div class="inv-summary-card salary-card">
-                        <div class="summary-icon">💰</div>
-                        <div class="summary-content">
-                            <p class="summary-label">Salary</p>
-                            <h2 class="summary-value">₹<span id="invStaffSalary">0</span></h2>
-                        </div>
+                    <div class="summary-stat">
+                        <span class="summary-label">Remaining</span>
+                        <span class="summary-value-secondary" id="daysRemaining">25</span>
                     </div>
                 </div>
             </div>
 
-            <!-- BOTTOM LEFT: Form -->
-            <div class="inv-form-card">
-                <h3 class="card-title">
-                    <span class="card-title-icon">➕</span>
-                    Add New Expense
-                </h3>
-                <form class="inv-form">
-                    <div class="inv-form-group">
-                        <label for="invExpenseAmount">Amount <span class="required">*</span></label>
-                        <div class="inv-input-wrapper">
-                            <span class="inv-currency">₹</span>
-                            <input type="number" id="invExpenseAmount" placeholder="0.00" min="0" step="0.01" required>
+            <!-- T-Shirt Card -->
+            <div class="summary-card">
+                <div class="summary-card-header">
+                    <span class="summary-card-icon">👕</span>
+                    <h3>T-Shirt Uniform</h3>
+                </div>
+                <div class="summary-card-content">
+                    <div class="summary-stat">
+                        <span class="summary-label">Same T-Shirt</span>
+                        <span class="summary-value" id="sameShirtCount">0</span>
+                    </div>
+                    <div class="summary-stat">
+                        <span class="summary-label">Changed</span>
+                        <span class="summary-value-secondary" id="changedShirtCount">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Attendance Card -->
+            <div class="summary-card">
+                <div class="summary-card-header">
+                    <span class="summary-card-icon">✓</span>
+                    <h3>Attendance Summary</h3>
+                </div>
+                <div class="summary-card-content">
+                    <div class="summary-stat attendance-present">
+                        <span class="summary-label">Present</span>
+                        <span class="summary-value" id="presentCount">0</span>
+                    </div>
+                    <div class="summary-stat attendance-absent">
+                        <span class="summary-label">Absent</span>
+                        <span class="summary-value-secondary" id="absentCount">0</span>
+                    </div>
+                    <div class="summary-stat attendance-leave">
+                        <span class="summary-label">Leaves</span>
+                        <span class="summary-value-secondary" id="leaveCount">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content - Display Expenses Table -->
+        <div class="expense-content" style="grid-template-columns: 1fr;">
+            <!-- Display Expenses Table -->
+            <div class="expense-section">
+                <h2 style="margin-bottom: 15px; color: #1f2937; font-size: 15px; font-weight: 600;">Display Expense Per User</h2>
+                <div id="staffExpensesList" style="max-height: 500px; overflow-y: auto;">
+                    <div style="padding: 20px; text-align: center; color: #999;">
+                        <p style="font-size: 16px; margin-bottom: 10px;">No expenses recorded</p>
+                        <p style="font-size: 14px;">Select a staff member to view expenses</p>
+                    </div>
+                </div>
+                <div style="padding-top: 15px; border-top: 1px solid #e5e7eb; margin-top: 15px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 14px; font-weight: 500; color: #374151;">Total Expenses:</span>
+                        <span id="invTotalExpense"
+                            style="font-size: 20px; font-weight: bold; color: #ef4444;">₹0.00</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Add Expense Form -->
+    <div id="expenseFormModal" class="expense-modal">
+        <div class="expense-modal-overlay" onclick="closeExpenseForm()"></div>
+        <div class="expense-modal-box">
+            <div class="expense-modal-header">
+                <h2>Add new expense</h2>
+                <button type="button" class="expense-modal-close" onclick="closeExpenseForm()">✕</button>
+            </div>
+            <div class="expense-modal-form-wrapper">
+                <form id="expenseForm" onsubmit="handleAddExpense(event)" class="expense-modal-form">
+                    <div class="expense-form-grid">
+                        <!-- Row 1: Date and Amount -->
+                        <div class="expense-form-row">
+                            <div class="expense-form-group">
+                                <label for="invExpenseDate">Date</label>
+                                <input type="date" id="invExpenseDate" required class="expense-form-input">
+                            </div>
+
+                            <div class="expense-form-group">
+                                <label for="invExpenseAmount">Amount</label>
+                                <input type="number" id="invExpenseAmount" placeholder="Enter amount" required min="0"
+                                    step="0.01" class="expense-form-input">
+                            </div>
+                        </div>
+
+                        <!-- Row 2: Payment Mode and Bank Account -->
+                        <div class="expense-form-row">
+                            <div class="expense-form-group">
+                                <label for="expensePaymentMode">Payment Mode</label>
+                                <select id="expensePaymentMode" required class="expense-form-input" onchange="handleInventoryPaymentMode(this.value)">
+                                    <option value="cash" selected>Cash</option>
+                                    <option value="upi">UPI</option>
+                                    <option value="bank">Bank</option>
+                                </select>
+                            </div>
+
+                            <div class="expense-form-group">
+                                <label for="expenseBankAccount">Bank Account</label>
+                                <select id="expenseBankAccount" class="expense-form-input" disabled>
+                                    <option value="">N/A</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Row 3: Notes (Full Width) -->
+                        <div class="expense-form-group expense-form-group-full">
+                            <label for="invExpenseNote">Notes</label>
+                            <textarea id="invExpenseNote"
+                                placeholder="Enter notes..." rows="5" class="expense-form-input expense-form-textarea"></textarea>
                         </div>
                     </div>
 
-                    <div class="inv-form-group">
-                        <label for="invExpenseDate">Date <span class="required">*</span></label>
-                        <input type="date" id="invExpenseDate" required>
+                    <div class="expense-modal-footer expense-modal-footer-left">
+                        <button type="button" onclick="closeExpenseForm()" class="expense-btn-cancel">Cancel</button>
+                        <button type="submit" class="expense-btn-save">Save</button>
                     </div>
-
-                    <div class="inv-form-group">
-                        <label for="invExpenseNote">Notes <span class="optional">(Optional)</span></label>
-                        <textarea id="invExpenseNote" placeholder="Add expense notes or description..."
-                            rows="3"></textarea>
-                    </div>
-
-                    <button type="button" id="invSubmitExpense" class="inv-submit-btn">
-                        💾 Save Expense
-                    </button>
                 </form>
             </div>
-
-            <!-- BOTTOM RIGHT: Expense Table (Large) -->
-            <div class="inv-center-panel">
-                <div class="inv-table-card">
-                    <div class="table-header">
-                        <h3>📋 Expense Display</h3>
-                        <p class="table-subtitle">All recorded expenses with complete details</p>
-                    </div>
-
-                    <div class="inv-table-wrapper">
-                        <table class="inv-data-table">
-                            <thead>
-                                <tr>
-                                    <th class="row-number">#</th>
-                                    <th>Date</th>
-                                    <th>Amount</th>
-                                    <th>Notes</th>
-                                </tr>
-                            </thead>
-                            <tbody id="invExpenseList">
-                                <!-- JS fills rows here -->
-                            </tbody>
-                        </table>
-                        <div id="invEmptyState" class="inv-empty-state">
-                            <div class="inv-empty-icon">📋</div>
-                            <h3>No Expenses Yet</h3>
-                            <p>Add your first expense using the form on the left</p>
-                        </div>
-                    </div>
-
-                    <!-- Total Expenses Display -->
-                    <div class="total-expenses">
-                        <p class="total-label">💵 Total Expenses</p>
-                        <h3 id="invTotalExpense" class="total-value">₹0.00</h3>
-                    </div>
-                </div>
-            </div>
-
         </div>
     </div>
 

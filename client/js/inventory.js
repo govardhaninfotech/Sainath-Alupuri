@@ -1,4 +1,4 @@
-// inventory.js - Live PHP API Integration
+// inventory.js - Live PHP API Integration with Edit & Delete
 // Purpose: Manage staff expenses with live PHP backend
 
 import { staffURLphp, bankURLphp, expenseURLphp, expenseCategoriesURLphp } from "../apis/api.js";
@@ -14,6 +14,7 @@ let invFilteredStaff = [];
 let invSelectedStaff = null;
 let invExpenses = [];
 let bankAccountData = [];
+let currentEditingExpense = null;
 
 /**
  * Public functions
@@ -88,74 +89,185 @@ function selectStaffById(staffId) {
 }
 
 /* ============================
-   Modal Functions
+   Modal Functions - Add Expense
    ============================ */
 
-window.openExpenseForm = function() {
+window.openExpenseForm = function () {
     if (!invSelectedStaff) {
         showNotification("Please select a staff member first.", "error");
         return;
     }
-    
+
+    currentEditingExpense = null; // Reset editing state
+
     const modal = document.getElementById("expenseFormModal");
     if (modal) {
         modal.style.display = "flex";
         setTimeout(() => {
             modal.classList.add("show");
         }, 10);
-        
+
         // Reset form
         const form = document.getElementById("expenseForm");
         if (form) form.reset();
-        
+
         setDefaultDateToday();
-        
+
         // Reset payment mode to cash and disable bank account
         const paymentModeSelect = document.getElementById("expensePaymentMode");
         if (paymentModeSelect) {
             paymentModeSelect.value = "cash";
             handleInventoryPaymentMode("cash");
         }
+
+        // Update modal title
+        const modalTitle = modal.querySelector(".expense-modal-header h2");
+        if (modalTitle) {
+            modalTitle.textContent = "Add new expense";
+        }
+
+        // Update submit button text
+        const submitBtn = modal.querySelector(".expense-btn-save");
+        if (submitBtn) {
+            submitBtn.textContent = "Save";
+        }
     }
 };
 
-window.closeExpenseForm = function() {
+window.closeExpenseForm = function () {
     const modal = document.getElementById("expenseFormModal");
     if (modal) {
         modal.classList.remove("show");
         setTimeout(() => {
             modal.style.display = "none";
         }, 300);
-        
+
         // Reset form
         const form = document.getElementById("expenseForm");
         if (form) form.reset();
+
+        currentEditingExpense = null;
     }
 };
 
-// Handle payment mode change for inventory form
-window.handleInventoryPaymentMode = function(paymentMode) {
+/* ============================
+   Modal Functions - Edit Expense
+   ============================ */
+
+window.openEditExpenseForm = function (expenseId) {
+    console.log("[LOG] ========================================");
+    console.log("[LOG] EDIT EXPENSE - START");
+    console.log("[LOG] Opening edit form for expense ID:", expenseId);
+
+    const expense = invExpenses.find(e => String(e.id) === String(expenseId));
+
+    if (!expense) {
+        console.error("[LOG] ❌ Expense not found:", expenseId);
+        showNotification("Expense not found!", "error");
+        return;
+    }
+
+    console.log("[LOG] ✓ Found expense to edit:", expense);
+    currentEditingExpense = { ...expense };
+
+    const modal = document.getElementById("expenseFormModal");
+    if (!modal) {
+        console.error("[LOG] ❌ Modal not found");
+        return;
+    }
+
+    // Populate form with expense data
+    const dateInput = document.getElementById("invExpenseDate");
+    const amountInput = document.getElementById("invExpenseAmount");
+    const noteInput = document.getElementById("invExpenseNote");
+    const paymentModeSelect = document.getElementById("expensePaymentMode");
     const bankAccountSelect = document.getElementById("expenseBankAccount");
-    
+
+    console.log("[LOG] Populating form fields...");
+
+    if (dateInput) {
+        // Convert date from DD-MM-YYYY or any format to YYYY-MM-DD
+        let dateValue = expense.expense_date || expense.date;
+        if (dateValue) {
+            // Handle DD-MM-YYYY format
+            if (/^\d{2}-\d{2}-\d{4}$/.test(dateValue)) {
+                const [day, month, year] = dateValue.split("-");
+                dateValue = `${year}-${month}-${day}`;
+            }
+            // Handle YYYY-MM-DD format (already correct)
+            dateInput.value = dateValue;
+            console.log("[LOG] Date set to:", dateValue);
+        }
+    }
+
+    if (amountInput) {
+        amountInput.value = expense.amount || 0;
+        console.log("[LOG] Amount set to:", expense.amount);
+    }
+
+    if (noteInput) {
+        noteInput.value = expense.note || expense.notes || expense.description || "";
+        console.log("[LOG] Note set to:", expense.note);
+    }
+
+    if (paymentModeSelect) {
+        const paymentMode = (expense.payment_mode || "cash").toLowerCase();
+        paymentModeSelect.value = paymentMode;
+        handleInventoryPaymentMode(paymentMode);
+        console.log("[LOG] Payment mode set to:", paymentMode);
+    }
+
+    // Set bank account after payment mode is set
+    setTimeout(() => {
+        if (bankAccountSelect && expense.bank_account_id) {
+            bankAccountSelect.value = String(expense.bank_account_id);
+            console.log("[LOG] Bank account set to:", expense.bank_account_id);
+        }
+    }, 100);
+
+    // Update modal title
+    const modalTitle = modal.querySelector(".expense-modal-header h2");
+    if (modalTitle) {
+        modalTitle.textContent = "Edit expense";
+    }
+
+    // Update submit button text
+    const submitBtn = modal.querySelector(".expense-btn-save");
+    if (submitBtn) {
+        submitBtn.textContent = "Update";
+    }
+
+    console.log("[LOG] ✓ Form populated successfully");
+    console.log("[LOG] ========================================");
+
+    // Show modal
+    modal.style.display = "flex";
+    setTimeout(() => {
+        modal.classList.add("show");
+    }, 10);
+};
+
+// Handle payment mode change for inventory form
+window.handleInventoryPaymentMode = function (paymentMode) {
+    const bankAccountSelect = document.getElementById("expenseBankAccount");
+
     if (paymentMode === 'cash') {
         bankAccountSelect.disabled = true;
         bankAccountSelect.value = "";
         bankAccountSelect.innerHTML = '<option value="">N/A</option>';
     } else if (paymentMode === 'upi') {
         bankAccountSelect.disabled = false;
-        bankAccountSelect.innerHTML = '<option value="">Settle UPI</option>';
-        bankAccountSelect.value = "";
+        bankAccountSelect.innerHTML = '<option value="">Select UPI Account</option>';
+        populateBankAccountDropdown("", paymentMode);
     } else if (paymentMode === 'bank') {
         bankAccountSelect.disabled = false;
         bankAccountSelect.innerHTML = '<option value="">Select Bank</option>';
-        // Populate with bank accounts
-        populateBankAccountDropdown("", "");
-        bankAccountSelect.value = "";
+        populateBankAccountDropdown("", paymentMode);
     }
 };
 
 // Close modal when clicking outside
-window.addEventListener("click", function(event) {
+window.addEventListener("click", function (event) {
     const modal = document.getElementById("expenseFormModal");
     if (event.target === modal || (event.target.classList && event.target.classList.contains("expense-modal-overlay"))) {
         closeExpenseForm();
@@ -178,7 +290,7 @@ function initMonthDropdown() {
     if (!monthSelect) return;
     monthSelect.innerHTML = "";
     const today = new Date();
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 12; i++) {
         const d = new Date();
         d.setMonth(today.getMonth() - i);
         const value = d.toISOString().slice(0, 7);
@@ -198,7 +310,7 @@ function attachEventListeners() {
     if (staffSelect) staffSelect.addEventListener("change", (e) => { handleStaffSelection(e.target.value); });
     if (monthSelect) monthSelect.addEventListener("change", () => { renderExpenses(); calculateTotals(); });
     if (expenseForm) expenseForm.addEventListener("submit", handleSubmitExpense);
-    
+
     // Setup payment mode change handler
     setupPaymentModeChangeHandler();
 }
@@ -301,6 +413,7 @@ function handleStaffSelection(staffId) {
         invSelectedStaff = null;
         updateStaffHeader();
         clearExpenses();
+        resetSummaryCards();
         return;
     }
 
@@ -311,6 +424,7 @@ function handleStaffSelection(staffId) {
     }
 
     updateStaffHeader();
+    updateSummaryCards();
     if (invSelectedStaff) {
         loadExpensesForStaff();
     } else {
@@ -346,26 +460,24 @@ function updateStaffHeader() {
 
 function getAccountsByPaymentMode(paymentMode) {
     if (!paymentMode) return bankAccountData;
-    
+
     const mode = paymentMode.toLowerCase();
-    
+
     if (mode === 'cash') {
         return [];
     } else if (mode === 'upi') {
-        // Filter accounts that support UPI (type = 'upi' or name contains 'upi')
-        return bankAccountData.filter(acc => 
-            acc.type?.toLowerCase() === 'upi' || 
+        return bankAccountData.filter(acc =>
+            acc.type?.toLowerCase() === 'upi' ||
             acc.name?.toLowerCase().includes('upi') ||
             acc.account_name?.toLowerCase().includes('upi')
         );
     } else if (mode === 'bank') {
-        // Filter accounts that are bank accounts (type = 'bank')
-        return bankAccountData.filter(acc => 
+        return bankAccountData.filter(acc =>
             acc.type?.toLowerCase() === 'bank' ||
-            (!acc.type && acc.account_number) // Fallback for accounts without explicit type
+            (!acc.type && acc.account_number)
         );
     }
-    
+
     return bankAccountData;
 }
 
@@ -376,10 +488,9 @@ function populateBankAccountDropdown(selectedBankId = "", paymentMode = "") {
         return;
     }
 
-    // If cash is selected, disable the bank account field
     if (paymentMode.toLowerCase() === 'cash') {
         select.disabled = true;
-        select.innerHTML = `<option value="">Not applicable for Cash</option>`;
+        select.innerHTML = `<option value="">N/A</option>`;
         select.value = "";
         select.removeAttribute('required');
         return;
@@ -388,7 +499,6 @@ function populateBankAccountDropdown(selectedBankId = "", paymentMode = "") {
     select.disabled = false;
     select.setAttribute('required', 'required');
 
-    // Get filtered accounts based on payment mode
     const filteredAccounts = paymentMode ? getAccountsByPaymentMode(paymentMode) : bankAccountData;
 
     console.log(`Populating bank account dropdown with ${filteredAccounts.length} accounts for mode: ${paymentMode}`);
@@ -427,11 +537,10 @@ function setupPaymentModeChangeHandler() {
     const paymentModeSelect = document.getElementById("expensePaymentMode");
     if (!paymentModeSelect) return;
 
-    // Remove existing listeners by cloning
     const newSelect = paymentModeSelect.cloneNode(true);
     paymentModeSelect.parentNode.replaceChild(newSelect, paymentModeSelect);
 
-    newSelect.addEventListener("change", function() {
+    newSelect.addEventListener("change", function () {
         const selectedMode = this.value;
         console.log("Payment mode changed to:", selectedMode);
         populateBankAccountDropdown("", selectedMode);
@@ -456,7 +565,7 @@ async function loadExpensesForStaff() {
         console.log(url);
         const res = await fetch(url);
         console.log(res);
-        
+
         if (!res.ok) {
             console.warn("Expenses API returned", res.status);
             invExpenses = [];
@@ -497,12 +606,10 @@ function clearExpenses() {
 function normalizeToYYYYMM(dateStr) {
     if (!dateStr) return "";
 
-    // Format: YYYY-MM-DD
     if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
         return dateStr.slice(0, 7);
     }
 
-    // Format: DD-MM-YYYY
     if (/^\d{2}-\d{2}-\d{4}$/.test(dateStr)) {
         const [d, m, y] = dateStr.split("-");
         return `${y}-${m}`;
@@ -519,13 +626,14 @@ function renderExpenses() {
     const selectedMonth = monthSelect ? monthSelect.value : null;
 
     let filtered = invExpenses;
-    console.log("filtered", filtered);
+    console.log("[LOG] Filtered expenses:", filtered.length);
 
     if (selectedMonth) {
         filtered = invExpenses.filter(e => {
             const dateStr = normalizeToYYYYMM(e.expense_date || e.date);
             return dateStr === selectedMonth;
         });
+        console.log("[LOG] Expenses after month filter:", filtered.length);
     }
 
     if (!filtered.length) {
@@ -539,20 +647,25 @@ function renderExpenses() {
     }
 
     let html = `
-        <table style="width: 100%; border-collapse: collapse;">
-            <thead>
-                <tr style="background: #f3f4f6; border-bottom: 2px solid #e5e7eb;">
-                    <th style="padding: 12px; text-align: left; font-weight: 600; color: #374151;">Date</th>
-                    <th style="padding: 12px; text-align: right; font-weight: 600; color: #374151;">Amount</th>
-                    <th style="padding: 12px; text-align: left; font-weight: 600; color: #374151;">Payment Mode</th>
-                    <th style="padding: 12px; text-align: left; font-weight: 600; color: #374151;">Description</th>
-                    <th style="padding: 12px; text-align: center; font-weight: 600; color: #374151;">Action</th>
-                </tr>
-            </thead>
-            <tbody>
+        <div class="expense-table-container">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: #f3f4f6; border-bottom: 2px solid #e5e7eb;">
+                        <th style="padding: 15px 0px; text-align: center ; font-weight: 600; color: #374151; font-size: 13px;">Sr No</th>
+                        <th style="padding: 15px 0px; text-align: center ; font-weight: 600; color: #374151; font-size: 13px;">Date</th>
+                        <th style="padding: 15px 0px; text-align: center ; font-weight: 600; color: #374151; font-size: 13px;">Amount</th>
+                        <th style="padding: 15px 0px; text-align: center ; font-weight: 600; color: #374151; font-size: 13px;">Payment</th>
+                        <th style="padding: 15px 0px; text-align: center ; font-weight: 600; color: #374151; font-size: 13px;">Bank</th>
+                        <th style="padding: 15px 0px; text-align: center ; font-weight: 600; color: #374151; font-size: 13px;">Description</th>
+                        <th style="padding: 15px 0px; text-align: center ; font-weight: 600; color: #374151; font-size: 13px;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
     `;
 
     filtered.forEach((exp, index) => {
+        console.log("expance :", exp);
+
         const date = new Date(exp.expense_date || exp.date).toLocaleDateString('en-IN');
         const amount = parseFloat(exp.amount || 0);
         const paymentMode = exp.payment_mode || 'N/A';
@@ -560,43 +673,107 @@ function renderExpenses() {
 
         html += `
             <tr style="background: ${bgColor}; border-bottom: 1px solid #e5e7eb;">
-                <td style="padding: 12px; color: #374151; font-size: 14px;">${date}</td>
-                <td style="padding: 12px; text-align: right; color: #374151; font-size: 14px; font-weight: 600;">₹${amount.toFixed(2)}</td>
-                <td style="padding: 12px; color: #374151; font-size: 14px;">${paymentMode.toUpperCase()}</td>
-                <td style="padding: 12px; color: #374151; font-size: 14px;">${exp.note || exp.notes || exp.description || '-'}</td>
-                <td style="padding: 12px; text-align: center;">
-                    <button onclick="handleDeleteExpense('${exp.id}')" style="background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500;">Delete</button>
+                <td style="padding: 15px 0px ; text-align: center ; color: #374151; font-size: 13px; white-space: nowrap;">${index + 1}</td>
+                <td style="padding: 15px 0px; text-align: center ; color: #374151; font-size: 13px; white-space: nowrap;">${date}</td>
+                <td style="padding: 15px 0px; text-align: center ; color: #374151; font-size: 13px; font-weight: 600; white-space: nowrap;">₹${amount.toFixed(2)}</td>
+                <td style="padding: 15px 0px; text-align: center ; color: #374151; font-size: 13px; white-space: nowrap;">${paymentMode.toUpperCase()}</td>
+                <td style="padding: 15px 0px; text-align: center ; color: #374151; font-size: 13px; white-space: nowrap;">${exp.bank_name}</td>
+                <td style="padding: 15px 0px; text-align: center ; color: #374151; font-size: 13px; max-width: 100px; overflow: hidden; text-overflow: ellipsis;" title="${exp.notes || 'N/A'}">${exp.notes || 'N/A'}</td>
+                <td style="padding: 15px 0px; text-align: center ; text-align: center; white-space: nowrap;">
+                    <button onclick="openEditExpenseForm('${exp.id}')" class="icon-btn icon-btn-edit" title="Edit Expense">
+                        <i class="icon-edit">✎</i>
+                    </button>
+                    <button onclick="handleDeleteExpense('${exp.id}')" class="icon-btn icon-btn-delete" title="Delete Expense">
+                        <i class="icon-delete">🗑</i>
+                    </button>
                 </td>
             </tr>
         `;
     });
 
     html += `
-            </tbody>
-        </table>
+                </tbody>
+            </table>
+        </div>
     `;
 
     expensesList.innerHTML = html;
+    console.log("[LOG] Rendered", filtered.length, "expenses in table");
 }
 
-window.handleDeleteExpense = async function(expenseId) {
+/* ============================
+   Delete Expense
+   ============================ */
+
+window.handleDeleteExpense = async function (expenseId) {
+    console.log("[LOG] ========================================");
+    console.log("[LOG] DELETE EXPENSE - START");
+    console.log("[LOG] Attempting to delete expense ID:", expenseId);
+
     try {
+        const expense = invExpenses.find(e => String(e.id) === String(expenseId));
+
+        if (!expense) {
+            console.error("[LOG] ❌ Expense not found:", expenseId);
+            showNotification("Expense not found!", "error");
+            return;
+        }
+
+        console.log("[LOG] Expense to delete:", expense);
+        console.log("[LOG] - Amount: ₹" + expense.amount);
+        console.log("[LOG] - Date:", expense.expense_date || expense.date);
+        console.log("[LOG] - Payment Mode:", expense.payment_mode);
+
         const confirmed = await showConfirm("Are you sure you want to delete this expense?", "warning");
-        if (!confirmed) return;
+
+        if (!confirmed) {
+            console.log("[LOG] ⚠ Delete cancelled by user");
+            console.log("[LOG] ========================================");
+            return;
+        }
+
+        console.log("[LOG] User confirmed deletion, proceeding...");
+        console.log("[LOG] Sending DELETE request to API...");
 
         const res = await fetch(`${expenseURLphp}?id=${expenseId}`, {
             method: "DELETE",
             headers: { "Content-Type": "application/json" }
         });
 
-        if (!res.ok) throw new Error("Delete failed with status " + res.status);
+        console.log("[LOG] API Response status:", res.status);
 
-        invExpenses = invExpenses.filter(e => e.id !== expenseId);
+        if (!res.ok) {
+            const errorText = await res.text();
+            console.error("[LOG] ❌ API Error Response:", errorText);
+            throw new Error("Delete failed with status " + res.status);
+        }
+
+        const result = await res.json();
+        console.log("[LOG] ✓ API Success Response:", result);
+
+        // Remove from local array
+        const beforeCount = invExpenses.length;
+        invExpenses = invExpenses.filter(e => String(e.id) !== String(expenseId));
+        const afterCount = invExpenses.length;
+
+        console.log("[LOG] ✓ Removed from local array");
+        console.log("[LOG] Expenses count: " + beforeCount + " → " + afterCount);
+
+        // Refresh UI
         renderExpenses();
         calculateTotals();
+
+        console.log("[LOG] ✓ UI refreshed successfully");
+        console.log("[LOG] ✓ Expense deleted successfully");
+        console.log("[LOG] ========================================");
+
         showNotification("Expense deleted successfully.", "success");
     } catch (e) {
-        console.error("Failed to delete expense:", e);
+        console.error("[LOG] ========================================");
+        console.error("[LOG] ❌ DELETE FAILED");
+        console.error("[LOG] Error:", e.message);
+        console.error("[LOG] Stack:", e.stack);
+        console.error("[LOG] ========================================");
         showNotification("Error deleting expense.", "error");
     }
 };
@@ -618,23 +795,24 @@ function calculateTotals() {
 
     const totalExpense = filtered.reduce((s, e) => s + Number(e.amount || 0), 0);
     totalExpenseEl.textContent = `₹${totalExpense.toFixed(2)}`;
-    
-    // Update balance card
+
     updateStaffHeader();
 }
 
 /* ============================
-   Submit Expense
+   Submit Expense (Add or Update)
    ============================ */
 async function handleSubmitExpense(event) {
     event.preventDefault();
 
+    console.log("[LOG] ========================================");
+    console.log("[LOG] SUBMIT EXPENSE - START");
+
     if (!invSelectedStaff) {
+        console.error("[LOG] ❌ No staff selected");
         showNotification("Please select a staff member first.", "error");
         return;
     }
-
-    const categoryId = window.staffSalaryCategoryId; // Default category ID
 
     const amountInput = document.getElementById("invExpenseAmount");
     const dateInput = document.getElementById("invExpenseDate");
@@ -642,7 +820,10 @@ async function handleSubmitExpense(event) {
     const paymentModeSelect = document.getElementById("expensePaymentMode");
     const bankAccountSelect = document.getElementById("expenseBankAccount");
 
-    if (!amountInput || !dateInput || !paymentModeSelect) return;
+    if (!amountInput || !dateInput || !paymentModeSelect) {
+        console.error("[LOG] ❌ Form inputs not found");
+        return;
+    }
 
     const amount = Number(amountInput.value);
     const date = dateInput.value;
@@ -650,79 +831,146 @@ async function handleSubmitExpense(event) {
     const paymentMode = paymentModeSelect.value;
     const bankAccountId = bankAccountSelect.value || null;
 
+    console.log("[LOG] Form Values:");
+    console.log("[LOG] - Amount:", amount);
+    console.log("[LOG] - Date:", date);
+    console.log("[LOG] - Note:", note);
+    console.log("[LOG] - Payment Mode:", paymentMode);
+    console.log("[LOG] - Bank Account ID:", bankAccountId);
+
     // Validation
     if (!amount || !date || !paymentMode) {
+        console.error("[LOG] ❌ Validation failed: Missing required fields");
         showNotification("Please fill all required fields.", "error");
         return;
     }
     if (amount <= 0) {
+        console.error("[LOG] ❌ Validation failed: Amount must be > 0");
         showNotification("Amount must be greater than zero.", "error");
         return;
     }
     if (paymentMode !== "cash" && !bankAccountId) {
+        console.error("[LOG] ❌ Validation failed: Bank account required for non-cash payments");
         showNotification("Please select a bank account for non-cash payments.", "error");
         return;
     }
 
-    // Convert date from YYYY-MM-DD to DD-MM-YYYY format
+    console.log("[LOG] ✓ Validation passed");
+
+    // Date is already in YYYY-MM-DD format from the input
     const [year, month, day] = date.split("-");
     const formattedDate = `${year}-${month}-${day}`;
 
     const payload = {
         user_id: user_id,
         staff_id: invSelectedStaff.id,
-        // category_id: categoryId,
         amount: amount,
         expense_date: formattedDate,
         payment_mode: paymentMode,
         note: note
     };
 
-    // Add bank_account_id only for non-cash payments
     if (paymentMode !== "cash" && bankAccountId) {
         payload.bank_account_id = parseInt(bankAccountId);
     }
 
-    console.log("Submitting expense:", payload);
+    // Check if editing or adding
+    const isEditing = currentEditingExpense !== null;
 
-    const confirmed = await showConfirm("Are you sure you want to add this expense?", "warning");
-    if (!confirmed) return;
+    console.log("[LOG] Operation Type:", isEditing ? "UPDATE" : "ADD");
+
+    if (isEditing) {
+        console.log("[LOG] Editing expense ID:", currentEditingExpense.id);
+        console.log("[LOG] Original values:", {
+            amount: currentEditingExpense.amount,
+            date: currentEditingExpense.expense_date,
+            payment_mode: currentEditingExpense.payment_mode
+        });
+    }
+
+    console.log("[LOG] Payload prepared:", payload);
+
+    const confirmMessage = isEditing
+        ? "Are you sure you want to update this expense?"
+        : "Are you sure you want to add this expense?";
+
+    const confirmed = await showConfirm(confirmMessage, "info");
+    if (!confirmed) {
+        console.log("[LOG] ⚠ Operation cancelled by user");
+        console.log("[LOG] ========================================");
+        return;
+    }
+
+    console.log("[LOG] User confirmed, proceeding with API call...");
 
     try {
-        const res = await fetch(expenseURLphp, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
-        });
+        let res;
+
+        if (isEditing) {
+            // UPDATE existing expense
+            console.log("[LOG] Sending PUT request to update expense...");
+            console.log("[LOG] URL:", `${expenseURLphp}?id=${currentEditingExpense.id}`);
+
+            res = await fetch(`${expenseURLphp}?id=${currentEditingExpense.id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+        } else {
+            // ADD new expense
+            console.log("[LOG] Sending POST request to add new expense...");
+            console.log("[LOG] URL:", expenseURLphp);
+
+            res = await fetch(expenseURLphp, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+        }
+
+        console.log("[LOG] API Response status:", res.status);
 
         if (!res.ok) {
             const errorText = await res.text();
-            console.error("API Error:", errorText);
-            throw new Error("POST failed " + res.status);
+            console.error("[LOG] ❌ API Error Response:", errorText);
+            throw new Error(`Request failed with status ${res.status}`);
         }
 
-        const created = await res.json();
-        console.log("Expense created:", created);
+        const result = await res.json();
+        console.log("[LOG] ✓ API Success Response:", result);
 
         // Reload expenses to get fresh data
+        console.log("[LOG] Reloading expenses from server...");
         await loadExpensesForStaff();
 
         // Close modal and reset form
         closeExpenseForm();
 
-        showNotification("Expense added successfully.", "success");
+        const successMessage = isEditing
+            ? "✓ Expense updated successfully!"
+            : "✓ Expense added successfully!";
+
+        console.log("[LOG] ✓ Operation completed successfully");
+        console.log("[LOG] ========================================");
+
+        showNotification(successMessage, "success");
+
     } catch (e) {
-        console.error("Error posting expense:", e);
-        showNotification("Error while adding expense. Please try again.", "error");
+        console.error("[LOG] ========================================");
+        console.error("[LOG] ❌ SUBMIT FAILED");
+        console.error("[LOG] Error:", e.message);
+        console.error("[LOG] Stack:", e.stack);
+        console.error("[LOG] ========================================");
+        showNotification("Error while saving expense. Please try again.", "error");
     }
 }
 
 // Global handler functions
-window.handleStaffChange = function(staffId) {
+window.handleStaffChange = function (staffId) {
     handleStaffSelection(staffId);
 };
 
-window.handleMonthChange = function(monthYear) {
+window.handleMonthChange = function (monthYear) {
     const monthSelect = document.getElementById("invMonthSelect");
     if (monthSelect) {
         monthSelect.value = monthYear;
@@ -736,3 +984,601 @@ window.handleAddExpense = handleSubmitExpense;
 /* Expose for outside use */
 window.initInventoryStaffPage = initInventoryStaffPage;
 window.renderInventoryStaffPage = renderInventoryStaffPage;
+
+// ============================================
+// PRINT AND EXPORT FUNCTIONS - Using Global Print System
+// ============================================
+
+/**
+ * Toggle export dropdown menu
+ */
+window.toggleExportDropdown = function () {
+    const dropdown = document.getElementById("exportDropdown");
+    if (dropdown) {
+        dropdown.classList.toggle("show");
+    }
+};
+
+/**
+ * Close export dropdown when clicking outside
+ */
+document.addEventListener("click", function (event) {
+    const dropdown = document.getElementById("exportDropdown");
+    const exportBtn = document.querySelector(".btn-export");
+
+    if (dropdown && exportBtn) {
+        if (!dropdown.contains(event.target) && !exportBtn.contains(event.target)) {
+            dropdown.classList.remove("show");
+        }
+    }
+});
+
+/**
+ * Prepare print data from current expenses table
+ */
+function preparePrintData() {
+    const monthSelect = document.getElementById("invMonthSelect");
+    const selectedMonth = monthSelect ? monthSelect.value : null;
+
+    let filtered = invExpenses;
+    if (selectedMonth) {
+        filtered = invExpenses.filter(e => {
+            const dateStr = normalizeToYYYYMM(e.expense_date || e.date);
+            return dateStr === selectedMonth;
+        });
+    }
+
+    const headers = ['Sr No', 'Date', 'Amount', 'Payment Mode', 'Bank', 'Description'];
+    const rows = filtered.map((exp, index) => {
+        const date = new Date(exp.expense_date || exp.date).toLocaleDateString('en-IN');
+        const amount = parseFloat(exp.amount || 0);
+        const paymentMode = exp.payment_mode || 'N/A';
+        return [
+            index + 1,
+            date,
+            `₹${amount.toFixed(2)}`,
+            paymentMode.toUpperCase(),
+            exp.bank_name || 'N/A',
+            exp.notes || 'N/A'
+        ];
+    });
+
+    return { headers, rows };
+}
+
+/**
+ * Print the staff expense report with confirmation - Direct Print Dialog
+ */
+window.printReport = async function () {
+    const staffSelect = document.getElementById("invStaffSelect");
+    const monthSelect = document.getElementById("invMonthSelect");
+
+    if (!staffSelect.value || !monthSelect.value) {
+        showNotification("Please select Staff and Month to print report", "warning");
+        return;
+    }
+
+    const staffName = staffSelect.options[staffSelect.selectedIndex].text;
+    const monthYear = monthSelect.value;
+
+    const confirmPrint = await showConfirm(
+        `📋 Print Report Confirmation\n\nStaff: ${staffName}\nPeriod: ${monthYear}\n\nDo you want to print this report?`,
+        "info"
+    );
+
+    if (!confirmPrint) return;
+
+    // Prepare data for print
+    const printData = preparePrintData();
+    
+    // Generate print HTML with proper table format
+    const printHTML = generatePrintHTML(staffName, monthYear, printData);
+    
+    // Open print window
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(printHTML);
+    printWindow.document.close();
+    
+    // Trigger print after content loads
+    setTimeout(() => {
+        printWindow.focus();
+        printWindow.print();
+    }, 500);
+};
+
+/**
+ * Generate HTML for print/PDF with proper table format
+ */
+function generatePrintHTML(staffName, monthYear, printData) {
+    const headers = printData.headers || [];
+    const rows = printData.rows || [];
+    
+    // Build table rows
+    const tableRows = rows.map(row => {
+        const cells = row.map(cell => `<td style="padding: 8px; border: 1px solid #ddd; text-align: left;">${cell}</td>`).join('');
+        return `<tr>${cells}</tr>`;
+    }).join('');
+    
+    const tableHeaders = headers.map(header => `<th style="padding: 10px; border: 1px solid #ddd; background-color: #f3f4f6; font-weight: 600; text-align: left;">${header}</th>`).join('');
+    
+    return `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Staff Expense Report - ${staffName}</title>
+    <style>
+        @media print {
+            @page {
+                margin: 1.5cm;
+            }
+            body {
+                margin: 0;
+            }
+        }
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            color: #333;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #667eea;
+            margin-bottom: 30px;
+        }
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .logo {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 24px;
+        }
+        .company-info h1 {
+            margin: 0;
+            font-size: 24px;
+            color: #1f2937;
+        }
+        .company-info p {
+            margin: 5px 0 0 0;
+            color: #6b7280;
+            font-size: 14px;
+        }
+        .report-title {
+            text-align: right;
+        }
+        .report-title h2 {
+            margin: 0;
+            font-size: 20px;
+            color: #1f2937;
+        }
+        .report-title p {
+            margin: 5px 0 0 0;
+            color: #6b7280;
+            font-size: 12px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            page-break-inside: auto;
+        }
+        th, td {
+            padding: 10px 8px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        th {
+            background-color: #f3f4f6;
+            font-weight: 600;
+            color: #374151;
+        }
+        tr:nth-child(even) {
+            background-color: #f9fafb;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            text-align: center;
+            color: #6b7280;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo-section">
+            <div class="logo">SA</div>
+            <div class="company-info">
+                <h1>Sainath Alupuri</h1>
+                <p>Staff Expense Management System</p>
+            </div>
+        </div>
+        <div class="report-title">
+            <h2>Staff Expense Report</h2>
+            <p>Staff: ${staffName} | Period: ${monthYear}</p>
+            <p>Generated on: ${new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+        </div>
+    </div>
+    
+    <table>
+        <thead>
+            <tr>${tableHeaders}</tr>
+        </thead>
+        <tbody>
+            ${tableRows}
+        </tbody>
+    </table>
+    
+    <div class="footer">
+        <p>This is an official report generated by Sainath Alupuri Management System</p>
+        <p>© ${new Date().getFullYear()} All Rights Reserved | Confidential</p>
+    </div>
+</body>
+</html>`;
+}
+
+/**
+ * Load html2pdf library dynamically
+ */
+function loadHtml2Pdf() {
+    return new Promise((resolve, reject) => {
+        if (window.html2pdf) {
+            resolve();
+            return;
+        }
+        
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+        script.integrity = 'sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==';
+        script.crossOrigin = 'anonymous';
+        script.referrerPolicy = 'no-referrer';
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error('Failed to load html2pdf library'));
+        document.head.appendChild(script);
+    });
+}
+
+/**
+ * Load XLSX library dynamically
+ */
+function loadXLSX() {
+    return new Promise((resolve, reject) => {
+        if (window.XLSX) {
+            resolve();
+            return;
+        }
+        
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error('Failed to load XLSX library'));
+        document.head.appendChild(script);
+    });
+}
+
+/**
+ * Export to PDF with confirmation - Direct PDF Download
+ */
+window.exportToPDF = async function () {
+    const staffSelect = document.getElementById("invStaffSelect");
+    const monthSelect = document.getElementById("invMonthSelect");
+
+    if (!staffSelect.value || !monthSelect.value) {
+        showNotification("Please select Staff and Month to export", "warning");
+        return;
+    }
+
+    const staffName = staffSelect.options[staffSelect.selectedIndex].text;
+    const monthYear = monthSelect.value;
+
+    const confirmExport = await showConfirm(
+        `📄 PDF Export Confirmation\n\nStaff: ${staffName}\nPeriod: ${monthYear}\n\nPDF will be generated and downloaded. Do you want to continue?`,
+        "info"
+    );
+
+    if (!confirmExport) return;
+
+    showNotification("Loading PDF library... Please wait", "info");
+
+    try {
+        // Load library if not already loaded
+        await loadHtml2Pdf();
+        
+        showNotification("Generating PDF... Please wait", "info");
+
+        // Close dropdown
+        const dropdown = document.getElementById("exportDropdown");
+        if (dropdown) {
+            dropdown.classList.remove("show");
+        }
+
+        // Prepare data for print
+        const printData = preparePrintData();
+        
+        // Generate print HTML
+        const printHTML = generatePrintHTML(staffName, monthYear, printData);
+        
+        // Create temporary element for PDF generation
+        const tempDiv = document.createElement('div');
+        tempDiv.style.position = 'absolute';
+        tempDiv.style.left = '-9999px';
+        tempDiv.innerHTML = printHTML.match(/<body[^>]*>([\s\S]*?)<\/body>/i)[1];
+        document.body.appendChild(tempDiv);
+        
+        // Generate PDF
+        const opt = {
+            margin: [10, 10, 10, 10],
+            filename: `Staff_Expense_Report_${staffName.replace(/\s+/g, '_')}_${monthYear.replace('/', '-')}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        html2pdf()
+            .set(opt)
+            .from(tempDiv)
+            .save()
+            .then(() => {
+                document.body.removeChild(tempDiv);
+                showNotification("PDF downloaded successfully!", "success");
+            })
+            .catch(err => {
+                document.body.removeChild(tempDiv);
+                console.error('PDF export error:', err);
+                showNotification("Error generating PDF. Please try again.", "error");
+            });
+    } catch (err) {
+        console.error('Error loading PDF library:', err);
+        showNotification("Error loading PDF library. Please refresh and try again.", "error");
+    }
+};
+
+/**
+ * Export to Excel with confirmation - Direct Excel Download with Professional Formatting
+ */
+window.exportToExcel = async function () {
+    const staffSelect = document.getElementById("invStaffSelect");
+    const monthSelect = document.getElementById("invMonthSelect");
+
+    if (!staffSelect.value || !monthSelect.value) {
+        showNotification("Please select Staff and Month to export", "warning");
+        return;
+    }
+
+    const staffName = staffSelect.options[staffSelect.selectedIndex].text;
+    const monthYear = monthSelect.value;
+
+    const confirmExport = await showConfirm(
+        `📊 Excel Export Confirmation\n\nStaff: ${staffName}\nPeriod: ${monthYear}\n\nExcel file will be downloaded. Do you want to continue?`,
+        "info"
+    );
+
+    if (!confirmExport) return;
+
+    showNotification("Loading Excel library... Please wait", "info");
+
+    try {
+        // Load library if not already loaded
+        await loadXLSX();
+        
+        showNotification("Generating Excel file... Please wait", "info");
+
+        // Close dropdown
+        const dropdown = document.getElementById("exportDropdown");
+        if (dropdown) {
+            dropdown.classList.remove("show");
+        }
+
+        // Prepare data for print
+        const printData = preparePrintData();
+        const headers = printData.headers || [];
+        const rows = printData.rows || [];
+        
+        // Config for Excel
+        const config = {
+            companyName: 'Sainath Alupuri',
+            companySubtitle: 'Staff Expense Management System',
+            logo: 'SA',
+            reportTitle: `Staff Expense Report - ${staffName}`
+        };
+        
+        // Get additional summary data
+        const salary = document.getElementById("invStaffSalary")?.textContent || "₹0.00";
+        const totalExpense = document.getElementById("invTotalExpense")?.textContent || "₹0.00";
+        const balanceElement = document.getElementById("staffBalanceCard");
+        const balance = balanceElement?.textContent.trim() || "₹0.00";
+        
+        try {
+        // Create workbook
+        const wb = XLSX.utils.book_new();
+        
+        // Build worksheet data with professional structure
+        const wsData = [
+            // Company Header (Row 1-2) - Will merge across all columns
+            [config.companyName || 'Sainath Alupuri'],
+            [config.companySubtitle || 'Staff Expense Management System'],
+            [], // Empty row
+            // Report Info (Row 4-7)
+            ['Report Title:', `Staff Expense Report - ${staffName}`],
+            ['Reporting Period:', monthYear],
+            ['Generated Date:', new Date().toLocaleString('en-IN')],
+            [], // Empty row
+            // Summary Section (Row 9-11)
+            ['SUMMARY INFORMATION'],
+            ['Monthly Salary:', salary],
+            ['Total Expenses:', totalExpense],
+            ['Balance:', balance],
+            [], // Empty row
+            // Table Header (Row 13)
+            headers,
+            // Table Data (Row 14+)
+            ...rows,
+            [], // Empty row
+            // Footer (Row at bottom)
+            [`Generated by Sainath Alupuri Management System on ${new Date().toLocaleString('en-IN')}`]
+        ];
+        
+        // Create worksheet
+        const ws = XLSX.utils.aoa_to_sheet(wsData);
+        
+        // Set column widths for better formatting
+        const colWidths = headers.map((_, index) => {
+            // Set width based on header length
+            const maxLength = Math.max(
+                headers[index]?.length || 10,
+                ...rows.map(row => String(row[index] || '').length)
+            );
+            return { wch: Math.min(Math.max(maxLength + 2, 10), 50) };
+        });
+        ws['!cols'] = colWidths;
+        
+        // Set row heights
+        ws['!rows'] = [
+            { hpt: 20 }, // Company name row
+            { hpt: 15 }, // Subtitle row
+            { hpt: 5 },  // Empty row
+            { hpt: 15 }, // Report info rows
+            { hpt: 15 },
+            { hpt: 15 },
+            { hpt: 5 },  // Empty row
+            { hpt: 18 }, // Summary header
+            { hpt: 15 }, // Summary rows
+            { hpt: 15 },
+            { hpt: 15 },
+            { hpt: 5 },  // Empty row
+            { hpt: 18 }, // Table header
+            ...rows.map(() => ({ hpt: 15 })), // Data rows
+            { hpt: 5 },  // Empty row
+            { hpt: 15 }  // Footer
+        ];
+        
+        // Merge cells for headers and summary sections
+        const mergeRanges = [];
+        
+        // Merge company name across all columns (Row 1, Cols 0 to headers.length-1)
+        if (headers.length > 0) {
+            mergeRanges.push({
+                s: { r: 0, c: 0 },
+                e: { r: 0, c: headers.length - 1 }
+            });
+            // Merge subtitle (Row 2)
+            mergeRanges.push({
+                s: { r: 1, c: 0 },
+                e: { r: 1, c: headers.length - 1 }
+            });
+            // Merge summary header (Row 9)
+            mergeRanges.push({
+                s: { r: 8, c: 0 },
+                e: { r: 8, c: headers.length - 1 }
+            });
+            // Merge footer (last row)
+            mergeRanges.push({
+                s: { r: wsData.length - 1, c: 0 },
+                e: { r: wsData.length - 1, c: headers.length - 1 }
+            });
+        }
+        
+        ws['!merges'] = mergeRanges;
+        
+        // Add worksheet to workbook
+        XLSX.utils.book_append_sheet(wb, ws, 'Expense Report');
+        
+        // Save file
+        const filename = `Staff_Expense_Report_${staffName.replace(/\s+/g, '_')}_${monthYear.replace('/', '-')}.xlsx`;
+        XLSX.writeFile(wb, filename);
+        
+        showNotification("Excel file downloaded successfully!", "success");
+        } catch (err) {
+            console.error('Excel export error:', err);
+            showNotification("Error generating Excel file. Please try again.", "error");
+        }
+    } catch (err) {
+        console.error('Error loading Excel library:', err);
+        showNotification("Error loading Excel library. Please refresh and try again.", "error");
+    }
+};
+
+// ============================================
+// SUMMARY CARD UPDATE FUNCTIONS
+// ============================================
+
+/**
+ * Update summary cards with staff data
+ */
+function updateSummaryCards() {
+    if (!invSelectedStaff) {
+        resetSummaryCards();
+        return;
+    }
+
+    try {
+        // Get data from staff object or use defaults
+        const staffData = invSelectedStaff || {};
+
+        // Cap Management - Get from staff data or calculate
+        const capFirstCount = parseInt(staffData.cap_first_count || staffData.first_cap || 0);
+        const capTotalCount = parseInt(staffData.cap_total_count || staffData.total_cap || 0);
+
+        document.getElementById("capFirstCount").textContent = capFirstCount;
+        document.getElementById("capTotalCount").textContent = capTotalCount;
+
+        // 25 Days Tracking - Calculate from attendance
+        const daysCompleted = parseInt(staffData.days_worked || staffData.working_days || 0);
+        const daysRemaining = Math.max(0, 25 - daysCompleted);
+
+        document.getElementById("daysCompleted").textContent = daysCompleted;
+        document.getElementById("daysRemaining").textContent = daysRemaining;
+
+        // T-Shirt Uniform - Get from staff data
+        const sameShirtDays = parseInt(staffData.same_shirt_days || staffData.uniform_days || 0);
+        const changedShirtDays = Math.max(0, 25 - sameShirtDays);
+
+        document.getElementById("sameShirtCount").textContent = sameShirtDays;
+        document.getElementById("changedShirtCount").textContent = changedShirtDays;
+
+        // Attendance Summary - Get from staff data
+        const presentCount = parseInt(staffData.attendance_present || staffData.present || 0);
+        const absentCount = parseInt(staffData.attendance_absent || staffData.absent || 0);
+        const leaveCount = parseInt(staffData.attendance_leave || staffData.leave || 0);
+
+        document.getElementById("presentCount").textContent = presentCount;
+        document.getElementById("absentCount").textContent = absentCount;
+        document.getElementById("leaveCount").textContent = leaveCount;
+
+        console.log("Summary cards updated successfully");
+    } catch (e) {
+        console.error("Error updating summary cards:", e);
+        resetSummaryCards();
+    }
+}
+
+/**
+ * Reset summary cards to default
+ */
+function resetSummaryCards() {
+    document.getElementById("capFirstCount").textContent = "0";
+    document.getElementById("capTotalCount").textContent = "0";
+    document.getElementById("daysCompleted").textContent = "0";
+    document.getElementById("daysRemaining").textContent = "25";
+    document.getElementById("sameShirtCount").textContent = "0";
+    document.getElementById("changedShirtCount").textContent = "0";
+    document.getElementById("presentCount").textContent = "0";
+    document.getElementById("absentCount").textContent = "0";
+    document.getElementById("leaveCount").textContent = "0";
+}
+
+// Update summary cards when staff changes
+window.updateSummaryCards = updateSummaryCards;

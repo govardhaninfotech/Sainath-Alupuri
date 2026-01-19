@@ -22,7 +22,7 @@ import { renderInventoryOrdersPage, openorderform, calculateOrderTotal, calculat
 // ============================================
 let currentUser = null;
 let currentPage = "home";
-let sidebarOpen = false;
+let sidebarOpen = false;    
 
 // ============================================
 // INITIALIZATION - Runs when page loads
@@ -454,12 +454,8 @@ async function navigateTo(page) {
 
         case "staffAttendanceReports":
             mainContent.innerHTML = await renderStaffAttendanceReportsTable();
-            document
-                .querySelector('.submenu-item[onclick*="inventory_orders"]')
-                ?.classList.add("active");
+            document.querySelector('.submenu-item[onclick*="staffAttendanceReports"]')?.classList.add("active");
             initMonthDropdown();
-
-
             break;
 
 

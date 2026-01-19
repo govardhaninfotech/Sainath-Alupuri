@@ -265,9 +265,9 @@
     color: #111827;
 }
 
-.modal-body {
+/* .modal-body {
     padding: 20px;
-}
+} */
 
 /* Form Styles */
 .form-group {
@@ -606,9 +606,9 @@
         font-size: 18px;
     }
 
-    .modal-body {
+    /* .modal-body {
         padding: 16px;
-    }
+    } */
 
     .pagination {
         flex-direction: column;
