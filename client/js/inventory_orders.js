@@ -1,5 +1,5 @@
 // ============================================
-// ORDERS PAGE - WITH DATE RANGE FILTER
+// ORDERS PAGE - WITH DATE RANGE FILTER & TIME VALIDATION
 // ============================================
 
 import { ordersURLphp, itemURLphp, orderItemsURLphp } from "../apis/api.js";
@@ -35,6 +35,10 @@ let currentStartDate = null;
 let currentEndDate = null;
 let editingItemId = null;
 
+// ORDERING TIME RESTRICTIONS (11 AM to 8 PM)
+const ORDER_START_HOUR = 11; // 11 AM
+const ORDER_END_HOUR = 20;   // 8 PM (20:00 in 24-hour format)
+
 // EXPENSE MANAGEMENT STATE
 let selectedStaffForExpense = null;
 let staffExpenses = [];
@@ -49,6 +53,47 @@ if (!user_id) {
 }
 
 // ============================================
+// GET CURRENT MONTH START AND END DATES
+// ============================================
+function getCurrentMonthDates() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    
+    // First day of current month
+    const startDate = new Date(year, month, 1);
+    
+    // Last day of current month
+    const endDate = new Date(year, month + 1, 0);
+    
+    return {
+        start: startDate.toISOString().split('T')[0],
+        end: endDate.toISOString().split('T')[0]
+    };
+}
+
+// ============================================
+// CHECK IF ORDERING TIME IS VALID
+// ============================================
+function isOrderingTimeValid() {
+    const now = new Date();
+    const currentHour = now.getHours();
+    
+    // Check if current time is between 11 AM and 8 PM
+    return currentHour >= ORDER_START_HOUR && currentHour < ORDER_END_HOUR;
+}
+
+// ============================================
+// SHOW TIME RESTRICTION MESSAGE
+// ============================================
+function showTimeRestrictionMessage() {
+    showNotification(
+        `Sorry! Ordering is only available between ${ORDER_START_HOUR}:00 AM and ${ORDER_END_HOUR}:00 PM (8:00 PM).`,
+        "error"
+    );
+}
+
+// ============================================
 // LOAD ORDER DATA FROM API (WITH DATE RANGE)
 // ============================================
 function loadorderData() {
@@ -59,13 +104,15 @@ function loadorderData() {
     const endDateEle = document.querySelector("#endDate");
     
     if (startDateEle == null || endDateEle == null) {
-        // Default to today if elements don't exist
-        const today = new Date().toISOString().split("T")[0];
-        startDate = today;
-        endDate = today;
+        // Default to current month if elements don't exist
+        const monthDates = getCurrentMonthDates();
+        startDate = monthDates.start;
+        endDate = monthDates.end;
+        currentStartDate = startDate;
+        currentEndDate = endDate;
     } else {
-        startDate = startDateEle.value || new Date().toISOString().split("T")[0];
-        endDate = endDateEle.value || new Date().toISOString().split("T")[0];
+        startDate = startDateEle.value || currentStartDate;
+        endDate = endDateEle.value || currentEndDate;
     }
     
     // Validate date range
@@ -171,10 +218,6 @@ function displayOrderDetailsModal(order, orderItemsList) {
                                         <span class="inv-status-badge inv-status-${order.status.toLowerCase()}">${order.status.toUpperCase()}</span>
                                     </span>
                                 </div>
-                               <!-- <div class="info-item">
-                                    <span class="info-label">Delivery Type</span>
-                                    <span class="info-value">${order.delivery_type === 'urgent' ? 'Same Day Delivery' : 'Next Day Delivery'}</span>
-                                </div> -->
                                 <div class="info-item">
                                     <span class="info-label">Total Amount</span>
                                     <span class="info-value" style="font-weight: 700; color: #667eea; font-size: 16px;">₹${parseFloat(order.total_amount).toFixed(2)}</span>
@@ -284,7 +327,7 @@ function formatDateTime(dateString) {
 }
 
 // ============================================
-// VALIDATE DATE RANGE
+// VALIDATE DATE RANGE - FIXED VERSION
 // ============================================
 function validateDateRange() {
     const startDateEle = document.getElementById("startDate");
@@ -303,14 +346,16 @@ function validateDateRange() {
         return false;
     }
     
-    // Validation 2: Check if start date is before end date
+    // Validation 2: Check if start date is before or equal to end date
     const startDateObj = new Date(startDate);
     const endDateObj = new Date(endDate);
     
     if (startDateObj > endDateObj) {
-        showNotification("Start date cannot be after end date. Please correct the date range.", "error");
-        // Reset end date to start date
-        endDateEle.value = startDate;
+        showNotification("Start date cannot be after end date!", "error");
+        // Reset to current month
+        const monthDates = getCurrentMonthDates();
+        startDateEle.value = monthDates.start;
+        endDateEle.value = monthDates.end;
         return false;
     }
     
@@ -334,10 +379,16 @@ function validateDateRange() {
 }
 
 // ============================================
-// FORM FUNCTIONS
+// FORM FUNCTIONS - WITH TIME VALIDATION
 // ============================================
 export function openorderform() {
-    console.log("enter in orderfrom");
+    // ✅ CHECK TIME BEFORE OPENING FORM
+    if (!isOrderingTimeValid()) {
+        showTimeRestrictionMessage();
+        return; // Don't open the form
+    }
+    
+    console.log("Opening order form");
     loadItemData();
     editingItemId = null;
     orderItems = []; // Reset order items
@@ -351,14 +402,12 @@ export function openorderform() {
     const staffDateInput = document.getElementById("orderDate");
     staffDateInput.value = today;
     staffDateInput.setAttribute('readonly', 'true');
-    staffDateInput.style.pointerEvents = 'none'; // Prevent any interaction
+    staffDateInput.style.pointerEvents = 'none';
 
     // Set total amount to 0 and make it disabled
     const totalAmountInput = document.getElementById("totalAmount");
     totalAmountInput.value = "0.00";
     totalAmountInput.setAttribute('disabled', 'true');
-
- 
 
     const modal = document.getElementById("orderFormModal");
     modal.style.display = "flex";
@@ -371,6 +420,13 @@ export function openorderform() {
 // RENDER STAFF TABLE WITH PAGINATION
 // ============================================
 export function renderInventoryOrdersPage() {
+    // Set default dates to current month on first load
+    if (currentStartDate === null || currentEndDate === null) {
+        const monthDates = getCurrentMonthDates();
+        currentStartDate = monthDates.start;
+        currentEndDate = monthDates.end;
+    }
+    
     return loadorderData().then(() => generateTableHTML());
 }
 
@@ -419,12 +475,19 @@ function generateTableHTML() {
         }
     }
     
-    // Set default dates if not set
-    if (currentStartDate == null || currentEndDate == null) {
-        const today = new Date().toISOString().split("T")[0];
-        currentStartDate = today;
-        currentEndDate = today;
-    }
+    // Set today as max date for date inputs
+    const today = new Date().toISOString().split('T')[0];
+
+    // Display time restriction message if outside ordering hours
+    const timeRestrictionBanner = !isOrderingTimeValid() ? `
+        <div style="background: #FEF2F2; border: 1px solid #FCA5A5; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 20px;">🕐</span>
+            <div>
+                <div style="font-weight: 600; color: #991B1B; font-size: 14px;">Ordering Currently Unavailable</div>
+                <div style="color: #7F1D1D; font-size: 13px; margin-top: 2px;">Orders can only be placed between ${ORDER_START_HOUR}:00 AM and ${ORDER_END_HOUR}:00 PM (8:00 PM)</div>
+            </div>
+        </div>
+    ` : '';
 
     return `
         <div class="content-card">
@@ -433,15 +496,17 @@ function generateTableHTML() {
                 <div class="date-range-container">
                     <div class="date-input-group">
                         <label for="startDate">From Date:</label>
-                        <input type="date" id="startDate" value="${currentStartDate}" onchange="validateAndRefreshOrders()" max="" required/>
+                        <input type="date" id="startDate" value="${currentStartDate}" onchange="validateAndRefreshOrders()" max="${today}" required/>
                     </div>
                     <div class="date-input-group">
                         <label for="endDate">To Date:</label>
-                        <input type="date" id="endDate" value="${currentEndDate}" onchange="validateAndRefreshOrders()" max="" required/>
+                        <input type="date" id="endDate" value="${currentEndDate}" onchange="validateAndRefreshOrders()" max="${today}" required/>
                     </div>
                 </div>
                 <button class="btn-add" onclick="openorderform()">+ Add Order</button>
             </div>
+            
+            ${timeRestrictionBanner}
             
             <div class="table-container">
                 <table class="data-table">
@@ -479,10 +544,11 @@ function generateTableHTML() {
             <div class="modal-content modal-responsive">
                 <div class="modal-header">
                     <h3 id="formTitle">Add New Order</h3>
+                    <h6></h6>
                     <button class="close-btn" onclick="closeorderForm()">&times;</button>
                 </div>
                 <div class="modal-body">
-                    <form id="staffForm" onsubmit="submitOrderForm (event)" class="form-responsive">
+                    <form id="staffForm" onsubmit="submitOrderForm(event)" class="form-responsive">
                         <input type="hidden" id="itemId">
                         
                         <div class="form-row">
@@ -511,13 +577,13 @@ function generateTableHTML() {
 
                         <div class="form-actions" id="formActions">
                             <button type="button" class="btn-cancel" id="cancelBtn" onclick="closeOrderForm()">Cancel</button>
-                            <button type="submit" class="btn-submit" id="submitBtn">Place Order</button>
+                            <button type="submit" style="width: 20px !important;" class="btn-submit" id="submitBtn">Place Order</button>
                         </div>
                     </form>
                 </div>
             </div>
         </div>
-                <style>
+        <style>
             .filter-group {
                 display: flex;
                 align-items: center;
@@ -592,9 +658,21 @@ async function loadItemData() {
 }
 
 // ============================================
-// CALCULATE ITEM TOTAL
+// CALCULATE ITEM TOTAL - WITH TIME VALIDATION
 // ============================================
 export function calculateItemTotal(itemId) {
+    // ✅ CHECK TIME ON EVERY INTERACTION
+    if (!isOrderingTimeValid()) {
+        showTimeRestrictionMessage();
+        // Reset the quantity back to 0
+        const quantityInput = document.getElementById(`quantity_${itemId}`);
+        if (quantityInput) {
+            quantityInput.value = 0;
+        }
+        closeOrderForm();
+        return;
+    }
+    
     const priceInput = document.getElementById(`price_${itemId}`).textContent;
     const quantityInput = document.getElementById(`quantity_${itemId}`).value;
     const totalInput = document.getElementById(`total_${itemId}`);

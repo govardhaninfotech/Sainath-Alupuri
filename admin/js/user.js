@@ -10,6 +10,7 @@ import {
     addItemToAPI
 } from "../apis/master_api.js";
 import { showNotification, showConfirm } from "./notification.js";
+import { exportToExcelmain, exportToPDFmain, printReportclient } from "./print/print.js";
 import {
     validateRequiredField,
     validateIndianMobile,
@@ -99,6 +100,24 @@ function generateTableHTML() {
         <div class="content-card">
             <div class="staff-header">
                 <h2>Client Management</h2>
+                 <div class="header-actions" style="display: flex; gap: 10px; align-items: center;">
+                <button onclick="printReportclient()" class="btn-print" title="Print Report">
+                    <span style="font-size: 18px;">🖨️</span> Print
+                </button>
+                <div class="export-dropdown-wrapper">
+                    <button onclick="toggleExportDropdown()" class="btn-export" title="Export Report">
+                        <span style="font-size: 18px;">📥</span> Export
+                    </button>
+                    <div id="exportDropdown" class="export-dropdown-menu">
+                        <button onclick="exportToPDFmain()" class="export-option">
+                            <span>📄</span> PDF
+                        </button>
+                        <button onclick="exportToExcelmain()" class="export-option">
+                            <span>📊</span> Excel
+                        </button>
+                    </div>
+                </div>
+            </div>
                 <button class="btn-add" onclick="openUserForm()">Add User</button>
             </div>
             
@@ -229,6 +248,55 @@ function generateTableHTML() {
         </div>
     `;
 }
+
+//    let user = userData[index];
+//         tableRows += `
+//     <tr>
+//                 <td>${serialNo}</td>
+//                 <td>${user.name}</td>
+//                 <td>${user.email}</td>
+//                 <td>${user.mobile}</td>
+//                 <td>${user.shop_code}</td>
+//                <!-- <td>${user.current_balance}</td> -->
+//                 <td>${user.is_family_member}</td>
+//                 <td>
+//                     <button class="btn-icon btn-edit" onclick="editUser('${user.id}')" title="Edit">
+//                         <i class="icon-edit">✎</i>
+//                     </button>
+
+// prepaer data form print
+export function preparePrintDatainclient() {
+    // const monthSelect = 1;
+    const selectedMonth = 1;
+
+    let filtered = userData;
+    // if (selectedMonth) {
+    //     filtered = userData.filter(e => {
+    //         // const dateStr = normalizeToYYYYMM(e.expense_date || e.date);
+    //         const dateStr 
+    //         return dateStr;
+    //     });
+    // }
+
+    const headers = ['Sr No', 'Name', 'email', 'Mobile', 'Shop Code'];
+    const rows = filtered.map((user, index) => {
+        const name = user.name;
+        const email = user.email;
+        const mobile = user.mobile;
+        const shop = user.shop_code;
+        return [
+            index + 1,
+            name,
+            email,
+            mobile,
+            shop
+        ];
+    });
+
+    return { headers, rows };
+}
+
+
 
 // ============================================
 // PAGINATION FUNCTIONS (SERVER-SIDE)
@@ -435,7 +503,7 @@ function submitUserForm(event) {
         email: document.getElementById("userEmail").value,
         mobile: document.getElementById("userMobile").value,
         shop_code: document.getElementById("userShopCode").value,
-        credit_limit:  0,
+        credit_limit: 0,
         current_balance: 0,
         address: document.getElementById("userAddress").value || "",
         status: statusCheckbox.checked ? "active" : "inactive",
@@ -580,6 +648,7 @@ window.changeUserPerPage = changeUserPerPage;
 window.showNotification = showNotification;
 window.generateTableHTML = generateTableHTML;
 window.showConfirm = showConfirm;
+window.preparePrintDatainclient = preparePrintDatainclient;
 
 // Setup ESC key handler for modal
 setupEscKeyHandler();

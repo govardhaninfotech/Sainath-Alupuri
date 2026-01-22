@@ -7,7 +7,9 @@
     <title>Staff Expense - Sainath</title>
     <link rel="stylesheet" href="css/inventory.css">
     <!-- For PDF Export -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"
+        integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <!-- For Excel Export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
@@ -15,7 +17,8 @@
 <body>
     <div class="staff-expense-container">
         <!-- Header with Add Button, Print and Export -->
-        <div class="staff-expense-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <div class="staff-expense-header"
+            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
             <h1 style="font-size: 22px; font-weight: 600; margin: 0; color: #1f2937;">Staff Expense</h1>
             <div class="header-actions" style="display: flex; gap: 10px; align-items: center;">
                 <button onclick="printReport()" class="btn-print" title="Print Report">
@@ -80,12 +83,13 @@
         <div class="summary-cards-row summary-cards-row-new" style="grid-template-columns: repeat(3, 1fr);">
             <!-- Cap Card - Shows only days wear -->
             <div class="summary-card">
-                <div class="summary-card-content" style="text-align: center; padding: 10px;">
+                <div class="summary-card-content" style="text-align: center; padding: 10px; display: flex;">
                     <div style="font-size: 14px; color: #1f2937; font-weight: 600; line-height: 1.4;">
                         🧢 Cap
                     </div>
-                    <div style="font-size: 18px; font-weight: 700; margin-top: 6px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
-                        <span id="capDaysWear">0</span> days wear
+                    <div
+                        style="font-size: 18px; font-weight: 700; margin-top: 6px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                        <span id="capDaysWear">0</span> days
                     </div>
                 </div>
             </div>
@@ -96,8 +100,9 @@
                     <div style="font-size: 14px; color: #1f2937; font-weight: 600; line-height: 1.4;">
                         👕 T-Shirt
                     </div>
-                    <div style="font-size: 18px; font-weight: 700; margin-top: 6px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
-                        <span id="tshirtDaysWear">0</span> days wear
+                    <div
+                        style="font-size: 18px; font-weight: 700; margin-top: 6px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                        <span id="tshirtDaysWear">0</span> days
                     </div>
                 </div>
             </div>
@@ -108,8 +113,11 @@
                     <div style="font-size: 14px; color: #1f2937; font-weight: 600; line-height: 1.4;">
                         ✅ Attendance
                     </div>
-                    <div style="font-size: 18px; font-weight: 700; margin-top: 6px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
-                        Present day <span id="presentDayCount">0</span>
+                    <div
+                        style="font-size: 18px; font-weight: 700; margin-top: 6px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                        Present day <span id="presentDayCount">0</span> days <br>
+                        Half day <span id="halfDayCount">0</span> days
+
                     </div>
                 </div>
             </div>
@@ -121,6 +129,7 @@
                 .summary-cards-row-new {
                     grid-template-columns: repeat(2, 1fr) !important;
                 }
+
                 .summary-cards-row-new .summary-card:last-child {
                     grid-column: 1 / -1;
                 }
@@ -130,13 +139,16 @@
                 .summary-cards-row-new {
                     grid-template-columns: 1fr !important;
                 }
+
                 .summary-cards-row-new .summary-card:last-child {
                     grid-column: auto;
                 }
-                .summary-cards-row-new .summary-card-content > div:first-child {
+
+                .summary-cards-row-new .summary-card-content>div:first-child {
                     font-size: 13px !important;
                 }
-                .summary-cards-row-new .summary-card-content > div:last-child {
+
+                .summary-cards-row-new .summary-card-content>div:last-child {
                     font-size: 16px !important;
                 }
             }
@@ -146,7 +158,8 @@
         <div class="expense-content" style="grid-template-columns: 1fr;">
             <!-- Display Expenses Table -->
             <div class="expense-section">
-                <h2 style="margin-bottom: 15px; color: #1f2937; font-size: 15px; font-weight: 600;">Display Expense Per User</h2>
+                <h2 style="margin-bottom: 15px; color: #1f2937; font-size: 15px; font-weight: 600;">Display Expense Per
+                    User</h2>
                 <div id="staffExpensesList" style="max-height: 500px; overflow-y: auto;">
                     <div style="padding: 20px; text-align: center; color: #999;">
                         <p style="font-size: 16px; margin-bottom: 10px;">No expenses recorded</p>
@@ -193,7 +206,8 @@
                         <div class="expense-form-row">
                             <div class="expense-form-group">
                                 <label for="expensePaymentMode">Payment Mode</label>
-                                <select id="expensePaymentMode" required class="expense-form-input" onchange="handleInventoryPaymentMode(this.value)">
+                                <select id="expensePaymentMode" required class="expense-form-input"
+                                    onchange="handleInventoryPaymentMode(this.value)">
                                     <option value="cash" selected>Cash</option>
                                     <option value="upi">UPI</option>
                                     <option value="bank">Bank</option>
@@ -211,8 +225,8 @@
                         <!-- Row 3: Notes (Full Width) -->
                         <div class="expense-form-group expense-form-group-full">
                             <label for="invExpenseNote">Notes</label>
-                            <textarea id="invExpenseNote"
-                                placeholder="Enter notes..." rows="5" class="expense-form-input expense-form-textarea"></textarea>
+                            <textarea id="invExpenseNote" placeholder="Enter notes..." rows="5"
+                                class="expense-form-input expense-form-textarea"></textarea>
                         </div>
                     </div>
 

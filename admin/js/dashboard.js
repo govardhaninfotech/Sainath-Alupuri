@@ -9,8 +9,7 @@ import { renderExpenseCategoryTable } from "./expense_category.js";
 import { renderInventoryExpancesPage } from "./expances.js";
 import { renderStaffExpensePage } from "./staffExpense.js";
 import { renderProfilePage } from "./profile.js";
-
-// 🔹 NEW: Inventory module imports
+import { initBackNavigation, addToHistory } from "./backNavigation.js";// 🔹 NEW: Inventory module imports
 import { renderInventoryStaffPage, initInventoryStaffPage } from "./inventory.js";
 import { renderInventoryOrdersPage } from "./inventory_orders.js";
 import { renderStaffAttendancePage } from "./inventory_attendance.js";
@@ -25,6 +24,7 @@ import { renderStockAdjustmentPage } from "./stockAdjustment.js";
 import { initClientDuesReportCard, initClientDuesDropdown } from "./Billing/clientDue.js";
 import { initPaymentHistoryCard, initClientDropdown } from "./Billing/payment_history.js";
 import { initPaymentHistoryCard as initPaymentCard, initClientDropdown as initPaymentClientDropdown } from "./Billing/payment.js";
+import { renderPaymentDetailsPage } from "./payment_details.js";
 
 // GLOBAL VARIABLES
 // ============================================
@@ -55,6 +55,10 @@ document.addEventListener("DOMContentLoaded", function () {
     if (userData) {
         currentUser = typeof userData === "string" ? JSON.parse(userData) : userData;
         console.log("✅ Logged in user found:", currentUser);
+
+        // 🔹 ADD THIS LINE
+        initBackNavigation();
+
         initializeDashboard();
     } else {
         console.warn("⚠️ No rememberedUser found, redirecting to login");
@@ -412,8 +416,11 @@ function logout() {
 // ============================================
 async function navigateTo(page) {
     console.log(`➡️ navigateTo("${page}")`);
-    currentPage = page;
 
+    // 🔹 ADD THIS LINE
+    addToHistory(page); // 👈 ADD THIS LINE
+
+    currentPage = page;
     localStorage.setItem("lastPage", page);
 
     const menuItems = document.querySelectorAll(".menu-item");
@@ -554,6 +561,12 @@ async function navigateTo(page) {
             initPaymentClientDropdown();
             break;
 
+        case "paymentDetails":
+            mainContent.innerHTML = renderPaymentDetailsPage();
+            document.querySelector('.submenu-item[onclick*="paymentDetails"]')?.classList.add("active");
+            // highlightMenuItem('.menu-item[onclick*="paymentDetails"]');
+            break;
+
         case "paymentHistory":
             mainContent.innerHTML = await initPaymentHistoryCard();
             document.querySelector('.submenu-item[onclick*="stockMovement"]')?.classList.add("active");
@@ -574,6 +587,20 @@ async function navigateTo(page) {
 export function getProfileContent() {
     return renderProfilePage();
 }
+// Add keyboard shortcut for back navigation
+document.addEventListener("keydown", (e) => {
+    // Alt + Left Arrow or Backspace
+    if ((e.altKey && e.key === "ArrowLeft") ||
+        (e.key === "Backspace" && !e.target.matches('input, textarea'))) {
+        e.preventDefault();
+        goBack();
+    }
+
+    // Escape to close sidebar (existing code)
+    if (e.key === "Escape" && sidebarOpen) {
+        closeSidebar();
+    }
+});
 
 // ============================================
 // MAKE FUNCTIONS GLOBALLY ACCESSIBLE

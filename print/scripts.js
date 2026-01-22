@@ -10,7 +10,7 @@ let config = {
 };
 
 // Initialize on page load
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     loadPrintData();
     renderTable();
     updateReportInfo();
@@ -78,10 +78,10 @@ function updateReportInfo() {
     document.getElementById('companySubtitle').textContent = config.companySubtitle || 'Professional Report';
     document.getElementById('companyLogo').textContent = config.logo || 'SA';
     document.getElementById('reportTitle').textContent = printData?.title || config.reportTitle || 'Report';
-    document.getElementById('reportDate').textContent = `Generated on ${new Date().toLocaleDateString('en-IN', { 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
+    document.getElementById('reportDate').textContent = `Generated on ${new Date().toLocaleDateString('en-IN', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
     })}`;
 }
 
@@ -94,13 +94,13 @@ function renderTable() {
 
     // Build headers
     const headers = printData.headers || [];
-    
+
     // Build rows
     const rows = printData.rows || [];
-    
+
     // Build table HTML
     let tableHtml = '';
-    
+
     if (printData.title) {
         tableHtml += `<h2>${printData.title}</h2>`;
     }
@@ -115,13 +115,13 @@ function renderTable() {
                 </thead>
                 <tbody>
                     ${rows.map(row => {
-                        if (Array.isArray(row)) {
-                            return `<tr>${row.map(cell => `<td>${cell || ''}</td>`).join('')}</tr>`;
-                        } else if (typeof row === 'object') {
-                            return `<tr>${headers.map(h => `<td>${row[h] || ''}</td>`).join('')}</tr>`;
-                        }
-                        return '';
-                    }).join('')}
+            if (Array.isArray(row)) {
+                return `<tr>${row.map(cell => `<td>${cell || ''}</td>`).join('')}</tr>`;
+            } else if (typeof row === 'object') {
+                return `<tr>${headers.map(h => `<td>${row[h] || ''}</td>`).join('')}</tr>`;
+            }
+            return '';
+        }).join('')}
                 </tbody>
             </table>
         `;
@@ -141,12 +141,17 @@ window.exportToPDF = function exportToPDF() {
     }
 
     const opt = {
-        margin: [10, 10, 10, 10],
+        margin: [5, 5, 5, 5],
         filename: `${config.reportTitle || 'Report'}_${new Date().toISOString().split('T')[0]}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
+        html2canvas: {
+            scale: 1.5,
+            scrollY: 0,
+            windowWidth: document.body.scrollWidth
+        },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
+
 
     // Include header in PDF
     const headerHtml = `

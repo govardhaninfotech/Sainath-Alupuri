@@ -666,7 +666,7 @@ body {
     cursor: pointer;
     font-size: 13px;
     transition: all 0.3s ease;
-    min-width: 85px;
+    /* min-width: 85px; */
     min-height: 38px;
 }
 

@@ -101,9 +101,28 @@ export function handleStaffExpMonthChange(event) {
 }
 
 function viewClientMonthlyReport(client_id) {
-    showNotification("No Staff Expense Report Viewed", "info");
+    // showNotification("No Staff Expense Report Viewed", "info");
+    month = document.getElementById(invMonthSelect)
+    console.log(month,client_id);
+    
+    navigateToInventoryStaff(client_id,month)
 }
+// ============================================
+// NAVIGATE TO INVENTORY STAFF PAGE WITH STAFF ID
+// ============================================
+function navigateToInventoryStaff(staffId) {
 
+    // Store staff_id in localStorage for inventory page to read
+    localStorage.setItem('selectedStaffId', staffId);
+
+    // Navigate to inventory_staff page using SPA navigation
+    if (window.navigateTo) {
+        window.navigateTo('staff_expense');
+    } else {
+        console.error('navigateTo function not available');
+        showNotification('Navigation error. Please refresh the page.', 'error');
+    }
+}
 
 function generateItemsTableHTML() {
 
@@ -124,9 +143,9 @@ function generateItemsTableHTML() {
                 <td>${serialNo}</td>
                 <td><a href="javascript:void(0)" class="order-link" onclick="viewClientMonthlyReport(${item.id})">${item.staff_name}</a></td>
                 <td>${item.amount}</td>
-                <td>${item.payment_mode}</td>
+               <!--  <td>${item.payment_mode}</td>
                 <td>${item.expense_date}</td>
-                <td>${item.notes}</td>
+                <td>${item.notes}</td> -->
             </tr>
         `;
     }
@@ -156,9 +175,9 @@ export function initStaffExpMothlyReportCard() {
                             <th>Sr No</th>
                             <th>Staff Name</th>
                             <th>Amount</th>
-                            <th>Payment Mode</th>
+                            <!-- <th>Payment Mode</th>
                             <th>Date</th>
-                            <th>Notes</th>
+                            <th>Notes</th> -->
                         </tr>
                     </thead>
                     <tbody id="itemsTableBody">

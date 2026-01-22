@@ -8,6 +8,8 @@ import { renderHomePage, initHomePage } from "./home.js";
 import { renderExpenseCategoryTable } from "./expense_category.js";
 import { renderInventoryExpancesPage } from "./expances.js";
 import { renderStaffExpensePage } from "./staffExpense.js";
+import { initBackNavigation, addToHistory } from "./backNavigation.js";// 🔹 NEW: Inventory module imports
+
 
 // 🔹 NEW: Inventory module imports
 import { renderInventoryStaffPage, initInventoryStaffPage } from "./inventory.js";
@@ -17,12 +19,14 @@ import { renderstaffExpancesReportTable } from "./staffExpancesReport.js";
 import { renderGeneralExpensesReportTable } from "./General_Expenses_Report.js";
 import { renderInventoryOrdersPage, openorderform, calculateOrderTotal, calculateItemTotal } from "./inventory_orders.js";
 // import { initPaymentHistoryCard, initClientDropdown } from "./Billing/payment_history.js";
+import { renderPaymentDetailsPage } from "./payment_details.js";
+
 
 // GLOBAL VARIABLES
 // ============================================
 let currentUser = null;
 let currentPage = "home";
-let sidebarOpen = false;    
+let sidebarOpen = false;
 
 // ============================================
 // INITIALIZATION - Runs when page loads
@@ -30,10 +34,8 @@ let sidebarOpen = false;
 document.addEventListener("DOMContentLoaded", function () {
     console.log("📌 Dashboard DOMContentLoaded");
 
-    // Check localStorage first (if remember me was checked)
     let userData = localStorage.getItem("rememberedUser");
 
-    // If not in localStorage, check sessionStorage (if remember me was NOT checked)
     if (!userData) {
         userData = sessionStorage.getItem("rememberedUser");
     }
@@ -41,19 +43,21 @@ document.addEventListener("DOMContentLoaded", function () {
     if (userData) {
         currentUser = typeof userData === "string" ? JSON.parse(userData) : userData;
         console.log("✅ Logged in user found:", currentUser);
+
+        // 🔹 ADD THIS LINE
+        initBackNavigation();
+
         initializeDashboard();
     } else {
         console.warn("⚠️ No rememberedUser found, redirecting to login");
         window.location.href = "../index.html";
     }
 
-    // Hook close button
     const sidebarCloseBtn = document.getElementById("sidebarCloseBtn");
     if (sidebarCloseBtn) {
         sidebarCloseBtn.addEventListener("click", closeSidebar);
     }
 
-    // Initialize sidebar state based on screen size
     initializeSidebarState();
 });
 
@@ -319,12 +323,13 @@ function logout() {
 // ============================================
 async function navigateTo(page) {
     console.log(`➡️ navigateTo("${page}")`);
-    currentPage = page;
 
-    // ✅ store this page so after reload we come back here
+    // 🔹 ADD THIS LINE
+    addToHistory(page); // 👈 ADD THIS LINE
+
+    currentPage = page;
     localStorage.setItem("lastPage", page);
 
-    // Clear active classes
     const menuItems = document.querySelectorAll(".menu-item");
     menuItems.forEach((item) => item.classList.remove("active"));
 
@@ -491,7 +496,11 @@ async function navigateTo(page) {
         //     initClientDropdown();
         //     break;
 
-
+        case "paymentDetails":
+            mainContent.innerHTML = renderPaymentDetailsPage();
+            document.querySelector('.submenu-item[onclick*="paymentDetails"]')?.classList.add("active");
+            // highlightMenuItem('.menu-item[onclick*="paymentDetails"]');
+            break;
 
         case "profile":
             mainContent.innerHTML = getProfileContent();

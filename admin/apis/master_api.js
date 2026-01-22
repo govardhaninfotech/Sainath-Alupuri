@@ -3,7 +3,6 @@
 export function getItemsData(url) {
     return fetch(url).then(response => response.json()).then(data => {
         // console.log(data);
-        // If data is an array, return it directly; if it's an object with items property, return that
         return data;
     }).catch(error => {
         console.error('Error fetching items data:', error);
@@ -58,7 +57,7 @@ export async function updateItem(url, itemId, itemData, userId = null) {
 // ------------------------------------------------------------------------------------------------------------------------------------
 // Add new item using php
 export async function addItemToAPI(url, itemData) {
-    console.log(url,itemData);
+    console.log(url, itemData);
 
     try {
         const response = await fetch(url, {

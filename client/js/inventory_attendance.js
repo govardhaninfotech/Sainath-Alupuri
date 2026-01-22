@@ -362,7 +362,7 @@ function generatePageHTML() {
 
                     <div class="edit-modal-footer">
                         <button type="button" class="edit-btn-cancel" onclick="closeEditAttendanceForm()">Cancel</button>
-                        <button type="submit" class="edit-btn-submit">Update</button>
+                        <button type="submit" style="width: 20px !important;" class="edit-btn-submit">Update</button>
                     </div>
                 </form>
             </div>
@@ -541,7 +541,9 @@ async function submitAttendanceForm(event) {
         staffs: staffArray
     };
 
-    console.log('[LOG] Attendance data prepared:', JSON.stringify(attendanceData, null, 2));
+    console.log(attendanceData);
+    
+    // console.log('[LOG] Attendance data prepared:', JSON.stringify(attendanceData, null, 2));
 
     try {
         const confirmed = await showConfirm(
@@ -566,8 +568,8 @@ async function submitAttendanceForm(event) {
         showNotification(`✓ Attendance recorded for ${staffArray.length} staff member(s)!`, "success");
         closeAttendanceForm();
 
-        await loadAttendanceData(currentFilterDate || TODAY_DATE);
-        refreshPage();
+        // await loadAttendanceData(currentFilterDate || TODAY_DATE);
+        // refreshPage();
 
     } catch (error) {
         console.error('[LOG] Error submitting form:', error);
