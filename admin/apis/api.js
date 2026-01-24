@@ -45,3 +45,7 @@ export let clientDuesURLphp = `${baseURL}/billing/client_dues.php`;
 export let paymentHistoryURLphp = `${baseURL}/billing/payment_history.php`;
 
 export let addPaymentURLphp = `${baseURL}/billing/add_payment.php`;
+
+export let notificationsURLphp = `${baseURL}/notifications/notifications.php`;
+
+export let companyProfileURLphp = `${baseURL}/profile/company.php`;

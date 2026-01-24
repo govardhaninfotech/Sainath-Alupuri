@@ -154,7 +154,9 @@ async function viewOrderDetails(orderId) {
 
     // Fetch order items using orderItemsURLphp
     const date = order.expected_delivery.split(" ")[0];
-    const orderItemsURL = `${orderItemsURLphp}?order_id=${orderId}&date=${date}`;
+    const orderItemsURL = `${orderItemsURLphp}?order_id=${orderId}`;
+    console.log(orderItemsURL);
+    
 
     try {
         const itemsData = await getItemsData(orderItemsURL);

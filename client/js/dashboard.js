@@ -20,6 +20,8 @@ import { renderGeneralExpensesReportTable } from "./General_Expenses_Report.js";
 import { renderInventoryOrdersPage, openorderform, calculateOrderTotal, calculateItemTotal } from "./inventory_orders.js";
 // import { initPaymentHistoryCard, initClientDropdown } from "./Billing/payment_history.js";
 import { renderPaymentDetailsPage } from "./payment_details.js";
+import { renderNotificationsPage } from "./notifications_page.js";
+import { renderCompanyInfoPage } from "./company_info.js";
 
 
 // GLOBAL VARIABLES
@@ -500,6 +502,16 @@ async function navigateTo(page) {
             mainContent.innerHTML = renderPaymentDetailsPage();
             document.querySelector('.submenu-item[onclick*="paymentDetails"]')?.classList.add("active");
             // highlightMenuItem('.menu-item[onclick*="paymentDetails"]');
+            break;
+
+        case "notifications":
+            renderNotificationsPage();
+            document.querySelector('.menu-item[onclick*="notifications"]')?.classList.add("active");
+            break;
+
+        case "company":
+            renderCompanyInfoPage();
+            document.querySelector('.menu-item[onclick*="company"]')?.classList.add("active");
             break;
 
         case "profile":

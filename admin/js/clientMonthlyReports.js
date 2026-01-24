@@ -49,6 +49,7 @@ function loadClientMonthlyReport() {
     year = currentDate ? parseInt(currentDate.split("-")[0], 10) : year;
 
     const url = `${clientMonthlySummaryURLphp}?user_id=${currentUser.id}&month=${month}&year=${year}&page=${currentItemsPage}&per_page=${itemsPerPage}`;
+    console.log(url);
 
     return getItemsData(url).then(data => {
         itemsData = data.orders || [];

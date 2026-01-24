@@ -3,7 +3,7 @@
 // ============================================
 
 import { ordersURLphp, itemURLphp, userURLphp, kitchenSummaryURLphp } from "../apis/api.js";
-import { printKitchenSummaryPDF } from "./print_pdf.js";
+import { printReport, exportToPDF, exportToExcel, toggleExportDropdown } from "./print/print.js";
 import {
     getItemsData,
     updateItem,
@@ -344,14 +344,14 @@ document.addEventListener("click", function (event) {
 // KITCHEN SUMMARY - PRINT DATA (SAME FORMAT AS INVENTORY)
 // ============================================
 
+// ============================================
+// STEP 1: PREPARE DATA FUNCTION
+// ============================================
 function prepareKitchenPrintData() {
-
     const headers = ['Type', 'Client', 'Item Name', 'Quantity', 'Unit'];
     const rows = [];
 
-    // -------------------
-    // Overall Summary
-    // -------------------
+    // Add overall summary
     if (overallSummary && overallSummary.length) {
         overallSummary.forEach(item => {
             rows.push([
@@ -364,9 +364,7 @@ function prepareKitchenPrintData() {
         });
     }
 
-    // -------------------
-    // Client Wise Summary
-    // -------------------
+    // Add client-wise summary
     if (clientWiseSummary && clientWiseSummary.length) {
         clientWiseSummary.forEach(client => {
             if (client.items && client.items.length) {
@@ -387,66 +385,67 @@ function prepareKitchenPrintData() {
 }
 
 // ============================================
-// KITCHEN SUMMARY - EXPORT HANDLERS (UPDATED)
+// STEP 2: CREATE WRAPPER FUNCTIONS
 // ============================================
 
-window.printKitchenReport = function () {
-    const dropdown = document.getElementById("exportDropdown");
-    if (dropdown) dropdown.style.display = "none";
-
-    openKitchenPrintPage("print");
-};
-
-window.exportKitchenPDF = function () {
-    const dropdown = document.getElementById("exportDropdown");
-    if (dropdown) dropdown.style.display = "none";
-
-    openKitchenPrintPage("pdf");
-};
-
-window.exportKitchenExcel = function () {
-    const dropdown = document.getElementById("exportDropdown");
-    if (dropdown) dropdown.style.display = "none";
-
-    exportToExcel();
-};
-
-function openKitchenPrintPage(type = "print") {
+/**
+ * PRINT KITCHEN REPORT
+ */
+window.printKitchenReport = async function () {
     const printData = prepareKitchenPrintData();
 
-    if (!printData.rows.length) {
-        showNotification("No data available to export", "error");
-        return;
-    }
-
-    // Store data for print engine
-    localStorage.setItem("printData", JSON.stringify({
+    await printReport({
         headers: printData.headers,
         rows: printData.rows,
-        title: `Kitchen Summary Report - ${currentDate}`,
-        date: currentDate
-    }));
+        reportTitle: 'Kitchen Summary Report',
+        companyName: 'Sainath Alupuri',
+        companySubtitle: 'Kitchen Management System',
+        logo: 'SA',
+        additionalInfo: `
+            <p><strong>Report Date:</strong> ${currentDate || new Date().toLocaleDateString('en-IN')}</p>
+            <p><strong>Total Items:</strong> ${overallSummary.length}</p>
+            <p><strong>Total Clients:</strong> ${clientWiseSummary.length}</p>
+        `
+    });
+};
 
-    // Same print page used everywhere
-    window.open("../../print/index.html", "_blank");
-}
+/**
+ * EXPORT KITCHEN REPORT TO PDF
+ */
+window.exportKitchenPDF = async function () {
+    const printData = prepareKitchenPrintData();
 
-// function sendKitchenDataToPrint() {
-//     const printData = prepareKitchenSummaryPrintData();
+    await exportToPDF({
+        headers: printData.headers,
+        rows: printData.rows,
+        reportTitle: 'Kitchen Summary Report',
+        companyName: 'Sainath Alupuri',
+        companySubtitle: 'Kitchen Management System',
+        logo: 'SA',
+        additionalInfo: `
+            <p><strong>Report Date:</strong> ${currentDate || new Date().toLocaleDateString('en-IN')}</p>
+            <p><strong>Total Items:</strong> ${overallSummary.length}</p>
+            <p><strong>Total Clients:</strong> ${clientWiseSummary.length}</p>
+        `
+    });
+};
 
-//     const printConfig = {
-//         reportTitle: "Kitchen Summary",
-//         companyName: "Sainath Alupuri",
-//         companySubtitle: "Kitchen Report",
-//         logo: "SA"
-//     };
+/**
+ * EXPORT KITCHEN REPORT TO EXCEL
+ */
+window.exportKitchenExcel = async function () {
+    const printData = prepareKitchenPrintData();
 
-//     localStorage.setItem("printData", JSON.stringify(printData));
-//     localStorage.setItem("printConfig", JSON.stringify(printConfig));
-// }
+    await exportToExcel({
+        headers: printData.headers,
+        rows: printData.rows,
+        reportTitle: 'Kitchen Summary Report',
+        companyName: 'Sainath Alupuri',
+        companySubtitle: 'Kitchen Management System'
+    });
+};
 
-
-
+// Toggle dropdown
 
 
 // ============================================
@@ -481,133 +480,7 @@ function changestaffPerPage(value) {
     });
 }
 
-// ============================================
-// EXPORT TO EXCEL - ALL DATA
-// ============================================
-function exportToExcel() {
-    if (!overallSummary.length && !clientWiseSummary.length) {
-        showNotification("No data available to export", "error");
-        return;
-    }
 
-    // Create workbook
-    let excelContent = `
-        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel">
-        <head>
-            <meta charset="UTF-8">
-            <style>
-                table { border-collapse: collapse; width: 100%; }
-                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-                th { background-color: #4CAF50; color: white; font-weight: bold; }
-                .section-title { background-color: #2196F3; color: white; font-weight: bold; font-size: 14px; }
-                .client-header { background-color: #FF9800; color: white; font-weight: bold; }
-            </style>
-        </head>
-        <body>
-            <h2>Kitchen Summary Report - ${currentDate}</h2>
-    `;
-
-    // Overall Summary Section
-    if (overallSummary.length) {
-        excelContent += `
-            <h3>Overall Summary</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Sr No</th>
-                        <th>Item Name</th>
-                        <th>Total Quantity</th>
-                        <th>Unit</th>
-                    </tr>
-                </thead>
-                <tbody>
-        `;
-
-        overallSummary.forEach((item, index) => {
-            excelContent += `
-                <tr>
-                    <td>${index + 1}</td>
-                    <td>${item.item_name || ''}</td>
-                    <td>${item.total_qty || 0}</td>
-                    <td>${item.unit || ''}</td>
-                </tr>
-            `;
-        });
-
-        excelContent += `
-                </tbody>
-            </table>
-            <br/><br/>
-        `;
-    }
-
-    // Client Wise Summary Section
-    if (clientWiseSummary.length) {
-        excelContent += `<h3>Client Wise Summary</h3>`;
-
-        clientWiseSummary.forEach((client) => {
-            excelContent += `
-                <h4>${client.client_name} (${client.shop_code} • ${client.mobile})</h4>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Sr No</th>
-                            <th>Item Name</th>
-                            <th>Quantity</th>
-                            <th>Unit</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
-
-            if (client.items && client.items.length) {
-                client.items.forEach((item, i) => {
-                    excelContent += `
-                        <tr>
-                            <td>${i + 1}</td>
-                            <td>${item.item_name || ''}</td>
-                            <td>${item.total_qty || 0}</td>
-                            <td>${item.unit || ''}</td>
-                        </tr>
-                    `;
-                });
-            } else {
-                excelContent += `
-                    <tr>
-                        <td colspan="4" style="text-align:center;">No items found</td>
-                    </tr>
-                `;
-            }
-
-            excelContent += `
-                    </tbody>
-                </table>
-                <br/>
-            `;
-        });
-    }
-
-    excelContent += `
-        </body>
-        </html>
-    `;
-
-    // Create download link
-    const blob = new Blob([excelContent], {
-        type: "application/vnd.ms-excel"
-    });
-
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `Kitchen_Summary_${currentDate}.xls`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
-
-    showNotification("Excel file downloaded successfully!", "success");
-}
 
 // ============================================
 // REFRESH ORDERS TABLE ON DATE CHANGE
@@ -648,6 +521,7 @@ window.showConfirm = showConfirm;
 window.renderKitchenSummary = renderKitchenSummary;
 window.refreshkitchenSummaryTable = refreshkitchenSummaryTable;
 window.handleDateChange = handleDateChange;
+window.toggleExportDropdown = toggleExportDropdown;
 // window.toggleExportDropdown = toggleExportDropdown;
 // window.printKitchenReport = printKitchenReport;
 // window.exportKitchenPDF = exportKitchenPDF;

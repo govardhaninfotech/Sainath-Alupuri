@@ -1,9 +1,30 @@
 // ============================================
-// GLOBAL PRINT/PDF/EXCEL SYSTEM - SIMPLE APPROACH
-// Use same print design for everything!
+// GLOBAL PRINT/PDF/EXCEL SYSTEM - FINAL VERSION
+// EXACT MATCH BETWEEN PRINT AND PDF
 // ============================================
 
 import { showNotification, showConfirm } from "../notification.js";
+
+/**
+ * Load html2pdf library dynamically
+ */
+function loadHtml2Pdf() {
+    return new Promise((resolve, reject) => {
+        if (window.html2pdf) {
+            resolve();
+            return;
+        }
+
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+        script.integrity = 'sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==';
+        script.crossOrigin = 'anonymous';
+        script.referrerPolicy = 'no-referrer';
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error('Failed to load html2pdf library'));
+        document.head.appendChild(script);
+    });
+}
 
 /**
  * Load XLSX library dynamically
@@ -24,54 +45,7 @@ function loadXLSX() {
 }
 
 /**
- * Load jsPDF and html2canvas libraries dynamically
- */
-function loadPDFLibraries() {
-    return new Promise((resolve, reject) => {
-        // Check if both libraries are already loaded
-        if (window.jspdf && window.html2canvas) {
-            resolve();
-            return;
-        }
-
-        let scriptsLoaded = 0;
-        const scriptsNeeded = 2;
-
-        const checkAllLoaded = () => {
-            scriptsLoaded++;
-            if (scriptsLoaded === scriptsNeeded) {
-                resolve();
-            }
-        };
-
-        // Load html2canvas first
-        if (!window.html2canvas) {
-            const html2canvasScript = document.createElement('script');
-            html2canvasScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
-            html2canvasScript.onload = checkAllLoaded;
-            html2canvasScript.onerror = () => reject(new Error('Failed to load html2canvas library'));
-            document.head.appendChild(html2canvasScript);
-        } else {
-            checkAllLoaded();
-        }
-
-        // Load jsPDF
-        if (!window.jspdf) {
-            const jsPDFScript = document.createElement('script');
-            jsPDFScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-            jsPDFScript.onload = checkAllLoaded;
-            jsPDFScript.onerror = () => reject(new Error('Failed to load jsPDF library'));
-            document.head.appendChild(jsPDFScript);
-        } else {
-            checkAllLoaded();
-        }
-    });
-}
-
-
-
-/**
- * Generate HTML for print/PDF - SINGLE DESIGN FOR BOTH
+ * Generate HTML for print/PDF - EXACT MATCH DESIGN
  */
 function generatePrintHTML(config) {
     const {
@@ -128,7 +102,6 @@ function generatePrintHTML(config) {
                 padding: 0;
                 box-sizing: border-box;
             }
-            
             @media print {
                 @page {
                     margin: 15mm;
@@ -141,10 +114,9 @@ function generatePrintHTML(config) {
                     print-color-adjust: exact;
                 }
             }
-            
             body {
                 font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-                padding: 30px;
+                padding: 20px;
                 color: #1f2937;
                 background: white;
                 font-size: 14px;
@@ -156,23 +128,20 @@ function generatePrintHTML(config) {
                 display: flex;
                 justify-content: space-between;
                 align-items: flex-start;
-                padding-bottom: 15px;
+                padding-bottom: 12px;
                 border-bottom: 3px solid #667eea;
-                margin-bottom: 25px;
+                margin-bottom: 20px;
             }
-            
             .logo-section {
                 display: flex;
                 align-items: center;
                 gap: 12px;
             }
-            
             .logo-img {
                 width: 55px;
-                // height: 55px;
+                height: 55px;
                 object-fit: contain;
             }
-            
             .logo {
                 width: 55px;
                 height: 55px;
@@ -185,7 +154,6 @@ function generatePrintHTML(config) {
                 font-weight: bold;
                 font-size: 22px;
             }
-            
             .company-info h1 {
                 margin: 0;
                 font-size: 22px;
@@ -193,17 +161,14 @@ function generatePrintHTML(config) {
                 font-weight: 700;
                 line-height: 1.2;
             }
-            
             .company-info p {
                 margin: 2px 0 0 0;
                 color: #6b7280;
                 font-size: 13px;
             }
-            
             .report-title {
                 text-align: right;
             }
-            
             .report-title h2 {
                 margin: 0;
                 font-size: 18px;
@@ -211,7 +176,6 @@ function generatePrintHTML(config) {
                 font-weight: 700;
                 line-height: 1.3;
             }
-            
             .report-title p {
                 margin: 3px 0 0 0;
                 color: #6b7280;
@@ -221,14 +185,13 @@ function generatePrintHTML(config) {
             /* ADDITIONAL INFO SECTION */
             .additional-info {
                 background: #f3f4f6;
-                padding: 18px 20px;
+                padding: 15px 18px;
                 border-radius: 4px;
-                margin-bottom: 25px;
+                margin-bottom: 20px;
                 border-left: 4px solid #667eea;
             }
-            
             .additional-info p {
-                margin: 6px 0;
+                margin: 5px 0;
                 font-size: 14px;
                 color: #1f2937;
                 font-weight: 700;
@@ -238,22 +201,18 @@ function generatePrintHTML(config) {
             .table-container {
                 width: 100%;
                 margin-top: 0;
-                margin-bottom: 25px;
             }
-            
             table {
                 width: 100%;
                 border-collapse: collapse;
                 font-size: 13px;
                 border: 1px solid #d1d5db;
             }
-            
             thead {
                 background-color: #f9fafb;
             }
-            
             th {
-                padding: 14px 16px;
+                padding: 12px 15px;
                 border: 1px solid #d1d5db;
                 text-align: left;
                 background-color: #f9fafb;
@@ -261,33 +220,30 @@ function generatePrintHTML(config) {
                 color: #1f2937;
                 font-size: 14px;
             }
-            
             td {
-                padding: 14px 16px;
+                padding: 12px 15px;
                 border: 1px solid #d1d5db;
                 text-align: left;
                 color: #374151;
                 font-size: 13px;
                 background-color: white;
             }
-            
             tbody tr:nth-child(even) td {
                 background-color: #f9fafb;
             }
             
             /* FOOTER SECTION */
             .footer {
-                margin-top: 35px;
-                padding-top: 18px;
+                margin-top: 30px;
+                padding-top: 15px;
                 border-top: 1px solid #e5e7eb;
                 text-align: center;
                 color: #6b7280;
                 font-size: 11px;
             }
-            
             .footer p {
-                margin: 4px 0;
-                line-height: 1.6;
+                margin: 3px 0;
+                line-height: 1.5;
             }
         </style>
     </head>
@@ -372,13 +328,13 @@ export async function printReport(config) {
 }
 
 /**
- * EXPORT TO PDF - DIRECT DOWNLOAD WITHOUT PRINT DIALOG
+ * EXPORT TO PDF - FINAL FIXED VERSION
  */
 export async function exportToPDF(config) {
     const { reportTitle = 'Report' } = config;
 
     const confirmExport = await showConfirm(
-        `📄 PDF Export Confirmation\n\n${reportTitle}\n\nPDF will be downloaded directly to your device.\n\nDo you want to continue?`,
+        `📄 PDF Export Confirmation\n\n${reportTitle}\n\nPDF will be generated and downloaded. Do you want to continue?`,
         "info"
     );
 
@@ -389,104 +345,97 @@ export async function exportToPDF(config) {
         return;
     }
 
-    const dropdown = document.getElementById("exportDropdown");
-    if (dropdown) {
-        dropdown.style.display = "none";
-    }
-
-    showNotification("Loading PDF libraries... Please wait", "info");
+    showNotification("Loading PDF library... Please wait", "info");
 
     try {
-        // Load required libraries
-        await loadPDFLibraries();
-        
+        await loadHtml2Pdf();
         showNotification("Generating PDF... Please wait", "info");
 
-        // Generate HTML content
+        const dropdown = document.getElementById("exportDropdown");
+        if (dropdown) {
+            dropdown.style.display = "none";
+        }
+
+        // Generate complete HTML
         const printHTML = generatePrintHTML(config);
 
         if (!printHTML) {
-            showNotification("Error generating PDF content", "error");
+            showNotification("Error: Could not generate PDF content", "error");
             return;
         }
 
-        // Create temporary container for rendering
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = printHTML;
-        tempDiv.style.position = 'absolute';
-        tempDiv.style.left = '-9999px';
-        tempDiv.style.top = '0';
-        tempDiv.style.width = '210mm'; // A4 width
-        // tempDiv.style.minHeight = '297mm'; // A4 height
-        tempDiv.style.background = 'white';
-        tempDiv.style.padding = '30px';
-        tempDiv.style.boxSizing = 'border-box';
-        document.body.appendChild(tempDiv);
-
-        // Wait for images to load
-        const images = tempDiv.getElementsByTagName('img');
-        const imagePromises = Array.from(images).map(img => {
-            return new Promise((resolve) => {
-                if (img.complete) {
-                    resolve();
-                } else {
-                    img.onload = resolve;
-                    img.onerror = resolve; // Continue even if image fails
-                }
-            });
-        });
-        await Promise.all(imagePromises);
-
-        // Generate PDF using html2canvas and jsPDF
-        const canvas = await html2canvas(tempDiv, {
-            scale: 2,
-            useCORS: true,
-            logging: false,
-            backgroundColor: '#ffffff',
-            windowWidth: tempDiv.scrollWidth,
-            windowHeight: tempDiv.scrollHeight
-        });
-
-        // Clean up temporary div
-        document.body.removeChild(tempDiv);
-
-        // Create PDF
-        const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF({
-            orientation: 'portrait',
-            unit: 'mm',
-            format: 'a4'
-        });
-
-        const imgWidth = 210; // A4 width in mm
-        const pageHeight = 297; // A4 height in mm
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        let heightLeft = imgHeight;
-        let position = 0;
-
-        const imgData = canvas.toDataURL('image/jpeg', 1.0);
-
-        // Add first page
-        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-
-        // Add additional pages if content is longer than one page
-        while (heightLeft > 0) {
-            position = heightLeft - imgHeight;
-            pdf.addPage();
-            pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-            heightLeft -= pageHeight;
+        // Create a temporary container
+        const container = document.createElement('div');
+        container.id = 'pdf-container';
+        container.style.position = 'fixed';
+        container.style.left = '-9999px';
+        container.style.top = '0';
+        container.style.width = '210mm';
+        container.style.backgroundColor = 'white';
+        container.innerHTML = printHTML.match(/<body[^>]*>([\s\S]*?)<\/body>/i)[1];
+        
+        // Add styles
+        const styleMatch = printHTML.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
+        if (styleMatch) {
+            const style = document.createElement('style');
+            style.textContent = styleMatch[1];
+            document.head.appendChild(style);
+            style.id = 'pdf-temp-style';
         }
+        
+        document.body.appendChild(container);
 
-        // Generate filename and save
-        const filename = `${reportTitle.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
-        pdf.save(filename);
+        // Wait for rendering
+        setTimeout(() => {
+            const opt = {
+                margin: [15, 15, 15, 15],
+                filename: `${reportTitle.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`,
+                image: { 
+                    type: 'jpeg', 
+                    quality: 0.98 
+                },
+                html2canvas: {
+                    scale: 2,
+                    useCORS: true,
+                    logging: false,
+                    backgroundColor: '#ffffff',
+                    letterRendering: true,
+                    windowWidth: 794,
+                    windowHeight: container.scrollHeight
+                },
+                jsPDF: {
+                    unit: 'mm',
+                    format: 'a4',
+                    orientation: 'portrait',
+                    compress: true
+                },
+                pagebreak: { 
+                    mode: ['avoid-all', 'css', 'legacy']
+                }
+            };
 
-        showNotification("PDF downloaded successfully!", "success");
+            html2pdf()
+                .set(opt)
+                .from(container)
+                .save()
+                .then(() => {
+                    document.body.removeChild(container);
+                    const tempStyle = document.getElementById('pdf-temp-style');
+                    if (tempStyle) tempStyle.remove();
+                    showNotification("PDF downloaded successfully!", "success");
+                })
+                .catch(err => {
+                    document.body.removeChild(container);
+                    const tempStyle = document.getElementById('pdf-temp-style');
+                    if (tempStyle) tempStyle.remove();
+                    console.error('PDF export error:', err);
+                    showNotification("Error generating PDF: " + (err.message || 'Unknown error'), "error");
+                });
+        }, 800);
 
     } catch (err) {
-        console.error('PDF export error:', err);
-        showNotification("Error generating PDF. Please try again.", "error");
+        console.error('Error loading PDF library:', err);
+        showNotification("Error loading PDF library. Please refresh and try again.", "error");
     }
 }
 

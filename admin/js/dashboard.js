@@ -25,6 +25,10 @@ import { initClientDuesReportCard, initClientDuesDropdown } from "./Billing/clie
 import { initPaymentHistoryCard, initClientDropdown } from "./Billing/payment_history.js";
 import { initPaymentHistoryCard as initPaymentCard, initClientDropdown as initPaymentClientDropdown } from "./Billing/payment.js";
 import { renderPaymentDetailsPage } from "./payment_details.js";
+import { renderNotificationsPage } from "./notifications_page.js";
+import { renderCompanyInfoPage } from "./company_info.js";
+
+
 
 // GLOBAL VARIABLES
 // ============================================
@@ -571,6 +575,16 @@ async function navigateTo(page) {
             mainContent.innerHTML = await initPaymentHistoryCard();
             document.querySelector('.submenu-item[onclick*="stockMovement"]')?.classList.add("active");
             initClientDropdown();
+            break;
+            
+        case "company":
+            renderCompanyInfoPage();
+            document.querySelector('.menu-item[onclick*="company"]')?.classList.add("active");
+            break;
+
+        case "notifications":
+            renderNotificationsPage();
+            document.querySelector('.menu-item[onclick*="notifications"]')?.classList.add("active");
             break;
 
         case "profile":

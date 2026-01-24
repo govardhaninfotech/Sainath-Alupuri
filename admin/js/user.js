@@ -10,7 +10,7 @@ import {
     addItemToAPI
 } from "../apis/master_api.js";
 import { showNotification, showConfirm } from "./notification.js";
-import { exportToExcelmain, exportToPDFmain, printReportclient } from "./print/print.js";
+import { printReport, exportToPDF, exportToExcel, toggleExportDropdown } from "./print/print.js";
 import {
     validateRequiredField,
     validateIndianMobile,
@@ -249,52 +249,88 @@ function generateTableHTML() {
     `;
 }
 
-//    let user = userData[index];
-//         tableRows += `
-//     <tr>
-//                 <td>${serialNo}</td>
-//                 <td>${user.name}</td>
-//                 <td>${user.email}</td>
-//                 <td>${user.mobile}</td>
-//                 <td>${user.shop_code}</td>
-//                <!-- <td>${user.current_balance}</td> -->
-//                 <td>${user.is_family_member}</td>
-//                 <td>
-//                     <button class="btn-icon btn-edit" onclick="editUser('${user.id}')" title="Edit">
-//                         <i class="icon-edit">✎</i>
-//                     </button>
-
-// prepaer data form print
+// ============================================
+// STEP 1: PREPARE DATA FUNCTION
+// ============================================
 export function preparePrintDatainclient() {
-    // const monthSelect = 1;
-    const selectedMonth = 1;
-
+    // Your existing data preparation logic
     let filtered = userData;
-    // if (selectedMonth) {
-    //     filtered = userData.filter(e => {
-    //         // const dateStr = normalizeToYYYYMM(e.expense_date || e.date);
-    //         const dateStr 
-    //         return dateStr;
-    //     });
-    // }
 
-    const headers = ['Sr No', 'Name', 'email', 'Mobile', 'Shop Code'];
+    const headers = ['Sr No', 'Name', 'Email', 'Mobile', 'Shop Code'];
     const rows = filtered.map((user, index) => {
-        const name = user.name;
-        const email = user.email;
-        const mobile = user.mobile;
-        const shop = user.shop_code;
         return [
             index + 1,
-            name,
-            email,
-            mobile,
-            shop
+            user.name || '',
+            user.email || '',
+            user.mobile || '',
+            user.shop_code || ''
         ];
     });
 
     return { headers, rows };
 }
+
+// ============================================
+// STEP 2: CREATE WRAPPER FUNCTIONS
+// These call the global print functions with your data
+// ============================================
+
+/**
+ * PRINT CLIENT REPORT
+ */
+window.printReportclient = async function () {
+    const printData = preparePrintDatainclient();
+
+    await printReport({
+        headers: printData.headers,
+        rows: printData.rows,
+        reportTitle: 'Client Management Report',
+        companyName: 'Sainath Alupuri',
+        companySubtitle: 'Client Management System',
+        logo: 'SA',
+        additionalInfo: `
+            <p><strong>Total Clients:</strong> ${printData.rows.length}</p>
+            <p><strong>Report Date:</strong> ${new Date().toLocaleDateString('en-IN')}</p>
+        `
+    });
+};
+
+/**
+ * EXPORT CLIENT REPORT TO PDF
+ */
+window.exportToPDFmain = async function () {
+    const printData = preparePrintDatainclient();
+
+    await exportToPDF({
+        headers: printData.headers,
+        rows: printData.rows,
+        reportTitle: 'Client Management Report',
+        companyName: 'Sainath Alupuri',
+        companySubtitle: 'Client Management System',
+        logo: 'SA',
+        additionalInfo: `
+            <p><strong>Total Clients:</strong> ${printData.rows.length}</p>
+            <p><strong>Report Date:</strong> ${new Date().toLocaleDateString('en-IN')}</p>
+        `
+    });
+};
+
+/**
+ * EXPORT CLIENT REPORT TO EXCEL
+ */
+window.exportToExcelmain = async function () {
+    const printData = preparePrintDatainclient();
+
+    await exportToExcel({
+        headers: printData.headers,
+        rows: printData.rows,
+        reportTitle: 'Client Management Report',
+        companyName: 'Sainath Alupuri',
+        companySubtitle: 'Client Management System'
+    });
+};
+
+// Toggle dropdown (already global, just expose it)
 
 
 
@@ -649,6 +685,7 @@ window.showNotification = showNotification;
 window.generateTableHTML = generateTableHTML;
 window.showConfirm = showConfirm;
 window.preparePrintDatainclient = preparePrintDatainclient;
+window.toggleExportDropdown = toggleExportDropdown;
 
 // Setup ESC key handler for modal
 setupEscKeyHandler();

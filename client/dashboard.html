@@ -12,6 +12,8 @@
     <link rel="stylesheet" href="./css/inventory.css">
     <link rel="stylesheet" href="./css/inventory_orders.css">
     <link rel="stylesheet" href="./css/inventory_staff_attendance.css">
+    <link rel="stylesheet" href="./css/notifications.css">
+    <link rel="stylesheet" href="./css/company_info.css">
 </head>
 
 <body>
@@ -223,6 +225,16 @@
                         <span class="menu-icon">🏠</span>
                         <span class="menu-label">Payment Details</span>
                     </button>
+
+                    <button class="menu-item" onclick="navigateTo('notifications')">
+                        <span class="menu-icon">📬</span>
+                        <span class="menu-label">Notifications</span>
+                    </button>
+
+                    <button class="menu-item" onclick="navigateTo('company')">
+                        <span class="menu-icon">🏢</span>
+                        <span class="menu-label">Company Info</span>
+                    </button>
                 </div>
             </div>
         </aside>
@@ -273,6 +285,8 @@
     <script type="module" src="js/items.js"></script>
     <script type="module" src="js/staff.js"></script>
     <script type="module" src="js/bank.js"></script>
+    <script type="module" src="js/notifications_page.js"></script>
+    <script type="module" src="js/company_info.js"></script>
     <script type="module" src="js/inventory_orders.js"></script>
     <script type="module" src="js/staffExpense.js"></script>
 </body>

@@ -18,7 +18,7 @@
 <body>
     <!-- Immediate login validation -->
     <script>
-        (function() {
+        (function () {
             // Check if user is logged in
             let userData = localStorage.getItem('rememberedUser');
             if (!userData) {
@@ -57,7 +57,7 @@
                 </button>
 
                 <img class="navbar-logo" src="images/logo.jpg" alt="SAINATH Logo">
-                
+
                 <div class="user-menu">
                     <button class="user-icon-btn" onclick="toggleUserMenu()">
                         <div class="user-icon" id="userAvatar"></div>
@@ -113,7 +113,7 @@
                             <span class="submenu-dot"></span>
                             <span class="menu-label">Staff</span>
                         </button>
-                      
+
                         <button class="menu-item submenu-item" onclick="navigateTo('bank')">
                             <span class="submenu-dot"></span>
                             <span class="menu-label">Bank / UPI</span>
@@ -243,11 +243,18 @@
                             </button>
                         </div>
                     </div>
-                     <!-- <button class="menu-item active" onclick="navigateTo('paymentDetails')">
+                    <button class="menu-item" onclick="navigateTo('notifications')">
+                        <span class="menu-icon">📬</span>
+                        <span class="menu-label">Notifications</span>
+                    </button>
+                    <!-- <button class="menu-item active" onclick="navigateTo('paymentDetails')">
                         <span class="menu-icon">🏠</span>
                         <span class="menu-label">Payment Details</span>
                     </button> -->
-
+                    <button class="menu-item" onclick="navigateTo('company')">
+                        <span class="menu-icon">🏢</span>
+                        <span class="menu-label">Company Info</span>
+                    </button>
                 </div>
             </div>
         </aside>
@@ -274,6 +281,8 @@
         window.navigateTo = function () { console.error('navigateTo not loaded'); };
     </script>
 
+
+
     <!-- Link to external JavaScript files -->
     <script type="module" src="js/dashboard.js"></script>
     <script type="module" src="js/home.js"></script>
@@ -281,6 +290,7 @@
     <script type="module" src="js/staff.js"></script>
     <script type="module" src="js/bank.js"></script>
     <script type="module" src="js/inventory_orders.js"></script>
+
 </body>
 
 </html>

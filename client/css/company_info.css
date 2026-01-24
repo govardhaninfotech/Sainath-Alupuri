@@ -1,0 +1,501 @@
+/* ============================================
+   COMPANY INFO PAGE STYLES
+   ============================================ */
+
+.company-container {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* ============================================
+   TOP INFO - COMPANY NAME & LOGIN INFO
+   ============================================ */
+
+.company-top-info {
+    background: linear-gradient(135deg, #4f46e5, #6366f1);
+    color: white;
+    padding: 16px 20px;
+    border-radius: 8px;
+    margin-bottom: 25px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
+}
+
+.company-name-section,
+.user-login-section {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.company-name-label {
+    font-weight: 600;
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+.company-name-value {
+    font-size: 16px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.user-info {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* ============================================
+   HEADER STYLES
+   ============================================ */
+
+.company-header {
+    text-align: center;
+    margin-bottom: 40px;
+    padding: 20px 0;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+.company-header-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+}
+
+.company-logo {
+    width: 80px;
+    /* height: 80px; */
+    object-fit: contain;
+    border-radius: 8px;
+    /* box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); */
+}
+
+.company-header-text {
+    text-align: left;
+}
+
+.company-header h1 {
+    font-size: 35px;
+    color: #667eea;
+    margin: 0 0 4px 0;
+    font-weight: 700;
+}
+
+.company-header p {
+    font-size: 14px;
+    color: #6b7280;
+    margin: 0;
+}
+
+/* ============================================
+   DISPLAY VIEW STYLES
+   ============================================ */
+
+.company-info-display {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.info-card {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 30px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.info-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.info-field label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #4b5563;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.info-value {
+    font-size: 16px;
+    color: #1f2937;
+    background: #f3f4f6;
+    padding: 10px 15px;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+    word-break: break-word;
+}
+
+/* ============================================
+   ACTION BUTTONS
+   ============================================ */
+
+.company-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.btn-edit,
+.btn-reset {
+    flex: 1;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.btn-edit {
+    background: linear-gradient(135deg, #4f46e5, #6366f1);
+    color: white;
+    border: none;
+}
+
+.btn-edit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(79, 70, 229, 0.2);
+}
+
+.btn-reset {
+    color: #374151;
+    border: 1px solid #d1d5db;
+    background: #f3f4f6;
+}
+
+.btn-reset:hover {
+    background: #e5e7eb;
+    border-color: #9ca3af;
+}
+
+/* ============================================
+   FORM VIEW STYLES
+   ============================================ */
+
+.company-form-view {
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+}
+
+.form-card {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 40px;
+    max-width: 600px;
+    width: 100%;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.form-card h2 {
+    font-size: 22px;
+    color: #1f2937;
+    margin: 0 0 8px 0;
+    font-weight: 600;
+}
+
+.form-description {
+    font-size: 13px;
+    color: #6b7280;
+    margin: 0 0 25px 0;
+    line-height: 1.6;
+}
+
+/* ============================================
+   FORM STYLES
+   ============================================ */
+
+#companyForm {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.form-group label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #374151;
+}
+
+.form-group input,
+.form-group textarea {
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: inherit;
+    transition: all 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #0066cc;
+    box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 80px;
+    max-height: 120px;
+}
+
+/* ============================================
+   FORM ROW (FOR MULTIPLE COLUMNS)
+   ============================================ */
+
+.form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+}
+
+/* ============================================
+   MODAL STYLES
+   ============================================ */
+
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+.modal-overlay.active {
+    display: flex;
+    opacity: 1;
+    pointer-events: all;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 8px;
+    max-width: 700px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 25px rgba(0, 0, 0, 0.15);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 25px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.modal-header h2 {
+    font-size: 20px;
+    color: #1f2937;
+    margin: 0;
+    font-weight: 600;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #6b7280;
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.modal-close:hover {
+    color: #1f2937;
+    background: #f3f4f6;
+    border-radius: 4px;
+}
+
+/* Modal form */
+.modal-content #companyForm {
+    padding: 20px 25px;
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 10px;
+    padding: 20px 25px;
+    border-top: 1px solid #e5e7eb;
+    justify-content: flex-end;
+}
+
+.btn-send {
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #4f46e5, #6366f1);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-send:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(79, 70, 229, 0.2);
+}
+
+.btn-send:active {
+    transform: translateY(0);
+}
+
+/* ============================================
+   RESPONSIVE DESIGN
+   ============================================ */
+
+@media (max-width: 768px) {
+    .company-container {
+        padding: 15px;
+    }
+
+    .company-top-info {
+        flex-direction: column;
+        gap: 12px;
+        text-align: center;
+        align-items: flex-start;
+    }
+
+    .company-header {
+        margin-bottom: 25px;
+    }
+
+    .company-header-content {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .company-logo {
+        width: 70px;
+        height: 70px;
+    }
+
+    .company-header-text {
+        text-align: center;
+    }
+
+    .company-header h1 {
+        font-size: 22px;
+    }
+
+    .info-card {
+        padding: 20px;
+        gap: 15px;
+    }
+
+    .form-card {
+        padding: 25px;
+    }
+
+    .company-actions {
+        flex-direction: column;
+    }
+
+    .btn-edit,
+    .btn-reset {
+        flex: auto;
+    }
+
+    .modal-content {
+        width: 95%;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .modal-buttons {
+        flex-direction: column-reverse;
+    }
+
+    .btn-send,
+    .btn-reset {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .company-container {
+        padding: 10px;
+    }
+
+    .company-header {
+        margin-bottom: 20px;
+        padding: 15px 0;
+    }
+
+    .company-header h1 {
+        font-size: 20px;
+    }
+
+    .info-card {
+        padding: 15px;
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .form-card {
+        padding: 20px;
+    }
+
+    .info-value {
+        font-size: 14px;
+        padding: 8px 12px;
+    }
+
+    .modal-header {
+        padding: 15px 20px;
+    }
+
+    .modal-header h2 {
+        font-size: 18px;
+    }
+
+    .modal-content #companyForm {
+        padding: 15px 20px;
+    }
+
+    .modal-buttons {
+        padding: 15px 20px;
+    }
+}

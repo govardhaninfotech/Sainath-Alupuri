@@ -50,19 +50,19 @@ async function loadExpenseData() {
         }
         month = currentDate ? parseInt(currentDate.split("-")[1], 10) : month;
         year = currentDate ? parseInt(currentDate.split("-")[0], 10) : year;
-        
+
         const url = `${expenseURLphp}?user_id=${user_id}&month=${month}&year=${year}&page=${currentExpensePage}&per_page=${expensePerPage}`;
         console.log("Loading expenses from:", url);
 
         const data = await getItemsData(url);
-        
+
         // Extract expenses from response
         expenseData = data?.expenses || [];
         expenseTotal = data?.total ?? expenseData.length;
         expensePerPage = data?.per_page ?? expensePerPage;
         expenseTotalPages = data?.total_pages ?? Math.max(1, Math.ceil(expenseTotal / expensePerPage));
         currentExpensePage = data?.page ?? currentExpensePage;
-        
+
         console.log("Loaded expenses:", expenseData.length, "Total:", expenseTotal);
     } catch (error) {
         console.error("Error loading expenses:", error);
@@ -76,12 +76,15 @@ async function loadExpenseData() {
 // LOAD CATEGORY DATA (FOR DROPDOWN)
 // ============================================
 async function loadCategoryData() {
-    if (categoryDataLoaded && categoryData.length > 0) {
-        return categoryData;
-    }
+    
+    // if (categoryDataLoaded && categoryData.length > 0) {
+    //     return categoryData;
+    // }
 
     try {
         const res = await fetch(`${expenseCategoriesURLphp}?user_id=${user_id}`);
+        console.log(res);
+        
         if (!res.ok) throw new Error(`Categories API returned ${res.status}`);
 
         const json = await res.json();
@@ -209,28 +212,28 @@ function populateCategoryDropdown(selectedCategoryId = "") {
 // Filter bank accounts by payment mode
 function getAccountsByPaymentMode(paymentMode) {
     if (!paymentMode) return bankAccountData;
-    
+
     const mode = paymentMode.toLowerCase();
-    
+
     if (mode === 'cash') {
         return [];
     } else if (mode === 'upi') {
         // Filter accounts that support UPI (type = 'upi')
-        return bankAccountData.filter(acc => 
-            acc.type?.toLowerCase() === 'upi' || 
+        return bankAccountData.filter(acc =>
+            acc.type?.toLowerCase() === 'upi' ||
             acc.account_type?.toLowerCase() === 'upi' ||
             acc.name?.toLowerCase().includes('upi') ||
             acc.account_name?.toLowerCase().includes('upi')
         );
     } else if (mode === 'bank' || mode === 'bank_transfer') {
         // Filter accounts that are bank accounts (type = 'bank')
-        return bankAccountData.filter(acc => 
+        return bankAccountData.filter(acc =>
             acc.type?.toLowerCase() === 'bank' ||
             acc.account_type?.toLowerCase() === 'bank' ||
             (!acc.type && acc.account_number) // Fallback for accounts without explicit type
         );
     }
-    
+
     return bankAccountData;
 }
 
@@ -368,7 +371,7 @@ function generateTableHTML() {
         expenseData.forEach((expense, index) => {
             const serialNo = (page - 1) * perPage + index + 1;
             const paymentModeDisplay = (expense.payment_mode || 'cash').toUpperCase();
-            
+
             tableRows += `
                 <tr>
                     <td>${serialNo}</td>
@@ -519,6 +522,8 @@ async function changeExpensePage(direction) {
 // ============================================
 function openGeneralExpenseForm() {
     editingExpenseId = null;
+    loadCategoryData();
+    
     document.getElementById("expenseFormTitle").textContent = "Add New Expense";
     document.getElementById("expenseForm").reset();
     document.getElementById("expenseId").value = "";
@@ -534,7 +539,7 @@ function openGeneralExpenseForm() {
     if (paymentModeSelect) {
         paymentModeSelect.value = "cash";
     }
-    
+
     // Initialize bank account dropdown as disabled for cash
     populateBankAccountDropdown("", "cash");
 
@@ -576,14 +581,14 @@ function editExpense(id) {
     document.getElementById("expenseNotes").value = item.notes || "";
 
     console.log("Editing expense, populating dropdowns...");
-    
+
     // First populate category dropdown
     populateCategoryDropdown(item.category_id || "");
-    
+
     // Set payment mode first (default to cash if not set)
     const paymentMode = item.payment_mode || "cash";
     document.getElementById("expensePaymentMode").value = paymentMode;
-    
+
     // Then populate bank account dropdown based on payment mode and select the bank
     populateBankAccountDropdown(item.bank_account_id || "", paymentMode);
 

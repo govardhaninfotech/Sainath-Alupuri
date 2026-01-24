@@ -536,7 +536,15 @@ input:checked~.delivery-status-text {
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 16px;
 }
-
+#invMonthSelect{
+    padding: 10px 14px;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #374151;
+    background: white;
+    transition: all 0.3s ease;
+}
 .info-item {
     display: flex;
     flex-direction: column;
@@ -1337,8 +1345,6 @@ input:checked~.delivery-status-text {
         padding: 8px 10px;
         font-size: 12px;
     }
-
-
 
     .staff-header h2 {
         font-size: 16px;
