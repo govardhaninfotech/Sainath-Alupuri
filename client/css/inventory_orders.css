@@ -13,7 +13,7 @@ body {
     background: linear-gradient(135deg, #f5f7fa 0%, #f0f2f5 100%);
     min-height: 100vh;
     padding: 20px;
-}
+}   
 
 /* Wrapper */
 .inv-wrapper {
@@ -589,7 +589,7 @@ input:checked~.delivery-status-text {
 .staff-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-end;
     margin-bottom: 24px;
     gap: 16px;
     flex-wrap: wrap;
@@ -599,8 +599,8 @@ input:checked~.delivery-status-text {
     font-size: 24px;
     font-weight: 700;
     color: #111827;
-    flex: 1;
-    min-width: 200px;
+    width: 100%;
+    margin-bottom: 16px;
 }
 
 .staff-header input[type="date"] {
@@ -620,8 +620,12 @@ input:checked~.delivery-status-text {
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
+.staff-header input[type="date"]:hover {
+    border-color: #d1d5db;
+}
+
 .btn-add {
-    padding: 10px 24px;
+    padding: 12px 28px;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     border: none;
     border-radius: 8px;
@@ -630,6 +634,12 @@ input:checked~.delivery-status-text {
     cursor: pointer;
     transition: all 0.3s ease;
     box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
+    color: white;
+    white-space: nowrap;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .btn-add:hover {
@@ -641,15 +651,92 @@ input:checked~.delivery-status-text {
     transform: translateY(0);
 }
 
+/* Filter Section Styles */
+.filter-section {
+    flex: 1;
+    min-width: 300px;
+}
+
+.filter-container {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.date-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.date-input-group label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #374151;
+}
+
+.date-input-group input[type="date"] {
+    padding: 10px 12px;
+    border: 2px solid #e5e7eb;
+    border-radius: 6px;
+    font-size: 14px;
+    color: #374151;
+    background: white;
+    transition: all 0.3s ease;
+    min-width: 150px;
+}
+
+.date-input-group input[type="date"]:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.date-input-group input[type="date"]:hover {
+    border-color: #d1d5db;
+}
+
+/* Apply Filter Button */
+.btn-filter {
+    padding: 12px 28px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
+    white-space: nowrap;
+    min-width: 130px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-filter:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(16, 185, 129, 0.4);
+}
+
+.btn-filter:active {
+    transform: translateY(0);
+}
+
+.btn-filter:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
 /* ============================================
    RESPONSIVE - ORDERS PAGE
    ============================================ */
 
 @media (max-width: 1024px) {
-    body {
-        padding: 0px;
-
-    }
     .inv-orders-header {
         align-items: stretch;
         gap: 20px;
@@ -855,7 +942,204 @@ input:checked~.delivery-status-text {
     .item-list .data-table td {
         padding: 8px 10px;
     }
+
+    /* Responsive Filter Section for Small Screens */
+    .filter-section {
+        flex: 1;
+        min-width: 100%;
+        margin-bottom: 12px;
+    }
+
+    .filter-container {
+        display: flex;
+        gap: 8px;
+        align-items: flex-end;
+        flex-direction: column;
+    }
+
+    .date-input-group {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        width: 100%;
+    }
+
+    .date-input-group label {
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .date-input-group input[type="date"] {
+        padding: 9px 10px;
+        font-size: 13px;
+        min-width: 100%;
+    }
+
+    .btn-filter {
+        width: 100%;
+        min-width: auto;
+        padding: 12px 20px;
+        font-size: 13px;
+        min-height: 44px;
+    }
+
+    .btn-add {
+        width: 100%;
+        padding: 12px 20px;
+        font-size: 13px;
+        min-height: 44px;
+    }
 }
+
+
+/* ============================================
+   TABLET RESPONSIVE - 768px to 1024px
+   ============================================ */
+@media (max-width: 1024px) and (min-width: 769px) {
+    .filter-container {
+        display: flex;
+        gap: 12px;
+        align-items: flex-end;
+        flex-wrap: wrap;
+    }
+
+    .date-input-group {
+        flex: 1;
+        min-width: 140px;
+    }
+
+    .date-input-group input[type="date"] {
+        min-width: 140px;
+    }
+
+    .btn-filter {
+        min-width: 110px;
+    }
+
+    .staff-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        margin-bottom: 20px;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .filter-section {
+        flex: 0 1 auto;
+    }
+
+    .btn-add {
+        white-space: nowrap;
+    }
+}
+
+/* ============================================
+   MOBILE RESPONSIVE - Below 768px
+   ============================================ */
+@media (max-width: 768px) {
+    .filter-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        width: 40%;
+    }
+
+    .date-input-group {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .date-input-group label {
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .date-input-group input[type="date"] {
+        padding: 8px 10px;
+        font-size: 13px;
+        min-width: 100%;
+    }
+
+    .btn-filter {
+        grid-column: 3 / -1;
+        width: 20%;
+        padding: 12px 20px;
+        font-size: 13px;
+        min-height: 44px;
+    }
+
+    .staff-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .staff-header h2 {
+        width: 100%;
+        margin-bottom: 12px;
+    }
+
+    .filter-section {
+        width: 100%;
+        min-width: auto;
+    }
+
+    .btn-add {
+        width: 100%;
+        min-height: 44px;
+    }
+}
+
+/* ============================================
+   SMALL MOBILE - Below 480px
+   ============================================ */
+@media (max-width: 480px) {
+    .filter-container {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 8px;
+        width: 100%;
+    }
+
+    .date-input-group {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        width: 100%;
+    }
+
+    .date-input-group label {
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+    .date-input-group input[type="date"] {
+        padding: 8px 8px;
+        font-size: 12px;
+        width: 100%;
+    }
+
+    .btn-filter {
+        width: 40%;
+        padding: 12px 16px;
+        font-size: 12px;
+        grid-column: auto;
+        min-height: 44px;
+    }
+
+    .btn-add {
+        width: 100%;
+        padding: 12px 16px;
+        font-size: 12px;
+        min-height: 44px;
+    }
+
+    .staff-header h2 {
+        font-size: 16px;
+    }
+}
+
 
 
 /* ------------------------------------------------------------------------------------
@@ -1003,6 +1287,10 @@ input:checked~.delivery-status-text {
     .order-items-table tfoot .total-row td:last-child {
         font-size: 15px;
     }
+    .staff-header>div {
+    flex-direction: column;
+    
+}
 }
 
 
@@ -1041,389 +1329,6 @@ input:checked~.delivery-status-text {
 
 .staff-header>div {
     display: flex;
+    /*flex-direction: column;*/
     gap: 12px;
-}
-
-/* ============================================
-   COMPREHENSIVE RESPONSIVE DESIGN
-   ============================================ */
-
-@media (max-width: 1200px) {
-    .inv-orders-header {
-        padding: 20px;
-        gap: 20px;
-    }
-
-    .inv-orders-filters-inline {
-        flex-wrap: wrap;
-    }
-
-    .inv-orders-filters-inline .ord-filter-group {
-        min-width: 160px;
-        flex: 0 1 calc(33% - 10px);
-    }
-
-    .content-card {
-        padding: 10px;
-    }
-
-    .info-grid {
-        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-        gap: 12px;
-    }
-    
-    .form-group textarea{
-        width: 100%;
-    }
-}
-
-@media (max-width: 1024px) {
-    .inv-orders-header {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 16px;
-    }
-
-    .inv-orders-title-section {
-        min-width: 100%;
-    }
-
-    .inv-orders-filters-inline {
-        flex-wrap: wrap;
-        justify-content: flex-start;
-        min-width: 100%;
-    }
-
-    .inv-orders-filters-inline .ord-filter-group {
-        flex: 0 1 calc(50% - 10px);
-        min-width: 160px;
-    }
-
-    .inv-orders-table-card {
-        border-radius: 10px;
-    }
-
-    .inv-orders-table-card .ord-table-wrapper {
-        max-height: 500px;
-    }
-
-  
-    .staff-header {
-        flex-wrap: wrap;
-        gap: 12px;
-    }
-
-    .staff-header h2 {
-        font-size: 22px;
-    }
-
-    .staff-header input[type="date"] {
-        min-width: 140px;
-    }
-}
-
-@media (max-width: 768px) {
-    .inv-wrapper {
-        padding: 12px;
-    }
-
-    .inv-page-header {
-        margin-bottom: 16px;
-    }
-
-    .inv-page-header h1 {
-        font-size: 24px;
-        margin-bottom: 4px;
-    }
-
-    .inv-subtitle {
-        font-size: 13px;
-    }
-
-    .inv-orders-header {
-        padding: 16px;
-        border-radius: 10px;
-        gap: 12px;
-    }
-
-    .inv-orders-title-section h1 {
-        font-size: 22px;
-        margin-bottom: 4px;
-    }
-
-    .inv-orders-title-section .inv-subtitle {
-        font-size: 13px;
-    }
-
-    .inv-orders-filters-inline .ord-filter-group {
-        flex: 0 1 calc(50% - 8px);
-        min-width: 140px;
-    }
-
-    .inv-orders-filters-inline .ord-filter-group label {
-        font-size: 12px;
-    }
-
-    .inv-orders-filters-inline .ord-filter-group input,
-    .inv-orders-filters-inline .ord-filter-group select {
-        padding: 9px 12px;
-        font-size: 13px;
-    }
-
-    .inv-orders-table-card {
-        border-radius: 8px;
-        min-height: 400px;
-    }
-
-    .inv-orders-table-card .ord-table-header {
-        padding: 16px;
-    }
-
-    .inv-orders-table-card .ord-table-header h3 {
-        font-size: 16px;
-    }
-
-    .inv-orders-table-card .ord-table-wrapper {
-        max-height: 400px;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-
-    .ord-orders-table th {
-        padding: 10px 12px;
-        font-size: 11px;
-    }
-
-    .ord-orders-table td {
-        padding: 10px 12px;
-        font-size: 13px;
-    }
-
-    .content-card {
-        border-radius: 8px;
-    }
-
-    .staff-header {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 10px;
-    }
-
-    .staff-header h2 {
-        font-size: 18px;
-    }
-
-    .staff-header input[type="date"] {
-        width: 100%;
-        min-width: auto;
-        padding: 10px 12px;
-    }
-
-    .modal-large {
-        width: 95%;
-        max-width: 95vw;
-    }
-
-    .order-details-container {
-        padding: 8px 0;
-    }
-
-    .order-info-section {
-        padding: 14px;
-        margin-bottom: 16px;
-        border-radius: 8px;
-    }
-
-    .section-title {
-        font-size: 14px;
-        margin-bottom: 12px;
-    }
-
-    .info-grid {
-        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-        gap: 12px;
-    }
-
-    .info-label {
-        font-size: 11px;
-    }
-
-    .info-value {
-        font-size: 13px;
-    }
-
-    .inv-status-badge {
-        padding: 4px 10px;
-        font-size: 11px;
-    }
-
-    /* Hide action columns on small screens */
-    .ord-orders-table th:last-child,
-    .ord-orders-table td:last-child {
-        display: none;
-    }
-}
-
-@media (max-width: 480px) {
-    .inv-wrapper {
-        padding: 8px;
-    }
-
-    .inv-page-header h1 {
-        font-size: 20px;
-    }
-
-    .inv-orders-header {
-        padding: 12px;
-        gap: 10px;
-    }
-
-    .inv-orders-title-section h1 {
-        font-size: 18px;
-    }
-
-    .inv-orders-title-section .inv-subtitle {
-        font-size: 12px;
-    }
-
-    .inv-orders-filters-inline {
-        flex-direction: column;
-        gap: 10px;
-    }
-
-    .inv-orders-filters-inline .ord-filter-group {
-        flex: 1;
-        min-width: 100%;
-        margin-bottom: 8px;
-    }
-
-    .inv-orders-filters-inline .ord-filter-group input,
-    .inv-orders-filters-inline .ord-filter-group select {
-        padding: 11px 12px;
-        font-size: 16px;
-        min-height: 44px;
-    }
-
-    .inv-orders-table-card {
-        border-radius: 6px;
-        min-height: 300px;
-    }
-
-    .inv-orders-table-card .ord-table-header {
-        padding: 12px;
-    }
-
-    .inv-orders-table-card .ord-table-header h3 {
-        font-size: 14px;
-    }
-
-    .inv-orders-table-card .ord-table-wrapper {
-        max-height: 300px;
-        overflow-x: auto;
-    }
-
-    .ord-orders-table th {
-        padding: 8px 10px;
-        font-size: 10px;
-    }
-
-    .ord-orders-table td {
-        padding: 8px 10px;
-        font-size: 12px;
-    }
-
-  
-
-    .staff-header h2 {
-        font-size: 16px;
-    }
-
-    .modal-large {
-        width: 98%;
-    }
-
-    .order-info-section {
-        padding: 12px;
-        margin-bottom: 12px;
-    }
-
-    .section-title {
-        font-size: 13px;
-        margin-bottom: 10px;
-    }
-
-    .info-grid {
-        grid-template-columns: 1fr;
-        gap: 10px;
-    }
-
-    .info-label {
-        font-size: 10px;
-    }
-
-    .info-value {
-        font-size: 12px;
-    }
-
-    .btn-add {
-        width: 100%;
-        padding: 12px 16px;
-        font-size: 13px;
-    }
-
-    .form-group input,
-    .form-group textarea,
-    .form-group select {
-        font-size: 16px !important;
-        min-height: 44px;
-    }
-    .form-group textarea{
-        min-height: 80px;
-    }
-
-    .inv-status-badge {
-        padding: 4px 8px;
-        font-size: 10px;
-    }
-
-    .ord-data-table th,
-    .ord-data-table td {
-        padding: 8px;
-        font-size: 11px;
-    }
-
-    /* Full width tables on mobile */
-    .ord-orders-table {
-        font-size: 12px;
-    }
-
-    .ord-orders-table th:first-child,
-    .ord-orders-table td:first-child {
-        min-width: 50px;
-    }
-
-    .modal .modal-header {
-        padding: 12px 16px;
-    }
-
-    .modal .close-btn {
-        width: 32px;
-        height: 32px;
-        font-size: 24px;
-    }
-
-    .form-row {
-        grid-template-columns: 1fr !important;
-    }
-
-    .form-actions {
-        flex-direction: column-reverse;
-        gap: 8px;
-    }
-
-    .btn-cancel,
-    .btn-submit {
-        width: 100%;
-        min-height: 44px;
-    }
 }

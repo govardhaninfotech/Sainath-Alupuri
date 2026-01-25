@@ -1053,8 +1053,14 @@ input:checked~.delivery-status-text {
     gap: 12px;
 }
 
+#addressGroup textarea{
+    width: 100%;
+}
 .form-group textarea {
-    width: 200%;
+    width: 100%;
+}
+.group1 textarea {
+    width: 100%;
 }
 
 /* ============================================
@@ -1430,7 +1436,7 @@ input:checked~.delivery-status-text {
     }
 
     .form-actions {
-        flex-direction: column-reverse;
+        /* flex-direction: column-reverse; */
         gap: 8px;
     }
 

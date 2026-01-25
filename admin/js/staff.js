@@ -705,7 +705,7 @@ function navigateToInventoryStaff(staffId) {
 
     // Navigate to inventory_staff page using SPA navigation
     if (window.navigateTo) {
-        window.navigateTo('staff_expense');
+        window.navigateTo('inventory_staff');
     } else {
         console.error('navigateTo function not available');
         showNotification('Navigation error. Please refresh the page.', 'error');

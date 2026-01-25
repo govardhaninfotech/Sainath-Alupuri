@@ -118,7 +118,7 @@ function generateTableHTML() {
                     </div>
                 </div>
             </div>
-                <button class="btn-add" onclick="openUserForm()">Add User</button>
+                <button class="btn-add" style="max-width: 107px !important;" onclick="openUserForm()">Add User</button>
             </div>
             
             <div class="table-container">

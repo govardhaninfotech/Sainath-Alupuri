@@ -2129,7 +2129,7 @@ input:checked+.slider:before {
     }
 
     .modal .form-actions {
-        flex-direction: column-reverse;
+        /* flex-direction: column-reverse; */
         margin-top: 0px;
         padding: 0px;
     }

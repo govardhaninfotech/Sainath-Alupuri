@@ -1,5 +1,5 @@
 // ============================================
-// ORDERS PAGE - WITH DATE RANGE FILTER & TIME VALIDATION
+// ORDERS PAGE - WITH DATE RANGE FILTER
 // ============================================
 
 import { ordersURLphp, itemURLphp, orderItemsURLphp } from "../apis/api.js";
@@ -35,10 +35,6 @@ let currentStartDate = null;
 let currentEndDate = null;
 let editingItemId = null;
 
-// ORDERING TIME RESTRICTIONS (11 AM to 8 PM)
-const ORDER_START_HOUR = 11; // 11 AM
-const ORDER_END_HOUR = 20;   // 8 PM (20:00 in 24-hour format)
-
 // EXPENSE MANAGEMENT STATE
 let selectedStaffForExpense = null;
 let staffExpenses = [];
@@ -53,74 +49,31 @@ if (!user_id) {
 }
 
 // ============================================
-// GET CURRENT MONTH START AND END DATES
-// ============================================
-function getCurrentMonthDates() {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth();
-    
-    // First day of current month
-    const startDate = new Date(year, month, 1);
-    
-    // Last day of current month
-    const endDate = new Date(year, month + 1, 0);
-    
-    return {
-        start: startDate.toISOString().split('T')[0],
-        end: endDate.toISOString().split('T')[0]
-    };
-}
-
-// ============================================
-// CHECK IF ORDERING TIME IS VALID
-// ============================================
-function isOrderingTimeValid() {
-    const now = new Date();
-    const currentHour = now.getHours();
-    
-    // Check if current time is between 11 AM and 8 PM
-    return currentHour >= ORDER_START_HOUR && currentHour < ORDER_END_HOUR;
-}
-
-// ============================================
-// SHOW TIME RESTRICTION MESSAGE
-// ============================================
-function showTimeRestrictionMessage() {
-    showNotification(
-        `Sorry! Ordering is only available between ${ORDER_START_HOUR}:00 AM and ${ORDER_END_HOUR}:00 PM (8:00 PM).`,
-        "error"
-    );
-}
-
-// ============================================
 // LOAD ORDER DATA FROM API (WITH DATE RANGE)
 // ============================================
 function loadorderData() {
     let startDate = "";
     let endDate = "";
-    
+
     const startDateEle = document.querySelector("#startDate");
     const endDateEle = document.querySelector("#endDate");
-    
+
     if (startDateEle == null || endDateEle == null) {
-        // Default to current month if elements don't exist
-        const monthDates = getCurrentMonthDates();
-        startDate = monthDates.start;
-        endDate = monthDates.end;
-        currentStartDate = startDate;
-        currentEndDate = endDate;
+        // Default to today if elements don't exist
+        const today = new Date().toISOString().split("T")[0];
+        startDate = today;
+        endDate = today;
     } else {
-        startDate = startDateEle.value || currentStartDate;
-        endDate = endDateEle.value || currentEndDate;
+        startDate = startDateEle.value || new Date().toISOString().split("T")[0];
+        endDate = endDateEle.value || new Date().toISOString().split("T")[0];
     }
-    
+
     // Validate date range
     if (new Date(startDate) > new Date(endDate)) {
         showNotification("Start date cannot be after end date!", "error");
         return Promise.resolve({ orders: [], total: 0 });
     }
-    
+
     console.log("Loading orders from:", startDate, "to:", endDate);
 
     const url = `${ordersURLphp}?user_id=${user_id}&start_date=${startDate}&end_date=${endDate}`;
@@ -154,9 +107,7 @@ async function viewOrderDetails(orderId) {
 
     // Fetch order items using orderItemsURLphp
     const date = order.expected_delivery.split(" ")[0];
-    const orderItemsURL = `${orderItemsURLphp}?order_id=${orderId}`;
-    console.log(orderItemsURL);
-    
+    const orderItemsURL = `${orderItemsURLphp}?order_id=${orderId}&date=${date}`;
 
     try {
         const itemsData = await getItemsData(orderItemsURL);
@@ -194,12 +145,14 @@ function displayOrderDetailsModal(order, orderItemsList) {
             <div class="modal-content modal-large">
                 <div class="modal-header">
                     <h3>Order Details - ${order.order_no}</h3>
+                    <span class="info-value">${formatDateTime(order.placed_at)}</span>
                     <button class="close-btn" onclick="closeViewOrderModal()">&times;</button>
                 </div>
                 <div class="modal-body">
                     <div class="order-details-container">
                         <!-- Order Information Section -->
-                        <div class="order-info-section">
+
+                       <!-- <div class="order-info-section">
                             <h4 class="section-title">Order Information</h4>
                             <div class="info-grid">
                                 <div class="info-item">
@@ -220,15 +173,19 @@ function displayOrderDetailsModal(order, orderItemsList) {
                                         <span class="inv-status-badge inv-status-${order.status.toLowerCase()}">${order.status.toUpperCase()}</span>
                                     </span>
                                 </div>
+                               <div class="info-item">
+                                    <span class="info-label">Delivery Type</span>
+                                    <span class="info-value">${order.delivery_type === 'urgent' ? 'Same Day Delivery' : 'Next Day Delivery'}</span>
+                                </div>
                                 <div class="info-item">
                                     <span class="info-label">Total Amount</span>
                                     <span class="info-value" style="font-weight: 700; color: #667eea; font-size: 16px;">₹${parseFloat(order.total_amount).toFixed(2)}</span>
                                 </div>
                             </div>
-                        </div>
+                        </div> -->
 
                         <!-- Customer Information Section -->
-                        <div class="order-info-section">
+                        <!-- <div class="order-info-section">
                             <h4 class="section-title">Customer Information</h4>
                             <div class="info-grid">
                                 <div class="info-item">
@@ -256,7 +213,7 @@ function displayOrderDetailsModal(order, orderItemsList) {
                                     <span class="info-value">${order.is_family_member === 'True' ? 'Yes' : 'No'}</span>
                                 </div>
                             </div>
-                        </div>
+                        </div> -->
 
                         <!-- Order Items Section - Shows ONLY ordered items -->
                         <div class="order-info-section">
@@ -329,45 +286,43 @@ function formatDateTime(dateString) {
 }
 
 // ============================================
-// VALIDATE DATE RANGE - FIXED VERSION
+// VALIDATE DATE RANGE
 // ============================================
 function validateDateRange() {
     const startDateEle = document.getElementById("startDate");
     const endDateEle = document.getElementById("endDate");
-    
+
     if (!startDateEle || !endDateEle) {
         return false;
     }
-    
+
     const startDate = startDateEle.value;
     const endDate = endDateEle.value;
-    
+
     // Validation 1: Check if both dates are selected
     if (!startDate || !endDate) {
         showNotification("Please select both start and end dates!", "error");
         return false;
     }
-    
-    // Validation 2: Check if start date is before or equal to end date
+
+    // Validation 2: Check if start date is before end date
     const startDateObj = new Date(startDate);
     const endDateObj = new Date(endDate);
-    
+
     if (startDateObj > endDateObj) {
-        showNotification("Start date cannot be after end date!", "error");
-        // Reset to current month
-        const monthDates = getCurrentMonthDates();
-        startDateEle.value = monthDates.start;
-        endDateEle.value = monthDates.end;
+        showNotification("Start date cannot be after end date. Please correct the date range.", "error");
+        // Reset end date to start date
+        endDateEle.value = startDate;
         return false;
     }
-    
+
     // Validation 3: Check if date range is too large (max 90 days)
     const daysDiff = Math.ceil((endDateObj - startDateObj) / (1000 * 60 * 60 * 24));
     if (daysDiff > 90) {
         showNotification("Date range cannot exceed 90 days! Please select a smaller range.", "warning");
         return false;
     }
-    
+
     // Validation 4: Prevent selecting dates in the future
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -376,21 +331,15 @@ function validateDateRange() {
         endDateEle.value = today.toISOString().split('T')[0];
         return false;
     }
-    
+
     return true;
 }
 
 // ============================================
-// FORM FUNCTIONS - WITH TIME VALIDATION
+// FORM FUNCTIONS
 // ============================================
 export function openorderform() {
-    // ✅ CHECK TIME BEFORE OPENING FORM
-    if (!isOrderingTimeValid()) {
-        showTimeRestrictionMessage();
-        return; // Don't open the form
-    }
-    
-    console.log("Opening order form");
+    console.log("enter in orderfrom");
     loadItemData();
     editingItemId = null;
     orderItems = []; // Reset order items
@@ -404,12 +353,14 @@ export function openorderform() {
     const staffDateInput = document.getElementById("orderDate");
     staffDateInput.value = today;
     staffDateInput.setAttribute('readonly', 'true');
-    staffDateInput.style.pointerEvents = 'none';
+    staffDateInput.style.pointerEvents = 'none'; // Prevent any interaction
 
     // Set total amount to 0 and make it disabled
     const totalAmountInput = document.getElementById("totalAmount");
     totalAmountInput.value = "0.00";
     totalAmountInput.setAttribute('disabled', 'true');
+
+
 
     const modal = document.getElementById("orderFormModal");
     modal.style.display = "flex";
@@ -422,13 +373,6 @@ export function openorderform() {
 // RENDER STAFF TABLE WITH PAGINATION
 // ============================================
 export function renderInventoryOrdersPage() {
-    // Set default dates to current month on first load
-    if (currentStartDate === null || currentEndDate === null) {
-        const monthDates = getCurrentMonthDates();
-        currentStartDate = monthDates.start;
-        currentEndDate = monthDates.end;
-    }
-    
     return loadorderData().then(() => generateTableHTML());
 }
 
@@ -452,7 +396,7 @@ function generateTableHTML() {
         tableRows = `
             <tr>
                 <td colspan="7" style="text-align: center; padding: 40px; color: #9ca3af;">
-                    <div style="font-size: 48px; margin-bottom: 16px;">📦</div>
+                    <div style="font-size: 48px; margin-bottom: 16px;">ðŸ“¦</div>
                     <div style="font-size: 16px; font-weight: 600; color: #6b7280;">No orders found for this date range</div>
                     <div style="font-size: 14px; color: #9ca3af; margin-top: 8px;">Try selecting a different date range or add a new order</div>
                 </td>
@@ -476,39 +420,36 @@ function generateTableHTML() {
             `;
         }
     }
-    
-    // Set today as max date for date inputs
-    const today = new Date().toISOString().split('T')[0];
 
-    // Display time restriction message if outside ordering hours
-    const timeRestrictionBanner = !isOrderingTimeValid() ? `
-        <div style="background: #FEF2F2; border: 1px solid #FCA5A5; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 12px;">
-            <span style="font-size: 20px;">🕐</span>
-            <div>
-                <div style="font-weight: 600; color: #991B1B; font-size: 14px;">Ordering Currently Unavailable</div>
-                <div style="color: #7F1D1D; font-size: 13px; margin-top: 2px;">Orders can only be placed between ${ORDER_START_HOUR}:00 AM and ${ORDER_END_HOUR}:00 PM (8:00 PM)</div>
-            </div>
-        </div>
-    ` : '';
+    // Set default dates if not set
+    if (currentStartDate == null || currentEndDate == null) {
+        const today = new Date().toISOString().split("T")[0];
+        currentStartDate = today;
+        currentEndDate = today;
+    }
 
     return `
         <div class="content-card">
             <div class="staff-header">
                 <h2>Order Management</h2>
-                <div class="date-range-container">
-                    <div class="date-input-group">
-                        <label for="startDate">From Date:</label>
-                        <input type="date" id="startDate" value="${currentStartDate}" onchange="validateAndRefreshOrders()" max="${today}" required/>
-                    </div>
-                    <div class="date-input-group">
-                        <label for="endDate">To Date:</label>
-                        <input type="date" id="endDate" value="${currentEndDate}" onchange="validateAndRefreshOrders()" max="${today}" required/>
+                
+                <!-- Date Range Filter Section -->
+                <div class="filter-section">
+                    <div class="filter-container">
+                        <div class="date-input-group">
+                            <label for="startDate">From Date:</label>
+                            <input type="date" id="startDate" value="${currentStartDate}" max="" required/>
+                        </div>
+                        <div class="date-input-group">
+                            <label for="endDate">To Date:</label>
+                            <input type="date" id="endDate" value="${currentEndDate}" max="" required/>
+                        </div>
+                        <button class="btn-filter" onclick="validateAndRefreshOrders()">Apply Filter</button>
                     </div>
                 </div>
+                
                 <button class="btn-add" onclick="openorderform()">+ Add Order</button>
             </div>
-            
-            ${timeRestrictionBanner}
             
             <div class="table-container">
                 <table class="data-table">
@@ -546,11 +487,10 @@ function generateTableHTML() {
             <div class="modal-content modal-responsive">
                 <div class="modal-header">
                     <h3 id="formTitle">Add New Order</h3>
-                    <h6></h6>
                     <button class="close-btn" onclick="closeorderForm()">&times;</button>
                 </div>
                 <div class="modal-body">
-                    <form id="staffForm" onsubmit="submitOrderForm(event)" class="form-responsive">
+                    <form id="staffForm" onsubmit="submitOrderForm (event)" class="form-responsive">
                         <input type="hidden" id="itemId">
                         
                         <div class="form-row">
@@ -579,13 +519,13 @@ function generateTableHTML() {
 
                         <div class="form-actions" id="formActions">
                             <button type="button" class="btn-cancel" id="cancelBtn" onclick="closeOrderForm()">Cancel</button>
-                            <button type="submit" style="width: 20px !important;" class="btn-submit" id="submitBtn">Place Order</button>
+                            <button type="submit" class="btn-submit" id="submitBtn">Place Order</button>
                         </div>
                     </form>
                 </div>
             </div>
         </div>
-        <style>
+                <style>
             .filter-group {
                 display: flex;
                 align-items: center;
@@ -636,7 +576,7 @@ function generateTableHTML() {
 // ============================================
 async function loadItemData() {
     let currentUser = null;
-    
+
     try {
         currentUser =
             JSON.parse(sessionStorage.getItem("rememberedUser")) ||
@@ -660,21 +600,9 @@ async function loadItemData() {
 }
 
 // ============================================
-// CALCULATE ITEM TOTAL - WITH TIME VALIDATION
+// CALCULATE ITEM TOTAL
 // ============================================
 export function calculateItemTotal(itemId) {
-    // ✅ CHECK TIME ON EVERY INTERACTION
-    if (!isOrderingTimeValid()) {
-        showTimeRestrictionMessage();
-        // Reset the quantity back to 0
-        const quantityInput = document.getElementById(`quantity_${itemId}`);
-        if (quantityInput) {
-            quantityInput.value = 0;
-        }
-        closeOrderForm();
-        return;
-    }
-    
     const priceInput = document.getElementById(`price_${itemId}`).textContent;
     const quantityInput = document.getElementById(`quantity_${itemId}`).value;
     const totalInput = document.getElementById(`total_${itemId}`);
@@ -813,18 +741,18 @@ function refreshOrdersTable() {
     console.log("Refreshing orders table...");
     const startDateInput = document.getElementById("startDate");
     const endDateInput = document.getElementById("endDate");
-    
+
     if (startDateInput && endDateInput) {
         currentStartDate = startDateInput.value;
         currentEndDate = endDateInput.value;
         console.log("Selected date range:", currentStartDate, "to", currentEndDate);
-        
+
         // Validate before loading
         if (!validateDateRange()) {
             return Promise.resolve();
         }
     }
-    
+
     // Reset to first page when filtering
     currentstaffPage = 1;
 
@@ -887,13 +815,46 @@ function deletestaff(id) {
 }
 
 // ============================================
+// VALIDATE TIME RANGE (11 AM - 8 PM)
+// ============================================
+function validateOrderTimeRange() {
+    const currentTime = new Date();
+    const currentHour = currentTime.getHours();
+    const currentMinutes = currentTime.getMinutes();
+
+    // Check if current time is between 11 AM (11:00) and 8 PM (20:00)
+    const isWithinTimeRange = (currentHour >= 11 && currentHour < 20);
+
+    if (!isWithinTimeRange) {
+        return {
+            error: true,
+            status: 'error',
+            message: 'Orders are only accepted between 11 AM and 8 PM.'
+        };
+    }
+
+    return {
+        error: false,
+        status: 'success',
+        message: 'Order time is valid.'
+    };
+}
+
+// ============================================
 // SUBMIT FORM
 // ============================================
-async function submitOrderForm (event) {
+async function submitOrderForm(event) {
     event.preventDefault();
     const date = document.getElementById("orderDate").value.trim();
     const total_amount = document.getElementById("totalAmount").value.trim();
     const deliveryCheckbox = document.getElementById("stafftatus");
+
+    // Validate time range (11 AM - 8 PM)
+    const timeValidation = validateOrderTimeRange();
+    if (timeValidation.error) {
+        showNotification(timeValidation.message, "error");
+        return;
+    }
 
     // Validate Name
     if (!date) {
@@ -972,7 +933,7 @@ async function submitOrderForm (event) {
                         });
                     }
                 } else {
-                    showNotification(result.detail, "error");
+                    showNotification(result.message, "error");
                 }
             });
         });
@@ -1015,7 +976,7 @@ window.calculateOrderTotal = calculateOrderTotal;
 window.openorderform = openorderform;
 window.closeOrderForm = closeOrderForm;
 window.closeorderForm = closeorderForm;
-window.submitOrderForm  = submitOrderForm ;
+window.submitOrderForm = submitOrderForm;
 window.changestaffPage = changestaffPage;
 window.changestaffPerPage = changestaffPerPage;
 window.showNotification = showNotification;
@@ -1027,3 +988,4 @@ window.viewOrderDetails = viewOrderDetails;
 window.closeViewOrderModal = closeViewOrderModal;
 window.validateDateRange = validateDateRange;
 window.validateAndRefreshOrders = validateAndRefreshOrders;
+window.validateOrderTimeRange = validateOrderTimeRange;

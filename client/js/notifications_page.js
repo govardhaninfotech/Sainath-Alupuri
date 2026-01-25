@@ -3,7 +3,7 @@
 // ============================================
 
 import { notificationsURLphp } from "../apis/api.js";
-import { getItemsData } from "../apis/master_api.js";
+import { addItemToAPI, getItemsData } from "../apis/master_api.js";
 import { showNotification } from "./notification.js";
 
 // Notifications data storage
@@ -13,7 +13,17 @@ const STORAGE_KEY = "sainath_notifications";
 
 // ✅ FIX FLAG (PREVENT AUTO RE-RENDER)
 let isNotificationModalOpen = false;
-let isViewNotificationModalOpen = false;
+
+
+// Get logged-in user ID
+function getLoggedInUserId() {
+    let user =
+        JSON.parse(localStorage.getItem("rememberedUser")) ||
+        JSON.parse(sessionStorage.getItem("rememberedUser"));
+
+    return user?.id || null;
+}
+let user_id = getLoggedInUserId();
 
 // ============================================
 // LOAD NOTIFICATIONS FROM API
@@ -60,8 +70,8 @@ function saveNotificationsToStorage() {
 // ============================================
 export async function renderNotificationsPage() {
 
-    // ✅ DO NOT re-render if any modal is open
-    if (isNotificationModalOpen || isViewNotificationModalOpen) return;
+    // ✅ DO NOT re-render if modal is open
+    if (isNotificationModalOpen) return;
 
     // Load from API first
     const apiData = await loadNotificationsFromAPI();
@@ -79,58 +89,50 @@ export async function renderNotificationsPage() {
 // ============================================
 function generateNotificationsHTML() {
     return `
-        <div class="notification-container">
+        <div class="notification-container_ntf">
 
-            <div class="notification-header">
-                <h1>📬 Notifications</h1>
-                <p>Send and manage notifications to users</p>
+            <div class="notification-header_ntf">
+                <h1>Notifications</h1>
             </div>
 
-            <div id="successMessage" class="success-message">
-                ✓ Notification sent successfully!
-            </div>
-
-            <div class="notification-actions">
-                <button class="btn-add-notification" onclick="openNotificationForm()">
+          <!--  <div class="notification-actions_ntf">
+                <button class="btn-add-notification_ntf" onclick="openSendNotificationForm_ntf()">
                     + Add Notification
                 </button>
-            </div>
+            </div> -->
 
-            <!-- Modal -->
-            <div id="notificationModal" class="modal-overlay">
-                <div class="modal-content">
-                    <div class="modal-header">
+            <!-- Send Notification Modal -->
+            <div id="notificationModal_ntf" class="modal-overlay_ntf">
+                <div class="modal-content_ntf" onclick="event.stopPropagation()">
+                    <div class="modal-header_ntf">
                         <h2>Send Notification</h2>
-                        <button type="button" class="modal-close" onclick="closeNotificationForm()">✕</button>
+                        <button type="button" class="modal-close_ntf" onclick="closeSendNotificationForm_ntf()">✕</button>
                     </div>
 
-                    <form id="notificationForm">
-                        <div class="form-group">
+                    <form id="sendNotificationForm_ntf" onclick="event.stopPropagation()">
+                        <div class="form-group_ntf">
                             <label>Title *</label>
-                            <input type="text" id="notificationTitle" required>
+                            <input type="text" id="notificationTitle_ntf" required>
                         </div>
 
-                        <div class="form-group">
+                        <div class="form-group_ntf">
                             <label>Description *</label>
-                            <textarea id="notificationDescription" required></textarea>
+                            <textarea id="notificationDescription_ntf" required></textarea>
                         </div>
 
-                        <div class="form-group">
-                            <label>Recipient *</label>
-                            <input type="text" id="notificationRecipient" required>
-                        </div>
+                 
 
-                        <div class="modal-buttons">
-                            <button type="button" class="btn-reset" onclick="resetNotificationForm()">Reset</button>
-                            <button type="button" class="btn-send" onclick="sendNotification()">Send</button>
+                        <div class="modal-buttons_ntf">
+                            <button type="button" class="btn-reset_ntf" onclick="resetSendNotificationForm_ntf()">Reset</button>
+                            <button type="button" class="btn-send_ntf" onclick="sendNotification_ntf()">Send</button>
                         </div>
                     </form>
                 </div>
             </div>
 
             <!-- Table -->
-            <div class="table-container">
-                <table id="notificationsTable">
+            <div class="table-container_ntf">
+                <table id="notificationsTable_ntf">
                     <thead>
                         <tr>
                             <th>#</th>
@@ -140,32 +142,32 @@ function generateNotificationsHTML() {
                             <th>Actions</th>
                         </tr>
                     </thead>
-                    <tbody id="notificationsTableBody"></tbody>
+                    <tbody id="notificationsTableBody_ntf"></tbody>
                 </table>
             </div>
 
             <!-- View Notification Modal -->
-            <div id="viewNotificationModal" class="modal-overlay">
-                <div class="modal-content">
-                    <div class="modal-header">
+            <div id="viewNotificationModal_ntf" class="modal-overlay_ntf">
+                <div class="modal-content_ntf" onclick="event.stopPropagation()">
+                    <div class="modal-header_ntf">
                         <h2>View Notification</h2>
-                        <button type="button" class="modal-close" onclick="closeViewNotification()">✕</button>
+                        <button type="button" class="modal-close_ntf" onclick="closeViewNotification_ntf()">✕</button>
                     </div>
-                    <div class="view-content">
-                        <div class="form-group">
+                    <div class="view-content_ntf">
+                        <div class="form-group_ntf">
                             <label>Title</label>
-                            <div id="viewTitle" class="view-field"></div>
+                            <div id="viewTitle_ntf" class="view-field_ntf"></div>
                         </div>
-                        <div class="form-group">
+                        <div class="form-group_ntf">
                             <label>Message</label>
-                            <div id="viewBody" class="view-field"></div>
+                            <div id="viewBody_ntf" class="view-field_ntf"></div>
                         </div>
-                        <div class="form-group">
+                        <div class="form-group_ntf">
                             <label>Created Date</label>
-                            <div id="viewDate" class="view-field"></div>
+                            <div id="viewDate_ntf" class="view-field_ntf"></div>
                         </div>
-                        <div class="modal-buttons">
-                            <button type="button" class="btn-reset" onclick="closeViewNotification()">Close</button>
+                        <div class="modal-buttons_ntf">
+                            <button type="button" class="btn-reset_ntf" onclick="closeViewNotification_ntf()">Close</button>
                         </div>
                     </div>
                 </div>
@@ -179,117 +181,137 @@ function generateNotificationsHTML() {
 // ============================================
 function initNotificationsEventListeners() {
 
-    window.openNotificationForm = openNotificationForm;
-    window.closeNotificationForm = closeNotificationForm;
-    window.sendNotification = sendNotification;
-    window.resetNotificationForm = resetNotificationForm;
-    window.viewNotification = viewNotification;
-    window.closeViewNotification = closeViewNotification;
+    // window.openSendNotificationForm_ntf = openSendNotificationForm_ntf;
+    // window.closeSendNotificationForm_ntf = closeSendNotificationForm_ntf;
+    window.sendNotification_ntf = sendNotification_ntf;
+    window.resetSendNotificationForm_ntf = resetSendNotificationForm_ntf;
+    window.viewNotification_ntf = viewNotification_ntf;
+    window.closeViewNotification_ntf = closeViewNotification_ntf;
 
-    // ✅ ESC Key Handler
-    document.addEventListener('keydown', handleEscapeKey);
-
-    // Send Notification Modal - Click Outside to Close
-    const modal = document.getElementById("notificationModal");
+    // Send Notification Modal - Click outside to close
+    const modal = document.getElementById("notificationModal_ntf");
     if (modal) {
         modal.addEventListener("click", function (event) {
             if (event.target === modal) {
-                closeNotificationForm();
+                closeSendNotificationForm_ntf();
             }
         });
     }
 
-    // View Notification Modal - Click Outside to Close
-    const viewModal = document.getElementById("viewNotificationModal");
+    // View Notification Modal - Click outside to close
+    const viewModal = document.getElementById("viewNotificationModal_ntf");
     if (viewModal) {
         viewModal.addEventListener("click", function (event) {
             if (event.target === viewModal) {
-                closeViewNotification();
+                closeViewNotification_ntf();
             }
         });
     }
+
+    // ESC key to close modals
+    document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape") {
+            const notificationModal = document.getElementById("notificationModal_ntf");
+            const viewModal = document.getElementById("viewNotificationModal_ntf");
+
+            if (notificationModal && notificationModal.classList.contains("active_ntf")) {
+                closeSendNotificationForm_ntf();
+            }
+            if (viewModal && viewModal.classList.contains("active_ntf")) {
+                closeViewNotification_ntf();
+            }
+        }
+    });
 }
 
 // ============================================
-// ESC KEY HANDLER
+// OPEN SEND NOTIFICATION MODAL
 // ============================================
-function handleEscapeKey(event) {
-    if (event.key === 'Escape' || event.key === 'Esc') {
-        if (isNotificationModalOpen) {
-            closeNotificationForm();
-        }
-        if (isViewNotificationModalOpen) {
-            closeViewNotification();
-        }
-    }
-}
-
-// ============================================
-// OPEN MODAL
-// ============================================
-function openNotificationForm() {
+function openSendNotificationForm_ntf() {
     console.log("🔓 Opening notification form...");
-    const modal = document.getElementById("notificationModal");
+    const modal = document.getElementById("notificationModal_ntf");
     if (modal) {
-        modal.classList.add("active");
+        // Clear any inline styles
+        modal.style.display = "";
+
+        // Add active class
+        modal.classList.add("active_ntf");
+
         isNotificationModalOpen = true;
-        document.body.style.overflow = 'hidden'; // Prevent background scroll
         console.log("✅ Modal opened, isNotificationModalOpen =", isNotificationModalOpen);
+
+        // Focus first input for better UX
+        setTimeout(() => {
+            const firstInput = document.getElementById("notificationTitle_ntf");
+            if (firstInput) firstInput.focus();
+        }, 100);
     }
 }
 
 // ============================================
-// CLOSE MODAL
+// CLOSE SEND NOTIFICATION MODAL
 // ============================================
-function closeNotificationForm() {
+function closeSendNotificationForm_ntf() {
     console.log("🔒 Closing notification form...");
-    const modal = document.getElementById("notificationModal");
+    const modal = document.getElementById("notificationModal_ntf");
     if (modal) {
-        modal.classList.remove("active");
+        // Remove active class
+        modal.classList.remove("active_ntf");
+
         isNotificationModalOpen = false;
-        document.body.style.overflow = ''; // Restore scroll
         console.log("✅ Modal closed, isNotificationModalOpen =", isNotificationModalOpen);
     }
-    const form = document.getElementById("notificationForm");
+
+    // Reset form
+    const form = document.getElementById("sendNotificationForm_ntf");
     if (form) form.reset();
 }
 
 // ============================================
 // RESET FORM
 // ============================================
-function resetNotificationForm() {
-    document.getElementById("notificationForm").reset();
+function resetSendNotificationForm_ntf() {
+    const form = document.getElementById("sendNotificationForm_ntf");
+    if (form) form.reset();
 }
 
 // ============================================
 // SEND NOTIFICATION
 // ============================================
-function sendNotification() {
+async function sendNotification_ntf() {
 
-    const title = document.getElementById("notificationTitle").value.trim();
-    const description = document.getElementById("notificationDescription").value.trim();
-    const recipient = document.getElementById("notificationRecipient").value.trim();
+    user_id = getLoggedInUserId();
+    const title = document.getElementById("notificationTitle_ntf").value.trim();
+    const description = document.getElementById("notificationDescription_ntf").value.trim();
+    // const recipient = document.getElementById("notificationRecipient_ntf").value.trim();
 
-    if (!title || !description || !recipient) {
+    if (!title || !description) {
         showNotification("Please fill all fields", "warning");
         return;
     }
-
     const notification = {
-        id: ++notificationId,
+        user_id: user_id,
         title,
-        description,
-        recipient,
-        dateTime: new Date().toLocaleString(),
-        timestamp: new Date().toISOString()
+        body: description
     };
 
-    notificationsData.push(notification);
-    saveNotificationsToStorage();
-    closeNotificationForm();
-    refreshNotificationsTable();
+    try {
 
-    showNotification(`Notification sent to ${recipient}`, "success");
+        let res = await addItemToAPI(notificationsURLphp, notification);
+        if (res.message)
+            showNotification("Notification sent successfully", "success");
+        if (res.error)
+            throw new Error(res.error);
+
+        console.log(res);
+    } catch (error) {
+        console.error(res.error);
+        showNotification("Error sending notification", "error");
+        return;
+    }
+    closeSendNotificationForm_ntf();   // close modal first
+    await renderNotificationsPage(); // then reload page
+
 }
 
 // ============================================
@@ -297,13 +319,13 @@ function sendNotification() {
 // ============================================
 function refreshNotificationsTable() {
 
-    const tableBody = document.getElementById("notificationsTableBody");
+    const tableBody = document.getElementById("notificationsTableBody_ntf");
     if (!tableBody) return;
 
     if (!notificationsData || notificationsData.length === 0) {
         tableBody.innerHTML = `
             <tr>
-                <td colspan="5" class="no-data">
+                <td colspan="5" class="no-data_ntf">
                     No notifications available
                 </td>
             </tr>
@@ -325,8 +347,8 @@ function refreshNotificationsTable() {
                 <td>${body.substring(0, 50)}${body.length > 50 ? "..." : ""}</td>
                 <td>${createdDate}</td>
                 <td>
-                    <div class="action-buttons">
-                        <button class="btn-icon btn-edit" onclick="viewNotification(${n.id})" title="View">
+                    <div class="action-buttons_ntf">
+                        <button class="btn-icon_ntf btn-edit_ntf" onclick="viewNotification_ntf(${n.id})" title="View">
                             👁️
                         </button>
                     </div>
@@ -338,14 +360,13 @@ function refreshNotificationsTable() {
     tableBody.innerHTML = html;
 }
 
-
 // ============================================
 // VIEW NOTIFICATION
 // ============================================
-function viewNotification(id) {
+function viewNotification_ntf(id) {
     console.log("👁️ Viewing notification ID:", id);
     const notification = notificationsData.find(n => n.id === id);
-    
+
     if (!notification) {
         showNotification("Notification not found", "error");
         return;
@@ -356,30 +377,27 @@ function viewNotification(id) {
     const body = notification.body || notification.description || "N/A";
     const createdDate = notification.created_date || notification.dateTime || "N/A";
 
-    document.getElementById("viewTitle").textContent = title;
-    document.getElementById("viewBody").textContent = body;
-    document.getElementById("viewDate").textContent = createdDate;
+    document.getElementById("viewTitle_ntf").textContent = title;
+    document.getElementById("viewBody_ntf").textContent = body;
+    document.getElementById("viewDate_ntf").textContent = createdDate;
 
     // Open the view modal
-    const modal = document.getElementById("viewNotificationModal");
+    const modal = document.getElementById("viewNotificationModal_ntf");
     if (modal) {
-        modal.classList.add("active");
-        isViewNotificationModalOpen = true;
-        document.body.style.overflow = 'hidden'; // Prevent background scroll
-        console.log("✅ View modal opened, isViewNotificationModalOpen =", isViewNotificationModalOpen);
+        modal.style.display = "";  // Clear inline style
+        modal.classList.add("active_ntf");  // Use active class
     }
 }
 
 // ============================================
 // CLOSE VIEW NOTIFICATION
 // ============================================
-function closeViewNotification() {
+function closeViewNotification_ntf() {
     console.log("🔒 Closing view notification");
-    const modal = document.getElementById("viewNotificationModal");
+    const modal = document.getElementById("viewNotificationModal_ntf");
     if (modal) {
-        modal.classList.remove("active");
-        isViewNotificationModalOpen = false;
-        document.body.style.overflow = ''; // Restore scroll
-        console.log("✅ View modal closed, isViewNotificationModalOpen =", isViewNotificationModalOpen);
+        modal.classList.remove("active_ntf");  // Use active class
     }
 }
+
+window.renderNotificationsPage = renderNotificationsPage;

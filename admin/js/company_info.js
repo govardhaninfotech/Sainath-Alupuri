@@ -11,13 +11,18 @@ let companyData = null;
 let isCompanyModalOpen = false;
 let hasCompanyData = false;
 
+function getLoggedInUserId() {
+    const user = JSON.parse(localStorage.getItem("loggedInUser"));
+    return user ? user.id : null;
+}
+
 // ============================================
 // LOAD COMPANY INFO FROM API
 // ============================================
 async function loadCompanyInfoFromAPI() {
     try {
         console.log("📡 Fetching company info from API:", companyProfileURLphp);
-        const data = await getItemsData(companyProfileURLphp);
+        const data = await getItemsData(`${companyProfileURLphp}?user_id=${getLoggedInUserId()}`);
         console.log("✅ Company info received:", data);
 
         if (Array.isArray(data) && data.length > 0) {
@@ -141,9 +146,14 @@ function generateCompanyDisplayView() {
                             <input type="text" id="companyName" value="${companyName}" required>
                         </div>
 
-                        <div class="form-group">
+                        <style>
+                            #addressGroup textarea {
+                                max-width: 100% !important;
+                            }
+                        </style>
+                        <div class="group1" id="addressGroup">
                             <label>Address *</label>
-                            <textarea id="companyAddress" required>${address}</textarea>
+                            <textarea id="companyAddress" style="width: 100% !important;" required>${address}</textarea>
                         </div>
 
                         <div class="form-group">
@@ -199,9 +209,6 @@ function generateCompanyFormView() {
 
             <div class="company-form-view">
                 <div class="form-card">
-                    <h2>Add Company Details</h2>
-                    <p class="form-description">Please add your company information. This can only be added once and later can be edited.</p>
-
                     <form id="companyForm" onclick="event.stopPropagation()">
                         <div class="form-group">
                             <label>Company Name *</label>
