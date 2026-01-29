@@ -384,7 +384,8 @@ input:checked+.slider:before {
     grid-template-columns: 1fr 1fr;
     gap: 20px;
 }
-#for-row-other{
+
+#for-row-other {
     grid-template-columns: 1fr;
 
 }
@@ -585,7 +586,7 @@ input:checked+.slider:before {
 
     .pagination-controls button {
         flex: 1;
-        min-width: 70px;
+        max-width: 140px;
         padding: 10px 8px;
         font-size: 13px;
         min-height: 40px;
@@ -670,7 +671,7 @@ input:checked+.slider:before {
         width: 20px;
     }
 
-    input:checked + .slider::before {
+    input:checked+.slider::before {
         transform: translateX(22px);
     }
 

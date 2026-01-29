@@ -102,7 +102,7 @@ export function handleStaffMonthChange(event) {
     return loadStaffAttendanceData().then(() => generateItemsTableHTML());
 }
 
-function viewClientMonthlyReport(client_id) {
+function viewStaffsMonthlyReport(client_id) {
     showNotification("No Staff Attendance Report Viewed", "info");
 }
 
@@ -124,7 +124,7 @@ function generateItemsTableHTML() {
             <tr>
    
                 <td>${serialNo}</td>
-                <td><a href="javascript:void(0)" class="order-link" onclick="viewClientMonthlyReport(${item.id})">${item.staff_name}</a></td>
+                <td><a href="javascript:void(0)" class="order-link" onclick="viewStaffsMonthlyReport(${item.id})">${item.staff_name}</a></td>
                 <td>${item.present_days}</td>
                 <td>${item.absent_days}</td>
                 <td>${item.half_days}</td>
@@ -146,16 +146,16 @@ export function initStaffAttendanceReportsCard() {
                 <h2>Staff Attendance Reports</h2>
                 
                 <div class="inv-filter-group">
-                        <label for="invMonthSelect">📅 Month Selection</label>
+                        <label for="invMonthSelect">ðŸ“… Month Selection</label>
                         <select id="invMonthSelect" onchange="handleStaffMonthChange(event)"></select>
                     </div>
 
                 <!-- <button class="btn-add" onclick="openStaffAttendanceForm()">Add Staff Attendance</button> -->
                 <div style="display: flex; gap: 10px; align-items: center;">
-                    <button class="btn-add" onclick="toggleExportDropdown()" style="background: #4CAF50; color: white;">📥 Export</button>
+                    <button class="btn-add" onclick="toggleExportDropdown()" style="background: #4CAF50; color: white;">ðŸ“¥ Export</button>
                     <div id="exportDropdown" style="display:none; position:absolute; background:white; border:1px solid #ddd; border-radius:4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); z-index:100; min-width: 150px;">
-                        <button onclick="handleExportPDF()" style="display:block; width:100%; padding:10px; border:none; text-align:left; cursor:pointer; background:none; font-size:14px;">📄 Export as PDF</button>
-                        <button onclick="handleExportExcel()" style="display:block; width:100%; padding:10px; border:none; text-align:left; cursor:pointer; background:none; font-size:14px;">📊 Export as Excel</button>
+                        <button onclick="handleExportPDF()" style="display:block; width:100%; padding:10px; border:none; text-align:left; cursor:pointer; background:none; font-size:14px;">ðŸ“„ Export as PDF</button>
+                        <button onclick="handleExportExcel()" style="display:block; width:100%; padding:10px; border:none; text-align:left; cursor:pointer; background:none; font-size:14px;">ðŸ“Š Export as Excel</button>
                     </div>
                 </div>
              </div>
@@ -176,7 +176,7 @@ export function initStaffAttendanceReportsCard() {
                         ${tableRows || `<tr><td colspan="7" style="text-align:center;">No items found</td></tr>`}
                     </tbody>
                 </table>
-            </div>
+            </div>  
             <div class="pagination">
                 <div class="pagination-info">
                     Showing ${itemsTotal === 0 ? 0 : showingFrom} to ${showingTo} of ${itemsTotal} entries
@@ -289,7 +289,7 @@ window.generateItemsTableHTML = generateItemsTableHTML;
 window.handleStaffMonthChange = handleStaffMonthChange;
 window.initStaffAttendanceReportsCard = initStaffAttendanceReportsCard;
 window.initStaffMonthDropdown = initStaffMonthDropdown;
-window.viewClientMonthlyReport = viewClientMonthlyReport;
+window.viewStaffsMonthlyReport = viewStaffsMonthlyReport;
 window.toggleExportDropdown = toggleExportDropdown;
 window.handleExportPDF = handleExportPDF;
 window.handleExportExcel = handleExportExcel;

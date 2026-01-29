@@ -508,11 +508,11 @@
     border-radius: 50%;
 }
 
-.toggle-switch input:checked + .slider {
+.toggle-switch input:checked+.slider {
     background-color: #10b981;
 }
 
-.toggle-switch input:checked + .slider::before {
+.toggle-switch input:checked+.slider::before {
     transform: translateX(22px);
 }
 
@@ -573,7 +573,7 @@
 
     .form-group {
         margin-bottom: 16px;
-        
+
     }
 
     .form-group label {
@@ -632,9 +632,9 @@
 
     .pagination-controls button {
         flex: 1;
-        min-width: 70px;
+        max-width: 140px;
         padding: 10px 8px;
-        font-size: 13px;
+        font-size: 13px;    
     }
 
     .page-number {

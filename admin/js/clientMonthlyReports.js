@@ -169,7 +169,7 @@ function loadClientOrders(clientId) {
         return Promise.reject("Missing user_id");
     }
 
-    const url = `${ordersURLphp}?user_id=${currentUser.id}&client_id=${clientId}`;
+    const url = `${ordersURLphp}?user_id=${clientId}`;
     console.log("Loading client orders from URL:", url);
 
     return getItemsData(url).then(data => {
@@ -236,13 +236,13 @@ function displayClientOrderDetailsModal(order, orderItemsList) {
         <div id="viewOrderModal" class="modal show" style="display: flex;">
             <div class="modal-content modal-large">
                 <div class="modal-header">
-                    <h3>Order Details - ${order.order_no}</h3>
+                    <h3>Order Details - ${order.order_no}</h3> ${order.placed_at}
                     <button class="close-btn" onclick="closeViewOrderModal()">&times;</button>
                 </div>
                 <div class="modal-body">
                     <div class="order-details-container">
                         <!-- Customer Information Section -->
-                        <div class="order-info-section">
+                        <!-- <div class="order-info-section">
                             <h4 class="section-title">Customer Information</h4>
                             <div class="info-grid">
                                 <div class="info-item">
@@ -262,7 +262,7 @@ function displayClientOrderDetailsModal(order, orderItemsList) {
                                     <span class="info-value">${order.address}</span>
                                 </div>
                             </div>
-                        </div>
+                        </div> -->
 
                         <!-- Order Items Section -->
                         <div class="order-info-section">
@@ -346,8 +346,8 @@ function generateClientOrdersPageHTML() {
 
             tableRows += `
                 <tr>
-                    <td><a href="javascript:void(0)" class="order-link" onclick="viewClientOrderDetails(${order.id})">${serialNo}</a></td>
-                    <td>${order.order_no}</td>
+                    <td>${serialNo}</td>
+                    <td><a href="javascript:void(0)" class="order-link" onclick="viewClientOrderDetails(${order.id})">${order.order_no}</a></td>
                     <td>₹${parseFloat(order.total_amount).toFixed(2)}</td>
                     <td>${order.delivery_type === 'urgent' ? 'Same Day' : 'Next Day'}</td>
                     <td>${order.status ? '<span style="padding: 4px 8px; border-radius: 4px; background: #dbeafe; color: #0369a1; font-size: 12px; font-weight: 500;">' + order.status.toUpperCase() + '</span>' : 'N/A'}</td>
@@ -473,8 +473,12 @@ function formatDateTime(dateString) {
 
 
 
-let tableRows = "";
-return `
+// ============================================
+// INITIALIZE CLIENT MONTHLY REPORT CARD
+// ============================================
+export function initClientMothlyReportCard() {
+    let tableRows = "";
+    return `
         <div class="content-card" id="table-container">
             <div class="items-header">
                 <h2>Client Monthly Report</h2>
@@ -535,6 +539,7 @@ return `
             </div>
         </div>      
     `;
+}
 
 
 
@@ -710,3 +715,4 @@ window.handleExportExcel = handleExportExcel;
 window.closeViewOrderModal = closeViewOrderModal;
 window.changeClientOrderPage = changeClientOrderPage;
 window.backToClientMonthlyReport = backToClientMonthlyReport;
+window.initClientMothlyReportCard = initClientMothlyReportCard;
