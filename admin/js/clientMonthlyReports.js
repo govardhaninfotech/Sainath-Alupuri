@@ -2,13 +2,15 @@
 // ITEMS PAGE - CRUD OPERATIONS WITH PAGINATION
 // ============================================
 
-import { clientMonthlySummaryURLphp } from "../apis/api.js";
+import { clientMonthlySummaryURLphp, ordersURLphp, orderItemsURLphp } from "../apis/api.js";
 import { getItemsData } from "../apis/master_api.js";
 import { showNotification } from "./notification.js";
 import { printReport, exportToPDF, exportToExcel, toggleExportDropdown } from "./print/print.js";
 
 // Items Data Storage
 let itemsData = [];
+let clientOrdersData = [];
+let selectedClientInfo = null;
 
 // Server-side pagination meta
 let month = 0;
@@ -21,6 +23,13 @@ let currentDate = null;
 let totalPages = itemsTotalPages || 1;
 let showingFrom = 0;
 let showingTo = 0;
+
+// Client Orders Pagination
+let currentClientOrderPage = 1;
+let clientOrdersPerPage = 10;
+let clientOrdersTotal = 0;
+let clientOrdersTotalPages = 1;
+let isViewingClientOrders = false;
 
 // ============================================
 // LOAD ITEMS DATA FROM API (SERVER PAGINATION)
@@ -86,8 +95,32 @@ export function handleClientMonthChange(event) {
     return loadClientMonthlyReport().then(() => generateItemsTableHTML());
 }
 
-function viewClientMonthlyReport(client_id) {
-    showNotification("No Client Monthly Report Viewed", "info");
+function viewClientMonthlyReport(clientIndex) {
+    // Get client info from itemsData using the index
+    if (clientIndex < 0 || clientIndex >= itemsData.length) {
+        showNotification("Client not found!", "error");
+        return;
+    }
+
+    const clientInfo = itemsData[clientIndex];
+    selectedClientInfo = {
+        id: clientInfo.id,
+        client_name: clientInfo.client_name,
+        total_orders: clientInfo.total_orders,
+        total_order_amount: clientInfo.total_order_amount,
+        total_paid_amount: clientInfo.total_paid_amount,
+        outstanding_amount: clientInfo.outstanding_amount
+    };
+
+    isViewingClientOrders = true;
+    currentClientOrderPage = 1;
+
+    return loadClientOrders(clientInfo.id).then(() => {
+        const mainContent = document.getElementById("mainContent");
+        if (mainContent) {
+            mainContent.innerHTML = generateClientOrdersPageHTML();
+        }
+    });
 }
 
 // Generate table HTML (NO client-side slicing now)
@@ -107,7 +140,7 @@ function generateItemsTableHTML() {
         tableRows += `
             <tr>
                 <td>${serialNo}</td>
-                <td><a href="javascript:void(0)" class="order-link" onclick="viewClientMonthlyReport(${item.id})">${item.client_name}</a></td>
+                <td><a href="javascript:void(0)" class="order-link" onclick="viewClientMonthlyReport(${index})">${item.client_name}</a></td>
                 <td>${item.total_orders}</td>
                 <td>${item.total_order_amount}</td>
                 <td>${item.total_paid_amount}</td>
@@ -117,10 +150,331 @@ function generateItemsTableHTML() {
     }
     document.getElementById("itemsTableBody").innerHTML = tableRows || `<tr><td colspan="6" style="text-align:center;">No records found</td></tr>`;
 }
-export function initClientMothlyReportCard() {
+// ============================================
+// LOAD CLIENT ORDERS FROM API
+// ============================================
+function loadClientOrders(clientId) {
+    let currentUser = null;
+
+    try {
+        currentUser =
+            JSON.parse(sessionStorage.getItem("rememberedUser")) ||
+            JSON.parse(localStorage.getItem("rememberedUser"));
+    } catch (e) {
+        currentUser = null;
+    }
+
+    if (!currentUser || !currentUser.id) {
+        showNotification("User not logged in!", "error");
+        return Promise.reject("Missing user_id");
+    }
+
+    const url = `${ordersURLphp}?user_id=${currentUser.id}&client_id=${clientId}`;
+    console.log("Loading client orders from URL:", url);
+
+    return getItemsData(url).then(data => {
+        clientOrdersData = data.orders || [];
+        clientOrdersTotal = data.total ?? clientOrdersData.length;
+        clientOrdersPerPage = data.per_page ?? clientOrdersPerPage;
+        clientOrdersTotalPages = data.total_pages ?? Math.max(1, Math.ceil(clientOrdersTotal / clientOrdersPerPage));
+        return data;
+    }).catch(error => {
+        console.error("Error loading client orders:", error);
+        showNotification("Error loading client orders!", "error");
+        clientOrdersData = [];
+        clientOrdersTotal = 0;
+        clientOrdersTotalPages = 1;
+        return { orders: [], total: 0 };
+    });
+}
+
+// ============================================
+// VIEW CLIENT ORDER DETAILS
+// ============================================
+async function viewClientOrderDetails(orderId) {
+    const order = clientOrdersData.find(o => String(o.id) === String(orderId));
+    if (!order) {
+        showNotification("Order not found!", "error");
+        return;
+    }
+
+    // Fetch order items
+    const date = order.expected_delivery.split(" ")[0];
+    const orderItemsURL = `${orderItemsURLphp}?order_id=${orderId}&date=${date}`;
+
+    try {
+        const itemsData = await getItemsData(orderItemsURL);
+        const orderItemsList = itemsData.items || [];
+
+        displayClientOrderDetailsModal(order, orderItemsList);
+    } catch (error) {
+        console.error("Error fetching order items:", error);
+        showNotification("Error loading order items!", "error");
+    }
+}
+
+function displayClientOrderDetailsModal(order, orderItemsList) {
+    // Generate items table
+    let itemsTableHTML = "";
+    if (orderItemsList.length > 0) {
+        orderItemsList.forEach((item, index) => {
+            itemsTableHTML += `
+                <tr>
+                    <td style="text-align: center;">${index + 1}</td>
+                    <td>${item.name}</td>
+                    <td style="text-align: center;">${item.qty}</td>
+                    <td style="text-align: right;">₹${parseFloat(item.price).toFixed(2)}</td>
+                    <td style="text-align: right; font-weight: 600;">₹${parseFloat(item.line_total).toFixed(2)}</td>
+                </tr>
+            `;
+        });
+    } else {
+        itemsTableHTML = `<tr><td colspan="5" style="text-align:center; color: #9ca3af; padding: 40px;">No items found</td></tr>`;
+    }
+
+    const modalHTML = `
+        <div id="viewOrderModal" class="modal show" style="display: flex;">
+            <div class="modal-content modal-large">
+                <div class="modal-header">
+                    <h3>Order Details - ${order.order_no}</h3>
+                    <button class="close-btn" onclick="closeViewOrderModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="order-details-container">
+                        <!-- Customer Information Section -->
+                        <div class="order-info-section">
+                            <h4 class="section-title">Customer Information</h4>
+                            <div class="info-grid">
+                                <div class="info-item">
+                                    <span class="info-label">Name</span>
+                                    <span class="info-value">${order.name}</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Mobile</span>
+                                    <span class="info-value">${order.mobile}</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Email</span>
+                                    <span class="info-value">${order.email}</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Address</span>
+                                    <span class="info-value">${order.address}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Order Items Section -->
+                        <div class="order-info-section">
+                            <h4 class="section-title">Order Items</h4>
+                            <div class="order-items-table-wrapper">
+                                <table class="order-items-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="text-align: center; width: 80px;">Sr No</th>
+                                            <th style="text-align: left;">Item Name</th>
+                                            <th style="text-align: center; width: 100px;">Quantity</th>
+                                            <th style="text-align: right; width: 120px;">Price</th>
+                                            <th style="text-align: right; width: 120px;">Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${itemsTableHTML}
+                                    </tbody>
+                                    <tfoot>
+                                        <tr class="total-row">
+                                            <td colspan="4" style="text-align: right; font-weight: 700; font-size: 15px; padding: 16px;">Grand Total:</td>
+                                            <td style="text-align: right; font-weight: 700; color: #667eea; font-size: 18px; padding: 16px;">₹${parseFloat(order.total_amount).toFixed(2)}</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Remove existing modal if any
+    const existingModal = document.getElementById("viewOrderModal");
+    if (existingModal) {
+        existingModal.remove();
+    }
+
+    // Add modal to body
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+}
+
+function closeViewOrderModal() {
+    const modal = document.getElementById("viewOrderModal");
+    if (modal) {
+        modal.classList.remove("show");
+        setTimeout(() => {
+            modal.remove();
+        }, 300);
+    }
+}
+
+// ============================================
+// GENERATE CLIENT ORDERS PAGE HTML
+// ============================================
+function generateClientOrdersPageHTML() {
+    let clientOrderShowingFrom = 0;
+    let clientOrderShowingTo = 0;
+
+    if (clientOrdersTotal > 0) {
+        clientOrderShowingFrom = (currentClientOrderPage - 1) * clientOrdersPerPage + 1;
+        clientOrderShowingTo = Math.min(currentClientOrderPage * clientOrdersPerPage, clientOrdersTotal);
+    }
 
     let tableRows = "";
+    if (clientOrdersData.length === 0) {
+        tableRows = `
+            <tr>
+                <td colspan="5" style="text-align: center; padding: 40px; color: #9ca3af;">
+                    <div style="font-size: 48px; margin-bottom: 16px;">📦</div>
+                    <div style="font-size: 16px; font-weight: 600; color: #6b7280;">No orders found for this client</div>
+                    <div style="font-size: 14px; color: #9ca3af; margin-top: 8px;">This client has not placed any orders yet</div>
+                </td>
+            </tr>
+        `;
+    } else {
+        for (let index = 0; index < clientOrdersData.length; index++) {
+            const serialNo = (currentClientOrderPage - 1) * clientOrdersPerPage + index + 1;
+            let order = clientOrdersData[index];
+
+            tableRows += `
+                <tr>
+                    <td><a href="javascript:void(0)" class="order-link" onclick="viewClientOrderDetails(${order.id})">${serialNo}</a></td>
+                    <td>${order.order_no}</td>
+                    <td>₹${parseFloat(order.total_amount).toFixed(2)}</td>
+                    <td>${order.delivery_type === 'urgent' ? 'Same Day' : 'Next Day'}</td>
+                    <td>${order.status ? '<span style="padding: 4px 8px; border-radius: 4px; background: #dbeafe; color: #0369a1; font-size: 12px; font-weight: 500;">' + order.status.toUpperCase() + '</span>' : 'N/A'}</td>
+                </tr>
+            `;
+        }
+    }
+
     return `
+        <div class="content-card">
+            <div class="staff-header">
+                <div style="display: flex; gap: 12px; align-items: center;">
+                    <button onclick="backToClientMonthlyReport()" class="btn-back" style="padding: 8px 12px; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 500;">
+                        ← Back
+                    </button>
+                    <h2 style="margin: 0;">${selectedClientInfo?.client_name || 'Client'} - Orders</h2>
+                </div>
+            </div>
+
+            <div class="client-info-summary" style="background: #f8fafc; padding: 16px; border-radius: 8px; margin-bottom: 16px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+                <div style="border-left: 4px solid #667eea; padding-left: 12px;">
+                    <div style="font-size: 12px; color: #666; margin-bottom: 4px;">Total Orders</div>
+                    <div style="font-size: 18px; font-weight: 700; color: #333;">${selectedClientInfo?.total_orders || 0}</div>
+                </div>
+                <div style="border-left: 4px solid #10b981; padding-left: 12px;">
+                    <div style="font-size: 12px; color: #666; margin-bottom: 4px;">Total Amount</div>
+                    <div style="font-size: 18px; font-weight: 700; color: #333;">₹${parseFloat(selectedClientInfo?.total_order_amount || 0).toFixed(2)}</div>
+                </div>
+                <div style="border-left: 4px solid #f59e0b; padding-left: 12px;">
+                    <div style="font-size: 12px; color: #666; margin-bottom: 4px;">Paid Amount</div>
+                    <div style="font-size: 18px; font-weight: 700; color: #333;">₹${parseFloat(selectedClientInfo?.total_paid_amount || 0).toFixed(2)}</div>
+                </div>
+                <div style="border-left: 4px solid #ef4444; padding-left: 12px;">
+                    <div style="font-size: 12px; color: #666; margin-bottom: 4px;">Outstanding</div>
+                    <div style="font-size: 18px; font-weight: 700; color: #333;">₹${parseFloat(selectedClientInfo?.outstanding_amount || 0).toFixed(2)}</div>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Sr No</th>
+                            <th>Order Number</th>
+                            <th>Amount</th>
+                            <th>Delivery Type</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${tableRows}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="pagination">
+                <div class="pagination-info">
+                    Showing ${clientOrdersTotal === 0 ? 0 : clientOrderShowingFrom} to ${clientOrderShowingTo} of ${clientOrdersTotal} entries
+                </div>
+                <div class="pagination-controls">
+                    <button onclick="changeClientOrderPage('prev')" ${currentClientOrderPage === 1 ? "disabled" : ""}>Previous</button>
+                    <span class="page-number">Page ${currentClientOrderPage} of ${clientOrdersTotalPages}</span>
+                    <button onclick="changeClientOrderPage('next')" ${currentClientOrderPage === clientOrdersTotalPages ? "disabled" : ""}>Next</button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// ============================================
+// BACK TO CLIENT MONTHLY REPORT
+// ============================================
+function backToClientMonthlyReport() {
+    isViewingClientOrders = false;
+    selectedClientInfo = null;
+    currentClientOrderPage = 1;
+    clientOrdersData = [];
+
+    const mainContent = document.getElementById("mainContent");
+    if (mainContent) {
+        mainContent.innerHTML = initClientMothlyReportCard();
+    }
+
+    // Reinitialize the dropdown and load data
+    return initClientMonthDropdown();
+}
+
+// ============================================
+// PAGINATION FOR CLIENT ORDERS
+// ============================================
+function changeClientOrderPage(direction) {
+    if (direction === "next" && currentClientOrderPage < clientOrdersTotalPages) {
+        currentClientOrderPage++;
+    } else if (direction === "prev" && currentClientOrderPage > 1) {
+        currentClientOrderPage--;
+    } else {
+        return Promise.resolve();
+    }
+
+    const mainContent = document.getElementById("mainContent");
+    if (mainContent) {
+        mainContent.innerHTML = generateClientOrdersPageHTML();
+    }
+}
+
+function formatDate(dateString) {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function formatDateTime(dateString) {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+
+
+let tableRows = "";
+return `
         <div class="content-card" id="table-container">
             <div class="items-header">
                 <h2>Client Monthly Report</h2>
@@ -181,7 +535,7 @@ export function initClientMothlyReportCard() {
             </div>
         </div>      
     `;
-}
+
 
 
 // ============================================
@@ -348,7 +702,11 @@ window.generateItemsTableHTML = generateItemsTableHTML;
 window.initClientMonthDropdown = initClientMonthDropdown;
 window.handleClientMonthChange = handleClientMonthChange;
 window.viewClientMonthlyReport = viewClientMonthlyReport;
+window.viewClientOrderDetails = viewClientOrderDetails;
 window.toggleExportDropdown = toggleExportDropdown;
 window.handlePrintClientMonthly = handlePrintClientMonthly;
 window.handleExportPDF = handleExportPDF;
 window.handleExportExcel = handleExportExcel;
+window.closeViewOrderModal = closeViewOrderModal;
+window.changeClientOrderPage = changeClientOrderPage;
+window.backToClientMonthlyReport = backToClientMonthlyReport;

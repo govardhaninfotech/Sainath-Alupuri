@@ -103,7 +103,7 @@ export function initInventoryStaffPage() {
         setDefaultDateToday();
         initMonthDropdown();
         attachEventListeners();
-        
+
         // Check if coming from expense report with selected month
         const selectedMonth = localStorage.getItem("selectedMonth");
         if (selectedMonth) {
@@ -113,7 +113,7 @@ export function initInventoryStaffPage() {
             console.log(`📅 Admin: Month loaded from storage: ${selectedMonth} (${month}/${year})`);
             localStorage.removeItem("selectedMonth"); // Clear after reading
         }
-        
+
         randerStaffAttendanceData();
         // Load all required data
         Promise.all([

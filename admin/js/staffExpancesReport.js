@@ -112,7 +112,7 @@ export function handleStaffExpMonthChange(event) {
     return loadStaffAttendanceData().then(() => generateItemsTableHTML());
 }
 
-function viewClientMonthlyReport(staffId) {
+function viewStaffMonthlyReport(staffId) {
     // Get the month from dropdown
     const monthSelect = document.getElementById('invMonthSelect');
     const selectedMonth = monthSelect ? monthSelect.value : null;
@@ -170,7 +170,7 @@ function generateItemsTableHTML() {
         tableRows += `
             <tr>
                 <td>${serialNo}</td>
-                <td><a href="javascript:void(0)" class="order-link" onclick="viewClientMonthlyReport('${item.staff_id}')">${item.staff_name}</a></td>
+                <td><a href="javascript:void(0)" class="order-link" onclick="viewStaffMonthlyReport('${item.staff_id}')">${item.staff_name}</a></td>
                 <td>${item.amount}</td>
                <!--  <td>${item.payment_mode}</td>
                 <td>${item.expense_date}</td>
@@ -388,7 +388,7 @@ window.generateItemsTableHTML = generateItemsTableHTML;
 window.initStaffExpMonthDropdown = initStaffExpMonthDropdown;
 window.initStaffExpMothlyReportCard = initStaffExpMothlyReportCard;
 window.handleStaffExpMonthChange = handleStaffExpMonthChange;
-window.viewClientMonthlyReport = viewClientMonthlyReport;
+window.viewStaffMonthlyReport = viewStaffMonthlyReport;
 window.toggleExportDropdown = toggleExportDropdown;
 window.handlePrintStaffExpense = handlePrintStaffExpense;
 window.handleStaffExportPDF = handleStaffExportPDF;
