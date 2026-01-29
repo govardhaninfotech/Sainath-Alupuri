@@ -5,6 +5,7 @@
 import { clientMonthlySummaryURLphp } from "../apis/api.js";
 import { getItemsData } from "../apis/master_api.js";
 import { showNotification } from "./notification.js";
+import { printReport, exportToPDF, exportToExcel, toggleExportDropdown } from "./print/print.js";
 
 // Items Data Storage
 let itemsData = [];
@@ -123,14 +124,31 @@ export function initClientMothlyReportCard() {
         <div class="content-card" id="table-container">
             <div class="items-header">
                 <h2>Client Monthly Report</h2>
-                <div class="inv-filter-group">
-                        <label for="invMonthSelect1">📅 Month Selection</label>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <div class="inv-filter-group">
                         <select id="invMonthSelect" onchange="handleClientMonthChange(event)"></select>
                     </div>
-                <button class="btn-add">Print</button>
-                <div style="display: flex; gap: 12px; align-items: center;">
-             </div>  
-            </div>
+                    <button onclick="handlePrintClientMonthly()" class="btn-print" title="Print Report">
+                        <span style="font-size: 18px;">🖨️</span> Print
+                    </button>
+                    <div class="export-dropdown-wrapper" style="position: relative;">
+                        <button onclick="toggleExportDropdown()" class="btn-export" title="Export Report">
+                            <span style="font-size: 18px;">📥</span> Export
+                        </button>
+                        <div id="exportDropdown" class="export-dropdown-menu" style="display: none; position: absolute; right: 0; top: 100%; background: white; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); z-index: 1000; min-width: 150px; margin-top: 5px;">
+                            <!-- <button onclick="handleExportPDF()" class="export-option" style="display: block; width: 100%; padding: 10px 15px; border: none; background: none; text-align: left; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='none'">
+                                <span>📄</span> PDF
+                            </button> -->
+                            <button onclick="handleExportPDFURLFromBackend()" class="export-option" style="display: block; width: 100%; padding: 10px 15px; border: none; background: none; text-align: left; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='none'">
+                                <span>📄</span> PDF
+                            </button>
+                            <button onclick="handleExportExcel()" class="export-option" style="display: block; width: 100%; padding: 10px 15px; border: none; background: none; text-align: left; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='none'">
+                                <span>📊</span> Excel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+             </div>
 
             <div class="table-container" id="table-container">
                 <table class="data-table" >
@@ -199,8 +217,130 @@ function changeItemPerPage(value) {
 }
 
 // ============================================
+// EXPORT FUNCTIONS
+// ============================================
+async function handlePrintClientMonthly() {
+    const printData = await prepareClientMonthlyPrintData();
+
+    console.log(printData);
+
+    if (!printData.headers || !printData.rows || printData.rows.length === 0) {
+        showNotification("No data available to print", "warning");
+        return;
+    }
+
+    await printReport({
+        headers: printData.headers,
+        rows: printData.rows,
+        reportTitle: 'Client Monthly Report',
+        companyName: 'Sainath Alupuri',
+        companySubtitle: 'Client Management System',
+        logo: 'SA',
+        additionalInfo: `
+            <p><strong>Report Period:</strong> ${currentDate || new Date().toLocaleDateString('en-IN')}</p>
+            <p><strong>Total Clients:</strong> ${itemsData.length}</p>
+        `
+    });
+}
+
+async function handleExportPDF() {
+    const printData = prepareClientMonthlyPrintData();
+
+    console.log('Export PDF - printData:', printData);
+    console.log('Export PDF - itemsData:', itemsData);
+    console.log('Export PDF - rows length:', printData.rows ? printData.rows.length : 0);
+
+    if (!printData || !printData.rows || printData.rows.length === 0) {
+        showNotification("No data available to export", "warning");
+        return;
+    }
+
+    const monthSelect = document.getElementById('invMonthSelect');
+    const selectedMonth = monthSelect ? monthSelect.value : 'N/A';
+    const [year, month] = selectedMonth.split('-');
+    const monthName = new Date(year, month - 1).toLocaleString('default', { month: 'long' });
+
+    await exportToPDF({
+        reportTitle: `Client Monthly Report - ${monthName} ${year}`,
+        headers: printData.headers,
+        rows: printData.rows,
+        companyName: 'Sainath Alupuri',
+        companySubtitle: 'Management System',
+        additionalInfo: `Report for Month: ${monthName} ${year}`
+    });
+}
+
+async function handleExportExcel() {
+    const printData = prepareClientMonthlyPrintData();
+
+    console.log('Export Excel - printData:', printData);
+    console.log('Export Excel - itemsData:', itemsData);
+    console.log('Export Excel - rows length:', printData.rows ? printData.rows.length : 0);
+
+    if (!printData || !printData.rows || printData.rows.length === 0) {
+        showNotification("No data available to export", "warning");
+        return;
+    }
+
+    const monthSelect = document.getElementById('invMonthSelect');
+    const selectedMonth = monthSelect ? monthSelect.value : 'N/A';
+    const [year, month] = selectedMonth.split('-');
+    const monthName = new Date(year, month - 1).toLocaleString('default', { month: 'long' });
+
+    await exportToExcel({
+        reportTitle: `Client Monthly Report - ${monthName} ${year}`,
+        headers: printData.headers,
+        rows: printData.rows,
+        companyName: 'Sainath Alupuri',
+        companySubtitle: 'Management System',
+        additionalInfo: `Report for Month: ${monthName} ${year}`
+    });
+}
+
+function prepareClientMonthlyPrintData() {
+    const monthSelect = document.getElementById('invMonthSelect');
+    const selectedMonth = monthSelect ? monthSelect.value : 'N/A';
+    const [year, month] = selectedMonth.split('-');
+    const monthName = new Date(year, month - 1).toLocaleString('default', { month: 'long' });
+
+    const headers = ['Sr No', 'Client Name', 'Total Orders', 'Order Amount', 'Paid Amount', 'Outstanding'];
+    const rows = itemsData.map((item, index) => [
+        (currentItemsPage - 1) * itemsPerPage + index + 1,
+        item.client_name,
+        item.total_orders,
+        item.total_order_amount,
+        item.total_paid_amount,
+        item.outstanding_amount
+    ]);
+
+    return {
+        headers: headers,
+        rows: rows
+    };
+}
+
+
+async function handleExportPDFURLFromBackend() {
+    let url = 'https://gisurat.com/govardhan/sainath_aloopuri/api/reports/client_monthly_summary.php?user_id=1&month=12&year=2026&export=pdf';
+
+    // let res = await fetch(url, {
+    //     method: 'GET',
+    //     headers: {
+    //         'Content-Type': 'application/json'
+    //     }
+    // });
+    // console.log(res);
+
+    window.open(url, '_blank');
+
+    toggleExportDropdown();
+
+}
+
+// ============================================
 // MAKE FUNCTIONS GLOBALLY ACCESSIBLE (ITEMS-ONLY NAMES)
 // ============================================
+window.handleExportPDFURLFromBackend = handleExportPDFURLFromBackend;
 window.changeItemPage = changeItemPage;
 window.changeItemPerPage = changeItemPerPage;
 window.showNotification = showNotification;
@@ -208,3 +348,7 @@ window.generateItemsTableHTML = generateItemsTableHTML;
 window.initClientMonthDropdown = initClientMonthDropdown;
 window.handleClientMonthChange = handleClientMonthChange;
 window.viewClientMonthlyReport = viewClientMonthlyReport;
+window.toggleExportDropdown = toggleExportDropdown;
+window.handlePrintClientMonthly = handlePrintClientMonthly;
+window.handleExportPDF = handleExportPDF;
+window.handleExportExcel = handleExportExcel;

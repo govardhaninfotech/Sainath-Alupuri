@@ -266,6 +266,9 @@
         <!-- Overlay for mobile -->
         <div id="overlay" class="overlay" onclick="closeSidebar()"></div>
 
+        <!-- Message Container for Alerts -->
+        <div id="mainAlert" class="message-container"></div>
+
         <!-- Main Content Area -->
         <main id="mainContent" class="main-content">
             <div class="content-card">
@@ -275,11 +278,16 @@
         </main>
     </div>
 
+    <img src="../admin/images/logo.jpg" alt="">
     <!-- Placeholder functions -->
     <script>
         window.toggleSidebar = function () { console.error('toggleSidebar not loaded'); };
         window.closeSidebar = function () { console.error('closeSidebar not loaded'); };
         window.toggleSubmenu = function () { console.error('toggleSubmenu not loaded'); };
+        window.toggleInventorySubmenu = function () { console.error('toggleInventorySubmenu not loaded'); };
+        window.toggleBillingSubmenu = function () { console.error('toggleBillingSubmenu not loaded'); };
+        window.toggleReportSubmenu = function () { console.error('toggleReportSubmenu not loaded'); };
+        window.toggleStockSubmenu = function () { console.error('toggleStockSubmenu not loaded'); };
         window.toggleUserMenu = function () { console.error('toggleUserMenu not loaded'); };
         window.logout = function () { console.error('logout not loaded'); };
         window.navigateTo = function () { console.error('navigateTo not loaded'); };

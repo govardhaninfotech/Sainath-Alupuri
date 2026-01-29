@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>${reportTitle}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        @media print {
+            @page {
+                margin: 15mm;
+                size: A4;
+            }
+
+            body {
+                margin: 0;
+                padding: 0;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            padding: 30px;
+            color: #1f2937;
+            background: white;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        /* HEADER SECTION */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #667eea;
+            margin-bottom: 25px;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-img {
+            width: 55px;
+            height: 55px;
+            object-fit: contain;
+        }
+
+        .logo {
+            width: 55px;
+            height: 55px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 22px;
+        }
+
+        .company-info h1 {
+            margin: 0;
+            font-size: 22px;
+            color: #1f2937;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        .company-info p {
+            margin: 2px 0 0 0;
+            color: #6b7280;
+            font-size: 13px;
+        }
+
+        .report-title {
+            text-align: right;
+        }
+
+        .report-title h2 {
+            margin: 0;
+            font-size: 18px;
+            color: #1f2937;
+            font-weight: 700;
+            line-height: 1.3;
+        }
+
+        .report-title p {
+            margin: 3px 0 0 0;
+            color: #6b7280;
+            font-size: 12px;
+        }
+
+        /* ADDITIONAL INFO SECTION */
+        .additional-info {
+            background: #f3f4f6;
+            padding: 18px 20px;
+            border-radius: 4px;
+            margin-bottom: 25px;
+            border-left: 4px solid #667eea;
+        }
+
+        .additional-info p {
+            margin: 6px 0;
+            font-size: 14px;
+            color: #1f2937;
+            font-weight: 700;
+        }
+
+        /* TABLE SECTION */
+        .table-container {
+            width: 100%;
+            margin-top: 0;
+            margin-bottom: 25px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            border: 1px solid #d1d5db;
+        }
+
+        thead {
+            background-color: #f9fafb;
+        }
+
+        th {
+            padding: 14px 16px;
+            border: 1px solid #d1d5db;
+            text-align: left;
+            background-color: #f9fafb;
+            font-weight: 700;
+            color: #1f2937;
+            font-size: 14px;
+        }
+
+        td {
+            padding: 14px 16px;
+            border: 1px solid #d1d5db;
+            text-align: left;
+            color: #374151;
+            font-size: 13px;
+            background-color: white;
+        }
+
+        tbody tr:nth-child(even) td {
+            background-color: #f9fafb;
+        }
+
+        /* FOOTER SECTION */
+        .footer {
+            margin-top: 35px;
+            padding-top: 18px;
+            border-top: 1px solid #e5e7eb;
+            text-align: center;
+            color: #6b7280;
+            font-size: 11px;
+        }
+
+        .footer p {
+            margin: 4px 0;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <div class="logo-section">
+            <img src="../admin/images/logo.jpg" alt="Logo" class="logo-img"
+                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+            <div class="company-info">
+                <h1>Sainath Alupuri</h1>
+                <p>Month: ' . $month . ' | Year: ' . $year . '</p>
+            </div>
+        </div>
+        <div class="report-title">
+            <h2>Client Order Summary</h2>
+            <p>Generated on: Month: ' . $month . ' | Year: ' . $year . '</p>
+        </div>
+    </div>
+
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Sr No</th>
+                    <th>Client Name</th>
+                    <th>Total Orders</th>
+                    <th>Total Order Amount</th>
+                    <th>Total Paid Amount</th>
+                    <th>Outstanding Amount</th>
+                </tr>
+            </thead>
+            <tbody>';
+
+                $srNo = 1;
+                foreach ($data as $row) {
+                $html .= '
+                <tr>
+                    <td>' . $srNo++ . '</td>
+                    <td>' . htmlspecialchars($row['client_name']) . '</td>
+                    <td>' . $row['total_orders'] . '</td>
+                    <td>' . number_format($row['total_order_amount'], 2) . '</td>
+                    <td>' . number_format($row['total_paid_amount'], 2) . '</td>
+                    <td>' . number_format($row['outstanding_amount'], 2) . '</td>
+                </tr>';
+                }
+
+                $html .= '
+            </tbody>
+        </table>
+    </div>
+
+    <div class="footer">
+        <p>This is an official report generated by ${companyName} Management System created by Govardhan Infotech</p>
+        <p>© ${new Date().getFullYear()} All Rights Reserved</p>
+    </div>
+</body>
+
+</html>';
+
+$dompdf = new Dompdf([
+'isRemoteEnabled' => true
+]);
+
+$dompdf->loadHtml($html);
+$dompdf->setPaper('A4', 'portrait');
+$dompdf->render();
+
+header('Content-Type: application/pdf');
+header('Content-Disposition: attachment; filename="' . $baseFileName . '.pdf"');
+header('Cache-Control: no-store, no-cache, must-revalidate');
+
+echo $dompdf->output();
+exit;
+}

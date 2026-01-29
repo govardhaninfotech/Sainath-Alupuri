@@ -384,7 +384,7 @@ function generateTableHTML() {
         <div class="content-card">
             <div class="staff-header">
                 <h2>Expense Management</h2>
-                <button class="btn-add" onclick="openExpenseForm()">Add Expense</button>
+                <button class="btn-add" onclick="openAddExpenseForm()">Add Expense</button>
             </div>
             
             <div class="table-container">
@@ -506,7 +506,7 @@ async function changeExpensePage(direction) {
 // ============================================
 // FORM FUNCTIONS
 // ============================================
-function openExpenseForm() {
+function openAddExpenseForm() {
     editingExpenseId = null;
     document.getElementById("expenseFormTitle").textContent = "Add New Expense";
     document.getElementById("expenseForm").reset();
@@ -704,7 +704,7 @@ window.addEventListener("click", function (event) {
 // MAKE FUNCTIONS GLOBALLY ACCESSIBLE
 // ============================================
 window.editExpense = editExpense;
-window.openExpenseForm = openExpenseForm;
+window.openAddExpenseForm = openAddExpenseForm;
 window.closeExpenseForm = closeExpenseForm;
 window.submitExpenseForm = submitExpenseForm;
 window.changeExpensePage = changeExpensePage;

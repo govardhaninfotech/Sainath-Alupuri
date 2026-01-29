@@ -233,10 +233,10 @@
                         <span class="menu-label">Notifications</span>
                     </button>
 
-                    <button class="menu-item" onclick="navigateTo('company')">
+                    <!-- <button class="menu-item" onclick="navigateTo('company')">
                         <span class="menu-icon">🏢</span>
                         <span class="menu-label">Company Info</span>
-                    </button>
+                    </button> -->
                 </div>
             </div>
         </aside>
@@ -244,6 +244,9 @@
 
         <!-- Overlay for mobile (when sidebar is open) -->
         <div id="overlay" class="overlay" onclick="closeSidebar()"></div>
+
+        <!-- Message Container for Alerts -->
+        <div id="mainAlert" class="message-container"></div>
 
         <!-- Main Content Area -->
         <main id="mainContent" class="main-content">
@@ -261,6 +264,11 @@
         window.toggleSidebar = function () { console.error('toggleSidebar not loaded'); };
         window.closeSidebar = function () { console.error('closeSidebar not loaded'); };
         window.toggleSubmenu = function () { console.error('toggleSubmenu not loaded'); };
+        window.toggleInventorySubmenu = function () { console.error('toggleInventorySubmenu not loaded'); };
+        window.toggleBillingSubmenu = function () { console.error('toggleBillingSubmenu not loaded'); };
+        window.toggleExpancesSubmenu = function () { console.error('toggleExpancesSubmenu not loaded'); };
+        window.toggleExpensesSubmenu = function () { console.error('toggleExpensesSubmenu not loaded'); };
+        window.toggleReportSubmenu = function () { console.error('toggleReportSubmenu not loaded'); };
         window.toggleUserMenu = function () { console.error('toggleUserMenu not loaded'); };
         window.logout = function () { console.error('logout not loaded'); };
         window.navigateTo = function () { console.error('navigateTo not loaded'); };

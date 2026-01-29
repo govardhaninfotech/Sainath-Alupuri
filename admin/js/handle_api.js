@@ -60,7 +60,7 @@ export function loginUers(mobile, password, remember) {
 
             if (data.role === "client") {
                 showMessage('loginMessage', 'Client login successful!', 'success');
-                window.location.href = './client/dashboard.html?page=home';
+                window.location.href = './client/dashboard.html?page=inventory_orders';
                 return;
             }
 

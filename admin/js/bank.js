@@ -404,7 +404,7 @@ async function submitBankForm(event) {
                     showNotification(result.detail, "error");
                 }
             });
-        });
+        }); 
     }
 }
 

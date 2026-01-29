@@ -9,7 +9,12 @@ import { renderExpenseCategoryTable } from "./expense_category.js";
 import { renderInventoryExpancesPage } from "./expances.js";
 import { renderStaffExpensePage } from "./staffExpense.js";
 import { renderProfilePage } from "./profile.js";
-import { initBackNavigation, addToHistory } from "./backNavigation.js";// 🔹 NEW: Inventory module imports
+import { initBackNavigation, addToHistory } from "./backNavigation.js";
+import { initNavigationGuards, validateNavigation, markPageVisited, resetNavigationGuards } from "./navigationGuards.js";
+import { closeAllSubmenus, highlightMenuItemForPage, closeSidebarAfterNavigation, initMenuSystem, toggleSubmenuWithGuard } from "./menuSystem.js";
+import { showMessage } from "./message.js";
+
+// 🔹 NEW: Inventory module imports
 import { renderInventoryStaffPage, initInventoryStaffPage } from "./inventory.js";
 import { renderInventoryOrdersPage } from "./inventory_orders.js";
 import { renderStaffAttendancePage } from "./inventory_attendance.js";
@@ -48,7 +53,7 @@ if (!user_id) {
 // INITIALIZATION - Runs when page loads
 // ============================================
 document.addEventListener("DOMContentLoaded", function () {
-    console.log("📌 Dashboard DOMContentLoaded");
+    console.log("📌 Admin Dashboard DOMContentLoaded");
 
     let userData = localStorage.getItem("rememberedUser");
 
@@ -58,9 +63,15 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (userData) {
         currentUser = typeof userData === "string" ? JSON.parse(userData) : userData;
-        console.log("✅ Logged in user found:", currentUser);
+        console.log("✅ Logged in admin found:", currentUser);
 
-        // 🔹 ADD THIS LINE
+        // 🛡️ Initialize navigation guards
+        initNavigationGuards(currentUser.role);
+        
+        // 🔹 Initialize menu system
+        initMenuSystem();
+
+        // Initialize back navigation
         initBackNavigation();
 
         initializeDashboard();
@@ -266,90 +277,22 @@ function toggleStockSubmenu() {
 
 function toggleSubmenu() {
     console.log("🔽 Master submenu toggle clicked");
-
-    const masterMenu = document.getElementById("masterSubmenu");
-    const isCurrentlyOpen = masterMenu.classList.contains("open");
-
-    // Close all other main menus
-    closeAllMenus();
-
-    // Toggle master menu
-    if (!isCurrentlyOpen) {
-        masterMenu.classList.add("open");
-        const masterBtn = masterMenu.previousElementSibling;
-        if (masterBtn) {
-            const chevron = masterBtn.querySelector(".chevron");
-            chevron?.classList.add("down");
-            // Highlight the active menu button
-            masterBtn.classList.add("active");
-        }
-    }
+    toggleSubmenuWithGuard("masterSubmenu");
 }
 
 function toggleInventorySubmenu() {
     console.log("🔽 Inventory submenu toggle clicked");
-
-    const inventoryMenu = document.getElementById("inventorySubmenu");
-    const isCurrentlyOpen = inventoryMenu.classList.contains("open");
-
-    // Close all other main menus
-    closeAllMenus();
-
-    // Toggle inventory menu
-    if (!isCurrentlyOpen) {
-        inventoryMenu.classList.add("open");
-        const inventoryBtn = inventoryMenu.previousElementSibling;
-        if (inventoryBtn) {
-            const chevron = inventoryBtn.querySelector(".chevron");
-            chevron?.classList.add("down");
-            // Highlight the active menu button
-            inventoryBtn.classList.add("active");
-        }
-    }
+    toggleSubmenuWithGuard("inventorySubmenu");
 }
 
 function toggleBillingSubmenu() {
     console.log("🔽 Billing submenu toggle clicked");
-
-    const billingSubmenu = document.getElementById("billingSubMenu");
-    const isCurrentlyOpen = billingSubmenu.classList.contains("open");
-
-    // Close all other main menus
-    closeAllMenus();
-
-    // Toggle billing menu
-    if (!isCurrentlyOpen) {
-        billingSubmenu.classList.add("open");
-        const billingBtn = billingSubmenu.previousElementSibling;
-        if (billingBtn) {
-            const chevron = billingBtn.querySelector(".chevron");
-            chevron?.classList.add("down");
-            // Highlight the active menu button
-            billingBtn.classList.add("active");
-        }
-    }
+    toggleSubmenuWithGuard("billingSubMenu");
 }
 
 function toggleReportSubmenu() {
     console.log("🔽 Report submenu toggle clicked");
-
-    const reportSubMenu = document.getElementById("reportSubMenu");
-    const isCurrentlyOpen = reportSubMenu.classList.contains("open");
-
-    // Close all other main menus
-    closeAllMenus();
-
-    // Toggle report menu
-    if (!isCurrentlyOpen) {
-        reportSubMenu.classList.add("open");
-        const reportBtn = reportSubMenu.previousElementSibling;
-        if (reportBtn) {
-            const chevron = reportBtn.querySelector(".chevron");
-            chevron?.classList.add("down");
-            // Highlight the active menu button
-            reportBtn.classList.add("active");
-        }
-    }
+    toggleSubmenuWithGuard("reportSubMenu");
 }
 
 // 🔹 NEW: Payment submenu toggle
@@ -408,9 +351,16 @@ document.addEventListener("click", function (event) {
 // LOGOUT FUNCTION
 // ============================================
 function logout() {
-    console.log("👋 Logging out user");
+    console.log("👋 Logging out admin user");
+    
+    // 🔄 Reset navigation guards for next login
+    resetNavigationGuards();
+    
     localStorage.removeItem("rememberedUser");
     sessionStorage.removeItem("rememberedUser");
+    localStorage.removeItem("navigationHistory");
+    localStorage.removeItem("lastPage");
+    localStorage.removeItem("adminNavigationCompletion");
     currentUser = null;
     window.location.replace("../index.html");
 }
@@ -421,14 +371,28 @@ function logout() {
 async function navigateTo(page) {
     console.log(`➡️ navigateTo("${page}")`);
 
-    // 🔹 ADD THIS LINE
-    addToHistory(page); // 👈 ADD THIS LINE
+    // �️ VALIDATE NAVIGATION AGAINST GUARDS
+    const validation = validateNavigation(page, currentUser.role);
+    if (!validation.allowed) {
+        console.warn(`❌ Navigation blocked: ${validation.reason}`);
+        showMessage('mainAlert', validation.reason, 'warning');
+        return;
+    }
+
+    // ✅ MARK PAGE AS VISITED (for navigation flow)
+    markPageVisited(page);
+
+    // 📍 ADD TO HISTORY
+    addToHistory(page);
+
+    // 🎯 HIGHLIGHT MENU ITEM
+    highlightMenuItemForPage(page);
+
+    // 📱 CLOSE SIDEBAR AFTER NAVIGATION (mobile)
+    closeSidebarAfterNavigation();
 
     currentPage = page;
     localStorage.setItem("lastPage", page);
-
-    const menuItems = document.querySelectorAll(".menu-item");
-    menuItems.forEach((item) => item.classList.remove("active"));
 
     const mainContent = document.getElementById("mainContent");
     if (!mainContent) return;
@@ -631,6 +595,19 @@ window.logout = logout;
 window.navigateTo = navigateTo;
 window.getProfileContent = getProfileContent;
 window.toggleStockSubmenu = toggleStockSubmenu;
+
+// ============================================
+// MAKE FUNCTIONS GLOBALLY ACCESSIBLE
+// ============================================
+window.navigateTo = navigateTo;
+window.logout = logout;
+window.toggleSidebar = toggleSidebar;
+window.closeSidebar = closeSidebar;
+window.toggleSubmenu = toggleSubmenu;
+window.toggleInventorySubmenu = toggleInventorySubmenu;
+window.toggleBillingSubmenu = toggleBillingSubmenu;
+window.toggleReportSubmenu = toggleReportSubmenu;
+window.toggleUserMenu = toggleUserMenu;
 
 // ============================================
 // RESPONSIVE HANDLING

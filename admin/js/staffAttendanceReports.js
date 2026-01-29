@@ -5,6 +5,7 @@
 import { staffAttendanceReportURLphp } from "../apis/api.js";
 import { getItemsData } from "../apis/master_api.js";
 import { showNotification } from "./notification.js";
+import { printReport, exportToPDF, exportToExcel, toggleExportDropdown } from "./print/print.js";
 
 // Items Data Storage
 let itemsData = [];
@@ -150,12 +151,14 @@ export function initStaffAttendanceReportsCard() {
                     </div>
 
                 <!-- <button class="btn-add" onclick="openStaffAttendanceForm()">Add Staff Attendance</button> -->
-                <button class="btn-add">Print</button>
-                <div style="display: flex; gap: 12px; align-items: center;">
-             
-
-                </div>  
-            </div>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <button class="btn-add" onclick="toggleExportDropdown()" style="background: #4CAF50; color: white;">📥 Export</button>
+                    <div id="exportDropdown" style="display:none; position:absolute; background:white; border:1px solid #ddd; border-radius:4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); z-index:100; min-width: 150px;">
+                        <button onclick="handleExportPDF()" style="display:block; width:100%; padding:10px; border:none; text-align:left; cursor:pointer; background:none; font-size:14px;">📄 Export as PDF</button>
+                        <button onclick="handleExportExcel()" style="display:block; width:100%; padding:10px; border:none; text-align:left; cursor:pointer; background:none; font-size:14px;">📊 Export as Excel</button>
+                    </div>
+                </div>
+             </div>
 
             <div class="table-container">
                 <table class="data-table">
@@ -220,6 +223,61 @@ function changeItemPerPage(value) {
     });
 }
 
+// ============================================
+// EXPORT FUNCTIONS
+// ============================================
+async function handleExportPDF() {
+    const monthSelect = document.getElementById('invMonthSelect');
+    const selectedMonth = monthSelect ? monthSelect.value : 'N/A';
+    const [year, month] = selectedMonth.split('-');
+    const monthName = new Date(year, month - 1).toLocaleString('default', { month: 'long' });
+    
+    const headers = ['Sr No', 'Staff Name', 'Present Days', 'Absent Days', 'Half Days', 'Leaves'];
+    const rows = itemsData.map((item, index) => [
+        (currentItemsPage - 1) * itemsPerPage + index + 1,
+        item.staff_name,
+        item.present_days,
+        item.absent_days,
+        item.half_days,
+        item.leaves
+    ]);
+
+    await exportToPDF({
+        reportTitle: `Staff Attendance Report - ${monthName} ${year}`,
+        headers: headers,
+        rows: rows,
+        companyName: 'Sainath Alupuri',
+        companySubtitle: 'Management System',
+        additionalInfo: `Report for Month: ${monthName} ${year}`
+    });
+}
+
+async function handleExportExcel() {
+    const monthSelect = document.getElementById('invMonthSelect');
+    const selectedMonth = monthSelect ? monthSelect.value : 'N/A';
+    const [year, month] = selectedMonth.split('-');
+    const monthName = new Date(year, month - 1).toLocaleString('default', { month: 'long' });
+    
+    const headers = ['Sr No', 'Staff Name', 'Present Days', 'Absent Days', 'Half Days', 'Leaves'];
+    const rows = itemsData.map((item, index) => [
+        (currentItemsPage - 1) * itemsPerPage + index + 1,
+        item.staff_name,
+        item.present_days,
+        item.absent_days,
+        item.half_days,
+        item.leaves
+    ]);
+
+    await exportToExcel({
+        reportTitle: `Staff Attendance Report - ${monthName} ${year}`,
+        headers: headers,
+        rows: rows,
+        companyName: 'Sainath Alupuri',
+        companySubtitle: 'Management System',
+        additionalInfo: `Report for Month: ${monthName} ${year}`
+    });
+}
+
 
 // ============================================
 // MAKE FUNCTIONS GLOBALLY ACCESSIBLE (ITEMS-ONLY NAMES)
@@ -229,6 +287,9 @@ window.changeItemPerPage = changeItemPerPage;
 window.showNotification = showNotification;
 window.generateItemsTableHTML = generateItemsTableHTML;
 window.handleStaffMonthChange = handleStaffMonthChange;
-window.initStaffAttendanceReportsCard = initStaffAttendanceReportsCard
+window.initStaffAttendanceReportsCard = initStaffAttendanceReportsCard;
 window.initStaffMonthDropdown = initStaffMonthDropdown;
 window.viewClientMonthlyReport = viewClientMonthlyReport;
+window.toggleExportDropdown = toggleExportDropdown;
+window.handleExportPDF = handleExportPDF;
+window.handleExportExcel = handleExportExcel;

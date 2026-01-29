@@ -53,13 +53,21 @@ export function loginUers(mobile, password, remember) {
 
             if (data.role === "admin") {
                 showMessage('loginMessage', 'Admin login successful!', 'success');
+                // Reset navigation state for new session
+                localStorage.removeItem('navigationCompletion');
+                localStorage.removeItem('navigationHistory');
+                localStorage.removeItem('lastPage');
                 window.location.href = './admin/dashboard.html?page=home';
                 return;
             }
 
             if (data.role === "client") {
                 showMessage('loginMessage', 'Client login successful!', 'success');
-                window.location.href = './client/dashboard.html?page=home';
+                // Reset navigation state for new session
+                localStorage.removeItem('navigationCompletion');
+                localStorage.removeItem('navigationHistory');
+                localStorage.removeItem('lastPage');
+                window.location.href = './client/dashboard.html?page=inventory_orders';
                 return;
             }
 

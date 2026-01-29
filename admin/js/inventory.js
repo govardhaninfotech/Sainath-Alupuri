@@ -103,6 +103,17 @@ export function initInventoryStaffPage() {
         setDefaultDateToday();
         initMonthDropdown();
         attachEventListeners();
+        
+        // Check if coming from expense report with selected month
+        const selectedMonth = localStorage.getItem("selectedMonth");
+        if (selectedMonth) {
+            currentDate = selectedMonth;
+            month = parseInt(selectedMonth.split("-")[1], 10);
+            year = parseInt(selectedMonth.split("-")[0], 10);
+            console.log(`📅 Admin: Month loaded from storage: ${selectedMonth} (${month}/${year})`);
+            localStorage.removeItem("selectedMonth"); // Clear after reading
+        }
+        
         randerStaffAttendanceData();
         // Load all required data
         Promise.all([
@@ -111,11 +122,14 @@ export function initInventoryStaffPage() {
         ]).then(() => {
             const staffIdFromUrl = getQueryParam("staff_id");
             const staffIdFromStorage = localStorage.getItem("selectedStaffId");
+            const staffNameFromStorage = localStorage.getItem("selectedStaffName");
             const staffIdToSelect = staffIdFromUrl || staffIdFromStorage;
 
             if (staffIdToSelect) {
                 if (staffIdFromStorage) {
+                    console.log(`✅ Admin: Staff loaded from expense report: ${staffNameFromStorage} (ID: ${staffIdToSelect})`);
                     localStorage.removeItem("selectedStaffId");
+                    localStorage.removeItem("selectedStaffName");
                 }
                 setTimeout(() => {
                     selectStaffById(staffIdToSelect);

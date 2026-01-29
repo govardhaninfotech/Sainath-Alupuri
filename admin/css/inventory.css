@@ -1428,7 +1428,7 @@ button {
     .btn-print,
     .btn-export,
     .btn-add-expense {
-        width: 100%;
+        /* width: 100%; */
         justify-content: center;
     }
 
@@ -1467,4 +1467,10 @@ button {
     .summary-cards-row {
         grid-template-columns: 1fr;
     }
+
+    .export-dropdown-wrapper {
+        display: inline-block;
+        width: auto;
+    }
+
 }

@@ -299,7 +299,6 @@ function generatePrintHTML(config) {
                 <div class="company-info">
                     <h1>${companyName}</h1>
                     <p>${companySubtitle}</p>
-                    
                 </div>
             </div>
             <div class="report-title">

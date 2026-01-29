@@ -227,6 +227,8 @@ async function addExpense(event) {
     const expenseDate = document.getElementById("expenseDate").value;
     const expenseAmount = document.getElementById("expenseAmount").value;
     const expenseDescription = document.getElementById("expenseDescription").value;
+    const paymentMode = document.getElementById("expensePaymentMode").value;
+    const bankAccount = document.getElementById("expenseBankAccount").value;
 
     if (!expenseDate || !expenseAmount) {
         showNotification("Please fill in all required fields!", "error");
@@ -239,12 +241,19 @@ async function addExpense(event) {
         return;
     }
 
+    if (paymentMode !== 'cash' && !bankAccount) {
+        showNotification("Please select a bank account!", "error");
+        return;
+    }
+
     const formData = {
         user_id: user_id,
         staff_id: parseInt(selectedStaffId),
         date: expenseDate,
         amount: amount,
-        description: expenseDescription || ""
+        description: expenseDescription || "",
+        payment_mode: paymentMode,
+        bank_account: bankAccount || ""
     };
 
     try {
@@ -253,6 +262,9 @@ async function addExpense(event) {
         if (result.status === "ok" || result.id) {
             showNotification("Expense added successfully!", "success");
             document.getElementById("expenseForm").reset();
+            document.getElementById("expensePaymentMode").value = "cash";
+            document.getElementById("expenseBankAccount").disabled = true;
+            document.getElementById("expenseBankAccount").value = "";
             await updateExpenseDisplay();
         } else {
             showNotification(result.message || "Error adding expense!", "error");
@@ -260,6 +272,27 @@ async function addExpense(event) {
     } catch (error) {
         console.error("Error adding expense:", error);
         showNotification("Error adding expense!", "error");
+    }
+}
+
+// ============================================
+// HANDLE PAYMENT MODE CHANGE
+// ============================================
+function handlePaymentModeChange(paymentMode) {
+    const bankAccountSelect = document.getElementById("expenseBankAccount");
+    
+    if (paymentMode === 'cash') {
+        bankAccountSelect.disabled = true;
+        bankAccountSelect.value = "";
+        bankAccountSelect.innerHTML = '<option value="">N/A</option>';
+    } else if (paymentMode === 'upi') {
+        bankAccountSelect.disabled = false;
+        bankAccountSelect.innerHTML = '<option value="">Settle UPI</option>';
+        bankAccountSelect.value = "";
+    } else if (paymentMode === 'bank') {
+        bankAccountSelect.disabled = false;
+        bankAccountSelect.innerHTML = '<option value="">Select Bank</option>';
+        bankAccountSelect.value = "";
     }
 }
 
@@ -361,29 +394,72 @@ export async function renderStaffExpensePage() {
 
             <!-- Main Content -->
             <div class="expense-content">
-                <!-- Add Expense Form -->
+                <!-- Add Expense Form Modal -->
+                <div id="addExpenseModal" class="expense-modal" style="display: none;">
+                    <div class="expense-modal-overlay" onclick="closeAddExpenseModal()"></div>
+                    <div class="expense-modal-box">
+                        <div class="expense-modal-header">
+                            <h2>Add new expense</h2>
+                            <button type="button" class="expense-modal-close" onclick="closeAddExpenseModal()">✕</button>
+                        </div>
+
+                        <form id="expenseForm" onsubmit="addExpense(event)" class="expense-modal-form">
+                            <div class="expense-form-grid">
+                                <!-- Row 1: Date and Amount -->
+                                <div class="expense-form-row">
+                                    <div class="expense-form-group">
+                                        <label for="expenseDate">Date</label>
+                                        <input type="date" id="expenseDate" value="${todayDate}" required class="expense-form-input">
+                                    </div>
+
+                                    <div class="expense-form-group">
+                                        <label for="expenseAmount">Amount</label>
+                                        <input type="number" id="expenseAmount" placeholder="Enter amount" required min="0" step="0.01" class="expense-form-input">
+                                    </div>
+                                </div>
+
+                                <!-- Row 2: Payment Mode and Bank Account -->
+                                <div class="expense-form-row">
+                                    <div class="expense-form-group">
+                                        <label for="expensePaymentMode">Payment Mode</label>
+                                        <select id="expensePaymentMode" class="expense-form-input" onchange="handlePaymentModeChange(this.value)">
+                                            <option value="cash" selected>Cash</option>
+                                            <option value="upi">UPI</option>
+                                            <option value="bank">Bank</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="expense-form-group">
+                                        <label for="expenseBankAccount">Bank Account</label>
+                                        <select id="expenseBankAccount" class="expense-form-input" disabled>
+                                            <option value="">N/A</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <!-- Row 3: Notes (Full Width) -->
+                                <div class="expense-form-group expense-form-group-full">
+                                    <label for="expenseDescription">Notes</label>
+                                    <textarea id="expenseDescription" placeholder="Enter notes" rows="5" class="expense-form-input expense-form-textarea"></textarea>
+                                </div>
+                            </div>
+
+                            <div class="expense-modal-footer expense-modal-footer-left">
+                                <button type="button" class="expense-btn-cancel" onclick="closeAddExpenseModal()">Cancel</button>
+                                <button type="submit" class="expense-btn-save">Save</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Add Expense Button and List Section -->
                 <div class="expense-section">
-                    <h2 style="margin-bottom: 20px; color: #1f2937; font-size: 18px; font-weight: 600;">Add Expense</h2>
-                    <form id="expenseForm" onsubmit="addExpense(event)" class="expense-form">
-                        <div class="form-group">
-                            <label for="expenseDate">Date <span class="required">*</span></label>
-                            <input type="date" id="expenseDate" value="${todayDate}" required class="form-input">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="expenseAmount">Amount <span class="required">*</span></label>
-                            <input type="number" id="expenseAmount" placeholder="Enter amount" required min="0" step="0.01" class="form-input">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="expenseDescription">Description</label>
-                            <textarea id="expenseDescription" placeholder="Enter description" rows="4" class="form-input"></textarea>
-                        </div>
-
-                        <button type="submit" class="btn-submit" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.3s ease;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h2 style="color: #1f2937; font-size: 18px; font-weight: 600; margin: 0;">Add Expense</h2>
+                        <button type="button" onclick="openAddExpenseModal()" class="btn-add-expense" style="padding: 10px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.3s ease;">
                             ➕ Add Expense
                         </button>
-                    </form>
+                    </div>
                 </div>
 
                 <!-- Display Expenses -->
@@ -409,3 +485,18 @@ window.addExpense = addExpense;
 window.deleteExpense = deleteExpense;
 window.showNotification = showNotification;
 window.updateExpenseDisplay = updateExpenseDisplay;
+window.handlePaymentModeChange = handlePaymentModeChange;
+window.openAddExpenseModal = function() {
+    const modal = document.getElementById("addExpenseModal");
+    if (modal) {
+        modal.style.display = "flex";
+        setTimeout(() => modal.classList.add("show"), 10);
+    }
+};
+window.closeAddExpenseModal = function() {
+    const modal = document.getElementById("addExpenseModal");
+    if (modal) {
+        modal.classList.remove("show");
+        setTimeout(() => modal.style.display = "none", 300);
+    }
+};

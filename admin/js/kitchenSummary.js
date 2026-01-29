@@ -172,14 +172,17 @@ function generateTableHTML() {
                         <input type="date" id="btnDate"
                                 value="${currentDate}"
                                 onchange="handleDateChange()" />
-                        <div class="export-container" style="position: relative;">
-                            <button class="btn-add btn-export" onclick="toggleExportDropdown()">
-                                Export ▼
+                        
+                        <button onclick="printKitchenReport()" class="btn-print" title="Print Report">
+                            <span style="font-size: 18px;">🖨️</span> Print
+                        </button>
+                        <div class="export-dropdown-wrapper" style="position: relative;">
+                            <button onclick="toggleExportDropdown()" class="btn-export" title="Export Report">
+                                <span style="font-size: 18px;">📥</span> Export
                             </button>
-                            <div id="exportDropdown" class="export-dropdown" style="display: none; position: absolute; right: 0; top: 100%; background: white; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); z-index: 1000; min-width: 150px; margin-top: 5px;">
-                                <button onclick="printKitchenReport()" style="display: block; width: 100%; padding: 10px 15px; border: none; background: none; text-align: left; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='none'">🖨️ Print</button>
-                                <button onclick="exportKitchenPDF()" style="display: block; width: 100%; padding: 10px 15px; border: none; background: none; text-align: left; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='none'">📄 Export PDF</button>
-                                <button onclick="exportKitchenExcel()" style="display: block; width: 100%; padding: 10px 15px; border: none; background: none; text-align: left; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='none'">📊 Export Excel</button>
+                            <div id="exportDropdown" class="export-dropdown-menu" style="display: none; position: absolute; right: 0; top: 100%; background: white; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); z-index: 1000; min-width: 150px; margin-top: 5px;">
+                                <button onclick="exportKitchenPDF()" class="export-option" style="display: block; width: 100%; padding: 10px 15px; border: none; background: none; text-align: left; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='none'"><span>📄</span> PDF</button>
+                                <button onclick="exportKitchenExcel()" class="export-option" style="display: block; width: 100%; padding: 10px 15px; border: none; background: none; text-align: left; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='none'"><span>📊</span> Excel</button>
                             </div>
                         </div>
                     </div>
@@ -201,14 +204,16 @@ function generateTableHTML() {
                             value="${currentDate}"
                             onchange="handleDateChange()" />
                     
-                    <div class="export-container" style="position: relative;">
-                        <button class="btn-add btn-export" onclick="toggleExportDropdown()">
-                            Export ▼
+                    <button onclick="printKitchenReport()" class="btn-print" title="Print Report">
+                        <span style="font-size: 18px;">🖨️</span> Print
+                    </button>
+                    <div class="export-dropdown-wrapper" style="position: relative;">
+                        <button onclick="toggleExportDropdown()" class="btn-export" title="Export Report">
+                            <span style="font-size: 18px;">📥</span> Export
                         </button>
-                        <div id="exportDropdown" class="export-dropdown" style="display: none; position: absolute; right: 0; top: 100%; background: white; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); z-index: 1000; min-width: 150px; margin-top: 5px;">
-                            <button onclick="printKitchenReport()" style="display: block; width: 100%; padding: 10px 15px; border: none; background: none; text-align: left; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='none'">🖨️ Print</button>
-                            <button onclick="exportKitchenPDF()" style="display: block; width: 100%; padding: 10px 15px; border: none; background: none; text-align: left; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='none'">📄 Export PDF</button>
-                            <button onclick="exportKitchenExcel()" style="display: block; width: 100%; padding: 10px 15px; border: none; background: none; text-align: left; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='none'">📊 Export Excel</button>
+                        <div id="exportDropdown" class="export-dropdown-menu" style="display: none; position: absolute; right: 0; top: 100%; background: white; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); z-index: 1000; min-width: 150px; margin-top: 5px;">
+                            <button onclick="exportKitchenPDF()" class="export-option" style="display: block; width: 100%; padding: 10px 15px; border: none; background: none; text-align: left; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='none'"><span>📄</span> PDF</button>
+                            <button onclick="exportKitchenExcel()" class="export-option" style="display: block; width: 100%; padding: 10px 15px; border: none; background: none; text-align: left; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='none'"><span>📊</span> Excel</button>
                         </div>
                     </div>
                 </div>

@@ -360,6 +360,7 @@ body {
         transform: translateY(40px);
         opacity: 0;
     }
+
     to {
         transform: translateY(0);
         opacity: 1;
@@ -429,7 +430,7 @@ body {
    ============================================ */
 
 .add-attendance-form {
-    max-width:650px;
+    max-width: 650px;
 }
 
 .date-display {
@@ -666,7 +667,7 @@ body {
     cursor: pointer;
     font-size: 13px;
     transition: all 0.3s ease;
-    min-width: 85px;
+    max-width: 110px;
     min-height: 38px;
 }
 
@@ -853,6 +854,7 @@ body {
             transform: scale(0.95);
             opacity: 0;
         }
+
         to {
             transform: scale(1);
             opacity: 1;
@@ -965,6 +967,7 @@ body {
    ============================================ */
 
 @media (max-height: 600px) and (orientation: landscape) {
+
     .modal-box-staff,
     .edit-attendance-form-container {
         max-height: 95vh;

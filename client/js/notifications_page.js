@@ -5,6 +5,7 @@
 import { notificationsURLphp } from "../apis/api.js";
 import { addItemToAPI, getItemsData } from "../apis/master_api.js";
 import { showNotification } from "./notification.js";
+import { initAutoRefresh } from "./autoRefresh.js";
 
 // Notifications data storage
 let notificationsData = [];
@@ -47,6 +48,27 @@ async function loadNotificationsFromAPI() {
         return [];
     }
 }
+
+// Initialize auto-refresh when page loads
+window.addEventListener('DOMContentLoaded', () => {
+    const refreshFunction = async () => {
+        const data = await loadNotificationsFromAPI();
+        if (data && data.length > 0) {
+            console.log('✅ Notifications refreshed:', data);
+        }
+    };
+    initAutoRefresh('notifications', refreshFunction, 30);
+});
+
+window.handleManualRefresh = async function(pageId, refreshFunc) {
+    try {
+        await refreshFunc();
+        showNotification('Notifications refreshed!', 'success');
+    } catch (error) {
+        console.error('Refresh error:', error);
+        showNotification('Error refreshing notifications', 'error');
+    }
+};
 
 // ============================================
 // SAVE NOTIFICATIONS TO LOCALSTORAGE
@@ -95,12 +117,6 @@ function generateNotificationsHTML() {
                 <h1>Notifications</h1>
             </div>
 
-          <!--  <div class="notification-actions_ntf">
-                <button class="btn-add-notification_ntf" onclick="openSendNotificationForm_ntf()">
-                    + Add Notification
-                </button>
-            </div> -->
-
             <!-- Send Notification Modal -->
             <div id="notificationModal_ntf" class="modal-overlay_ntf">
                 <div class="modal-content_ntf" onclick="event.stopPropagation()">
@@ -120,8 +136,6 @@ function generateNotificationsHTML() {
                             <textarea id="notificationDescription_ntf" required></textarea>
                         </div>
 
-                 
-
                         <div class="modal-buttons_ntf">
                             <button type="button" class="btn-reset_ntf" onclick="resetSendNotificationForm_ntf()">Reset</button>
                             <button type="button" class="btn-send_ntf" onclick="sendNotification_ntf()">Send</button>
@@ -135,7 +149,7 @@ function generateNotificationsHTML() {
                 <table id="notificationsTable_ntf">
                     <thead>
                         <tr>
-                            <th>#</th>
+                            <th>Sr No</th>
                             <th>Title</th>
                             <th>Message</th>
                             <th>Created Date</th>
@@ -150,9 +164,11 @@ function generateNotificationsHTML() {
             <div id="viewNotificationModal_ntf" class="modal-overlay_ntf">
                 <div class="modal-content_ntf" onclick="event.stopPropagation()">
                     <div class="modal-header_ntf">
-                        <h2>View Notification</h2>
+                        <h2>Notification</h2>
+                        <div id="viewDate_ntf" class="view-field_ntf"></div>
                         <button type="button" class="modal-close_ntf" onclick="closeViewNotification_ntf()">✕</button>
                     </div>
+                    <hr>
                     <div class="view-content_ntf">
                         <div class="form-group_ntf">
                             <label>Title</label>
@@ -161,10 +177,6 @@ function generateNotificationsHTML() {
                         <div class="form-group_ntf">
                             <label>Message</label>
                             <div id="viewBody_ntf" class="view-field_ntf"></div>
-                        </div>
-                        <div class="form-group_ntf">
-                            <label>Created Date</label>
-                            <div id="viewDate_ntf" class="view-field_ntf"></div>
                         </div>
                         <div class="modal-buttons_ntf">
                             <button type="button" class="btn-reset_ntf" onclick="closeViewNotification_ntf()">Close</button>
@@ -181,8 +193,8 @@ function generateNotificationsHTML() {
 // ============================================
 function initNotificationsEventListeners() {
 
-    // window.openSendNotificationForm_ntf = openSendNotificationForm_ntf;
-    // window.closeSendNotificationForm_ntf = closeSendNotificationForm_ntf;
+    window.openSendNotificationForm_ntf = openSendNotificationForm_ntf;
+    window.closeSendNotificationForm_ntf = closeSendNotificationForm_ntf;
     window.sendNotification_ntf = sendNotification_ntf;
     window.resetSendNotificationForm_ntf = resetSendNotificationForm_ntf;
     window.viewNotification_ntf = viewNotification_ntf;
@@ -283,12 +295,13 @@ async function sendNotification_ntf() {
     user_id = getLoggedInUserId();
     const title = document.getElementById("notificationTitle_ntf").value.trim();
     const description = document.getElementById("notificationDescription_ntf").value.trim();
-    // const recipient = document.getElementById("notificationRecipient_ntf").value.trim();
 
     if (!title || !description) {
         showNotification("Please fill all fields", "warning");
         return;
     }
+
+
     const notification = {
         user_id: user_id,
         title,

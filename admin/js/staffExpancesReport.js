@@ -5,6 +5,12 @@
 import { staffExpenseReportURLphp } from "../apis/api.js";
 import { getItemsData } from "../apis/master_api.js";
 import { showNotification } from "./notification.js";
+import { printReport, exportToPDF, exportToExcel, toggleExportDropdown } from "./print/print.js";
+
+// Auto-refresh configuration
+let autoRefreshInterval = null;
+const AUTO_REFRESH_INTERVAL = 30000; // 30 seconds
+import { initAutoRefresh } from "./autoRefresh.js";
 
 let itemsData = [];
 
@@ -92,20 +98,43 @@ export function initStaffExpMonthDropdown() {
         opt.textContent = label;
         monthSelect.appendChild(opt);
     }
+    
+    // Initialize auto-refresh
+    const refreshFunction = () => loadStaffAttendanceData().then(() => generateItemsTableHTML());
+    initAutoRefresh('staff-expense', refreshFunction, 30);
+    
     return loadStaffAttendanceData().then(() => generateItemsTableHTML());
 }
+
 export function handleStaffExpMonthChange(event) {
     currentDate = event.target.value;
     currentItemsPage = 1;
     return loadStaffAttendanceData().then(() => generateItemsTableHTML());
 }
 
-function viewClientMonthlyReport(client_id) {
-    // showNotification("No Staff Expense Report Viewed", "info");
-    month = document.getElementById(invMonthSelect)
-    console.log(month,client_id);
-    
-    navigateToInventoryStaff(client_id,month)
+function viewClientMonthlyReport(staffId) {
+    // Get the month from dropdown
+    const monthSelect = document.getElementById('invMonthSelect');
+    const selectedMonth = monthSelect ? monthSelect.value : null;
+
+    // Find staff data from itemsData
+    const staffData = itemsData.find(item => String(item.id) === String(staffId));
+    const staffName = staffData ? staffData.staff_name : `Staff ${staffId}`;
+
+    console.log(`📊 Admin: Navigating to inventory from expense report - Staff ID: ${staffId}, Staff Name: ${staffName}, Month: ${selectedMonth}`);
+
+    // Store both staff ID and current month in localStorage
+    localStorage.setItem('selectedStaffId', staffId);
+    localStorage.setItem('selectedMonth', selectedMonth);
+    localStorage.setItem('selectedStaffName', staffName);
+
+    // Navigate to inventory page
+    if (window.navigateTo) {
+        window.navigateTo('inventory_staff');
+    } else {
+        console.error('navigateTo function not available');
+        showNotification('Navigation error. Please refresh the page.', 'error');
+    }
 }
 // ============================================
 // NAVIGATE TO INVENTORY STAFF PAGE WITH STAFF ID
@@ -117,7 +146,7 @@ function navigateToInventoryStaff(staffId) {
 
     // Navigate to inventory_staff page using SPA navigation
     if (window.navigateTo) {
-        window.navigateTo('staff_expense');
+        window.navigateTo('inventory_staff');
     } else {
         console.error('navigateTo function not available');
         showNotification('Navigation error. Please refresh the page.', 'error');
@@ -141,7 +170,7 @@ function generateItemsTableHTML() {
         tableRows += `
             <tr>
                 <td>${serialNo}</td>
-                <td><a href="javascript:void(0)" class="order-link" onclick="viewClientMonthlyReport(${item.id})">${item.staff_name}</a></td>
+                <td><a href="javascript:void(0)" class="order-link" onclick="viewClientMonthlyReport('${item.staff_id}')">${item.staff_name}</a></td>
                 <td>${item.amount}</td>
                <!--  <td>${item.payment_mode}</td>
                 <td>${item.expense_date}</td>
@@ -159,14 +188,29 @@ export function initStaffExpMothlyReportCard() {
         <div class="content-card" id="table-container">
             <div class="items-header">
                 <h2>Staff Expense Monthly Report</h2>
-                <div class="inv-filter-group">
-                        <label for="invMonthSelect1">📅 Month Selection</label>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <div class="inv-filter-group">
                         <select id="invMonthSelect" onchange="handleStaffExpMonthChange(event)"></select>
                     </div>
-                <button class="btn-add">Print</button>
-                <div style="display: flex; gap: 12px; align-items: center;">
-             </div>  
-            </div>
+                   
+                    <button onclick="handlePrintStaffExpense()" class="btn-print" title="Print Report">
+                        <span style="font-size: 18px;">🖨️</span> Print
+                    </button>
+                    <div class="export-dropdown-wrapper" style="position: relative;">
+                        <button onclick="toggleExportDropdown()" class="btn-export" title="Export Report">
+                            <span style="font-size: 18px;">📥</span> Export
+                        </button>
+                        <div id="exportDropdown" class="export-dropdown-menu" style="display: none; position: absolute; right: 0; top: 100%; background: white; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); z-index: 1000; min-width: 150px; margin-top: 5px;">
+                            <button onclick="handleStaffExportPDF()" class="export-option" style="display: block; width: 100%; padding: 10px 15px; border: none; background: none; text-align: left; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='none'">
+                                <span>📄</span> PDF
+                            </button>
+                            <button onclick="handleStaffExportExcel()" class="export-option" style="display: block; width: 100%; padding: 10px 15px; border: none; background: none; text-align: left; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='none'">
+                                <span>📊</span> Excel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+             </div>
 
             <div class="table-container" id="table-container">
                 <table class="data-table" >
@@ -203,6 +247,106 @@ export function initStaffExpMothlyReportCard() {
 
 
 // ============================================
+// EXPORT FUNCTIONS
+// ============================================
+async function handlePrintStaffExpense() {
+    const printStaffData = await prepareStaffExpensePrintData();
+
+    if (!printStaffData || printStaffData.rows.length === 0) {
+        showNotification("No data available to print", "warning");
+        return;
+    }
+
+    await printReport({
+        headers: printStaffData.headers,
+        rows: printStaffData.rows,
+        reportTitle: 'Staff Expense Report',
+        companyName: 'Sainath Alupuri',
+        companySubtitle: 'Staff Management System',
+        logo: 'SA',
+        additionalInfo: `
+            <p><strong>Report Period:</strong> ${currentDate || new Date().toLocaleDateString('en-IN')}</p>
+            <p><strong>Total Records:</strong> ${itemsData.length}</p>
+        `
+    });
+}
+
+async function handleStaffExportPDF() {
+    const printData = prepareStaffExpensePrintData();
+    console.log("staff expense export pdf");
+
+    console.log('Staff Export PDF - printData:', printData);
+    console.log('Staff Export PDF - itemsData:', itemsData);
+    console.log('Staff Export PDF - rows length:', printData.rows ? printData.rows.length : 0);
+
+    if (!printData || !printData.rows || printData.rows.length === 0) {
+        showNotification("No data available to export", "warning");
+        return;
+    }
+
+    const monthSelect = document.getElementById('invMonthSelect');
+    const selectedMonth = monthSelect ? monthSelect.value : 'N/A';
+    const [year, month] = selectedMonth.split('-');
+    const monthName = new Date(year, month - 1).toLocaleString('default', { month: 'long' });
+
+    await exportToPDF({
+        reportTitle: `Staff Expense Monthly Report - ${monthName} ${year}`,
+        headers: printData.headers,
+        rows: printData.rows,
+        companyName: 'Sainath Alupuri',
+        companySubtitle: 'Management System',
+        additionalInfo: `Report for Month: ${monthName} ${year}\nTotal Amount: Rs. ${printData.rows.reduce((sum, row) => sum + (parseFloat(row[2]) || 0), 0).toFixed(2)}`
+    });
+}
+
+async function handleStaffExportExcel() {
+    const printData = prepareStaffExpensePrintData();
+
+    console.log('Staff Export Excel - printData:', printData);
+    console.log('Staff Export Excel - itemsData:', itemsData);
+    console.log('Staff Export Excel - rows length:', printData.rows ? printData.rows.length : 0);
+
+    if (!printData || !printData.rows || printData.rows.length === 0) {
+        showNotification("No data available to export", "warning");
+        return;
+    }
+
+    const monthSelect2 = document.getElementById('invMonthSelect');
+    const selectedMonth2 = monthSelect2 ? monthSelect2.value : 'N/A';
+    const [year2, month2] = selectedMonth2.split('-');
+    const monthName2 = new Date(year2, month2 - 1).toLocaleString('default', { month: 'long' });
+
+    await exportToExcel({
+        reportTitle: `Staff Expense Monthly Report - ${monthName2} ${year2}`,
+        headers: printData.headers,
+        rows: printData.rows,
+        companyName: 'Sainath Alupuri',
+        companySubtitle: 'Management System',
+        additionalInfo: `Report for Month: ${monthName2} ${year2}`
+    });
+}
+
+function prepareStaffExpensePrintData() {
+    const monthSelect = document.getElementById('invMonthSelect');
+    const selectedMonth = monthSelect ? monthSelect.value : 'N/A';
+    const [year, month] = selectedMonth.split('-');
+    const monthName = new Date(year, month - 1).toLocaleString('default', { month: 'long' });
+
+    const headers = ['Sr No', 'Staff Name', 'Expense Amount'];
+    const rows = itemsData.map((item, index) => [
+        (currentItemsPage - 1) * itemsPerPage + index + 1,
+        item.staff_name || item.name || '',
+        item.expense_amount || item.amount || 0
+       
+    ]);
+
+    return {
+        headers: headers,
+        rows: rows
+    };
+}
+
+// ============================================
 // PAGINATION FUNCTIONS (SERVER-SIDE)
 // ============================================
 function changeItemPage(direction) {
@@ -214,7 +358,7 @@ function changeItemPage(direction) {
         return Promise.resolve();
     }
 
-    return loadClientMonthlyReport().then(() => {
+    return loadStaffAttendanceData().then(() => {
         const mainContent = document.getElementById("mainContent");
         if (mainContent) {
             mainContent.innerHTML = generateItemsTableHTML();
@@ -226,7 +370,7 @@ function changeItemPerPage(value) {
     itemsPerPage = parseInt(value, 10) || 10;
     currentItemsPage = 1;
 
-    return loadClientMonthlyReport().then(() => {
+    return loadStaffAttendanceData().then(() => {
         const mainContent = document.getElementById("mainContent");
         if (mainContent) {
             mainContent.innerHTML = generateItemsTableHTML();
@@ -245,3 +389,34 @@ window.initStaffExpMonthDropdown = initStaffExpMonthDropdown;
 window.initStaffExpMothlyReportCard = initStaffExpMothlyReportCard;
 window.handleStaffExpMonthChange = handleStaffExpMonthChange;
 window.viewClientMonthlyReport = viewClientMonthlyReport;
+window.toggleExportDropdown = toggleExportDropdown;
+window.handlePrintStaffExpense = handlePrintStaffExpense;
+window.handleStaffExportPDF = handleStaffExportPDF;
+window.handleStaffExportExcel = handleStaffExportExcel;
+
+// ============================================
+// AUTO-REFRESH FUNCTIONALITY
+// ============================================
+function startAutoRefresh() {
+    if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+    
+    autoRefreshInterval = setInterval(() => {
+        console.log('🔄 Auto-refreshing Staff Expense Report data...');
+        loadStaffAttendanceData().catch(err => {
+            console.error('❌ Auto-refresh error:', err);
+        });
+    }, AUTO_REFRESH_INTERVAL);
+    
+    console.log('✅ Auto-refresh started (30s interval)');
+}
+
+function stopAutoRefresh() {
+    if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+        autoRefreshInterval = null;
+        console.log('⏸️  Auto-refresh stopped');
+    }
+}
+
+window.startAutoRefresh = startAutoRefresh;
+window.stopAutoRefresh = stopAutoRefresh;

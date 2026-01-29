@@ -11,10 +11,11 @@ let companyData = null;
 let isCompanyModalOpen = false;
 let hasCompanyData = false;
 
-function getLoggedInUserId() {
-    const user = JSON.parse(localStorage.getItem("loggedInUser"));
-    return user ? user.id : null;
-}
+const user = JSON.parse(localStorage.getItem("rememberedUser")) || JSON.parse(sessionStorage.getItem("rememberedUser"));
+console.log(user);
+
+let user_id = user ? user.id : null;
+console.log(user_id);
 
 // ============================================
 // LOAD COMPANY INFO FROM API
@@ -22,19 +23,39 @@ function getLoggedInUserId() {
 async function loadCompanyInfoFromAPI() {
     try {
         console.log("📡 Fetching company info from API:", companyProfileURLphp);
-        const data = await getItemsData(`${companyProfileURLphp}?user_id=${getLoggedInUserId()}`);
+        let url = `${companyProfileURLphp}?user_id=${user_id}`;
+        console.log(url);
+        const data = await getItemsData(url);
         console.log("✅ Company info received:", data);
+        console.log(data);
 
-        if (Array.isArray(data) && data.length > 0) {
-            return data[0];
-        } else if (data && data.company) {
+        // Validate response data
+        if (!data) {
+            console.log("⚠️ No data received from API");
+            return null;
+        }
+
+        // Check if response has required fields
+        if (data.id && data.company_name) {
+            // Single object response (matches the API structure you provided)
+            return data;
+        } else if (Array.isArray(data) && data.length > 0) {
+            // Array response
+            const record = data[0];
+            if (record.id && record.company_name) {
+                return record;
+            }
+        } else if (data && data.company && data.company.id && data.company.company_name) {
             return data.company;
-        } else if (data && data.data) {
+        } else if (data && data.data && data.data.id && data.data.company_name) {
             return data.data;
         }
+
+        console.log("⚠️ Invalid data structure - missing required fields");
         return null;
     } catch (error) {
         console.error("❌ Error loading company info:", error);
+        showNotification("Error loading company info: " + error.message, "error");
         return null;
     }
 }
@@ -43,7 +64,7 @@ async function loadCompanyInfoFromAPI() {
 // RENDER COMPANY INFO PAGE
 // ============================================
 export async function renderCompanyInfoPage() {
-    
+
     // Prevent re-render if modal is open
     if (isCompanyModalOpen) return;
 
@@ -100,10 +121,7 @@ function generateCompanyDisplayView() {
                         <div class="info-value">${companyName}</div>
                     </div>
 
-                    <div class="info-field">
-                        <label>Address</label>
-                        <div class="info-value">${address}</div>
-                    </div>
+                    
 
                     <div class="info-field">
                         <label>GST Number</label>
@@ -124,11 +142,15 @@ function generateCompanyDisplayView() {
                         <label>IGST (%)</label>
                         <div class="info-value">${igst}</div>
                     </div>
+
+                    <div class="info-field">
+                        <label>Address</label>
+                        <div class="info-value">${address}</div>
+                    </div>
                 </div>
 
                 <div class="company-actions">
                     <button class="btn-edit" onclick="openCompanyInfoForm()">✏️ Edit</button>
-                    <button class="btn-reset" onclick="resetCompanyInfo()">🔄 Reset</button>
                 </div>
             </div>
 
@@ -146,40 +168,32 @@ function generateCompanyDisplayView() {
                             <input type="text" id="companyName" value="${companyName}" required>
                         </div>
 
-                        <style>
-                            #addressGroup textarea {
-                                max-width: 100% !important;
-                            }
-                        </style>
-                        <div class="group1" id="addressGroup">
-                            <label>Address *</label>
-                            <textarea id="companyAddress" style="width: 100% !important;" required>${address}</textarea>
-                        </div>
-
                         <div class="form-group">
                             <label>GST Number *</label>
                             <input type="text" id="companyGST" value="${gstNumber}" required>
                         </div>
 
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>CGST (%) *</label>
-                                <input type="number" id="companyCGST" value="${cgst}" step="0.01" required>
-                            </div>
+                        <div class="form-group">
+                            <label>CGST (%) *</label>
+                            <input type="number" id="companyCGST" value="${cgst}" step="0.01" required>
+                        </div>
 
-                            <div class="form-group">
-                                <label>SGST (%) *</label>
-                                <input type="number" id="companySGST" value="${sgst}" step="0.01" required>
-                            </div>
+                        <div class="form-group">
+                            <label>SGST (%) *</label>
+                            <input type="number" id="companySGST" value="${sgst}" step="0.01" required>
+                        </div>
 
-                            <div class="form-group">
-                                <label>IGST (%) *</label>
-                                <input type="number" id="companyIGST" value="${igst}" step="0.01" required>
-                            </div>
+                        <div class="form-group">
+                            <label>IGST (%) *</label>
+                            <input type="number" id="companyIGST" value="${igst}" step="0.01" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Address *</label>
+                            <textarea id="companyAddress" style="width: 100%; min-height: 120px; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-family: inherit;" required>${address}</textarea>
                         </div>
 
                         <div class="modal-buttons">
-                            <button type="button" class="btn-reset" onclick="resetCompanyForm()">Reset</button>
                             <button type="button" class="btn-send" onclick="updateCompanyInfo()">Update</button>
                         </div>
                     </form>
@@ -216,30 +230,28 @@ function generateCompanyFormView() {
                         </div>
 
                         <div class="form-group">
-                            <label>Address *</label>
-                            <textarea id="companyAddress" placeholder="Enter company address" required></textarea>
-                        </div>
-
-                        <div class="form-group">
                             <label>GST Number *</label>
                             <input type="text" id="companyGST" placeholder="Enter GST number" required>
                         </div>
 
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>CGST (%) *</label>
-                                <input type="number" id="companyCGST" placeholder="0.00" step="0.01" required>
-                            </div>
+                        <div class="form-group">
+                            <label>CGST (%) *</label>
+                            <input type="number" id="companyCGST" placeholder="0.00" step="0.01" required>
+                        </div>
 
-                            <div class="form-group">
-                                <label>SGST (%) *</label>
-                                <input type="number" id="companySGST" placeholder="0.00" step="0.01" required>
-                            </div>
+                        <div class="form-group">
+                            <label>SGST (%) *</label>
+                            <input type="number" id="companySGST" placeholder="0.00" step="0.01" required>
+                        </div>
 
-                            <div class="form-group">
-                                <label>IGST (%) *</label>
-                                <input type="number" id="companyIGST" placeholder="0.00" step="0.01" required>
-                            </div>
+                        <div class="form-group">
+                            <label>IGST (%) *</label>
+                            <input type="number" id="companyIGST" placeholder="0.00" step="0.01" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Address *</label>
+                            <textarea id="companyAddress" placeholder="Enter company address" style="width: 100%; min-height: 120px; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-family: inherit;" required></textarea>
                         </div>
 
                         <div class="modal-buttons">
@@ -261,21 +273,20 @@ function initCompanyInfoEventListeners() {
     window.closeCompanyInfoForm = closeCompanyInfoForm;
     window.saveCompanyInfo = saveCompanyInfo;
     window.updateCompanyInfo = updateCompanyInfo;
-    window.resetCompanyInfo = resetCompanyInfo;
     window.resetCompanyForm = resetCompanyForm;
 
     const modal = document.getElementById("companyModal");
     if (modal) {
         const newModal = modal.cloneNode(true);
         modal.parentNode.replaceChild(newModal, modal);
-        
+
         const clonedModal = document.getElementById("companyModal");
         clonedModal.addEventListener("click", function (event) {
             if (event.target === this && event.target.className === "modal-overlay") {
                 closeCompanyInfoForm();
             }
         });
-        
+
         const modalContent = clonedModal.querySelector(".modal-content");
         if (modalContent) {
             modalContent.addEventListener("click", function (event) {
@@ -290,6 +301,13 @@ function initCompanyInfoEventListeners() {
 // ============================================
 function openCompanyInfoForm() {
     console.log("🔓 Opening company info form");
+    
+    // Validate that company data exists
+    if (!hasCompanyData || !companyData || !companyData.id) {
+        showNotification("No company data found. Please add company information first.", "warning");
+        return;
+    }
+
     const modal = document.getElementById("companyModal");
     if (modal) {
         modal.classList.add("active");
@@ -341,7 +359,10 @@ async function saveCompanyInfo() {
         formData.append("sgst", sgst);
         formData.append("igst", igst);
 
-        const response = await fetch(companyProfileURLphp, {
+        let url = `${companyProfileURLphp}?user_id=${user_id}`;
+        console.log(url);
+
+        const response = await fetch(url, {
             method: "POST",
             body: formData
         });
@@ -409,35 +430,5 @@ async function updateCompanyInfo() {
     } catch (error) {
         console.error("❌ Error updating company info:", error);
         showNotification("Error updating company information", "error");
-    }
-}
-
-// ============================================
-// RESET COMPANY DATA (DELETE/CLEAR)
-// ============================================
-async function resetCompanyInfo() {
-    if (!confirm("Are you sure you want to delete this company information? This action cannot be undone.")) {
-        return;
-    }
-
-    try {
-        const response = await fetch(`${companyProfileURLphp}?id=${companyData.id}`, {
-            method: "DELETE"
-        });
-
-        const result = await response.json();
-        console.log("🗑️ Delete response:", result);
-
-        if (result.success || result.status === "success") {
-            showNotification("Company information deleted successfully!", "success");
-            setTimeout(() => {
-                renderCompanyInfoPage();
-            }, 1000);
-        } else {
-            showNotification("Error deleting company information", "error");
-        }
-    } catch (error) {
-        console.error("❌ Error deleting company info:", error);
-        showNotification("Error deleting company information", "error");
     }
 }

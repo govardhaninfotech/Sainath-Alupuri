@@ -8,15 +8,17 @@ import { renderHomePage, initHomePage } from "./home.js";
 import { renderExpenseCategoryTable } from "./expense_category.js";
 import { renderInventoryExpancesPage } from "./expances.js";
 import { renderStaffExpensePage } from "./staffExpense.js";
-import { initBackNavigation, addToHistory } from "./backNavigation.js";// 🔹 NEW: Inventory module imports
-
+import { initBackNavigation, addToHistory } from "./backNavigation.js";
+import { initNavigationGuards, validateNavigation, markPageVisited, resetNavigationGuards } from "./navigationGuards.js";
+import { closeAllSubmenus, highlightMenuItemForPage, closeSidebarAfterNavigation, initMenuSystem, toggleSubmenuWithGuard } from "./menuSystem.js";
+import { showMessage } from "./message.js";
 
 // 🔹 NEW: Inventory module imports
 import { renderInventoryStaffPage, initInventoryStaffPage } from "./inventory.js";
 import { renderStaffAttendancePage } from "./inventory_attendance.js";
 import { renderStaffAttendanceReportsTable, initMonthDropdown } from "./staffAttendanceReports.js";
-import { renderstaffExpancesReportTable } from "./staffExpancesReport.js";
-import { renderGeneralExpensesReportTable } from "./General_Expenses_Report.js";
+import { initStaffExpMothlyReportCard, initStaffExpMonthDropdown } from "./staffExpancesReport.js";
+import { initGeneralMothlyReportCard, initGeneralMonthDropdown } from "./General_Expenses_Report.js";
 import { renderInventoryOrdersPage, openorderform, calculateOrderTotal, calculateItemTotal } from "./inventory_orders.js";
 // import { initPaymentHistoryCard, initClientDropdown } from "./Billing/payment_history.js";
 import { renderPaymentDetailsPage } from "./payment_details.js";
@@ -46,7 +48,10 @@ document.addEventListener("DOMContentLoaded", function () {
         currentUser = typeof userData === "string" ? JSON.parse(userData) : userData;
         console.log("✅ Logged in user found:", currentUser);
 
-        // 🔹 ADD THIS LINE
+        // 🔹 Initialize menu system
+        initMenuSystem();
+
+        // Initialize back navigation
         initBackNavigation();
 
         initializeDashboard();
@@ -136,41 +141,13 @@ export function toggleSidebar() {
 
 function toggleBillingSubmenu() {
     console.log("🔽 Billing submenu toggle clicked");
-
-    const billingSubmenu = document.getElementById("billingSubMenu");
-    if (!billingSubmenu) return;
-
-    // Close all other submenus when opening this one
-    closeAllSubmenus();
-
-    billingSubmenu.classList.toggle("open");
-    const billingBtn = billingSubmenu.previousElementSibling;
-    if (billingBtn) {
-        const chevron = billingBtn.querySelector(".chevron");
-        if (chevron) {
-            chevron.classList.toggle("down");
-        }
-    }
+    toggleSubmenuWithGuard("billingSubMenu");
 }
+
 function toggleExpancesSubmenu() {
     console.log("🔽 toggleExpancesSubmenu submenu toggle clicked");
-
-    const expancesSubmenu = document.getElementById("expancesSubmenu");
-    if (!expancesSubmenu) return;
-
-    // Close all other submenus when opening this one
-    closeAllSubmenus();
-
-    expancesSubmenu.classList.toggle("open");
-    const billingBtn = expancesSubmenu.previousElementSibling;
-    if (billingBtn) {
-        const chevron = billingBtn.querySelector(".chevron");
-        if (chevron) {
-            chevron.classList.toggle("down");
-        }
-    }
+    toggleSubmenuWithGuard("expancesSubmenu");
 }
-
 
 // Close sidebar
 function closeSidebar() {
@@ -185,101 +162,25 @@ function closeSidebar() {
     if (mainContent) mainContent.classList.remove("sidebar-open");
 }
 
-// Function to close all submenus
-function closeAllSubmenus() {
-    const allSubmenus = document.querySelectorAll(".submenu");
-    allSubmenus.forEach(submenu => {
-        submenu.classList.remove("open");
-        const button = submenu.previousElementSibling;
-        if (button) {
-            const chevron = button.querySelector(".chevron");
-            if (chevron) {
-                chevron.classList.remove("down");
-            }
-        }
-    });
-}
-
 function toggleSubmenu() {
     console.log("🔽 Master submenu toggle clicked");
-
-    const masterMenu = document.getElementById("masterSubmenu");
-    const isCurrentlyOpen = masterMenu.classList.contains("open");
-
-    // Close all other main menus
-    closeAllSubmenus();
-
-    // Toggle master menu
-    if (!isCurrentlyOpen) {
-        masterMenu.classList.add("open");
-        const masterBtn = masterMenu.previousElementSibling;
-        if (masterBtn) {
-            const chevron = masterBtn.querySelector(".chevron");
-            chevron?.classList.add("down");
-            // Highlight the active menu button
-            masterBtn.classList.add("active");
-        }
-    }
+    toggleSubmenuWithGuard("masterSubmenu");
 }
 
 // 🔹 NEW: INVENTORY submenu toggle
 function toggleInventorySubmenu() {
     console.log("🔽 Inventory submenu toggle clicked");
-
-    const submenu = document.getElementById("inventorySubmenu");
-    if (!submenu) return;
-
-    // Close all other submenus when opening this one
-    closeAllSubmenus();
-
-    submenu.classList.toggle("open");
-
-    const inventoryButton = submenu.previousElementSibling;
-    if (inventoryButton) {
-        const chevron = inventoryButton.querySelector(".chevron");
-        if (chevron) {
-            chevron.classList.toggle("down");
-        }
-    }
+    toggleSubmenuWithGuard("inventorySubmenu");
 }
 
 function toggleExpensesSubmenu() {
     console.log("🔽 Expenses submenu toggle clicked");
-
-    const submenu = document.getElementById("expensesSubmenu");
-    if (!submenu) return;
-
-    // Close all other submenus when opening this one
-    closeAllSubmenus();
-
-    submenu.classList.toggle("open");
-
-    const expensesButton = submenu.previousElementSibling;
-    if (expensesButton) {
-        const chevron = expensesButton.querySelector(".chevron");
-        if (chevron) {
-            chevron.classList.toggle("down");
-        }
-    }
+    toggleSubmenuWithGuard("expensesSubmenu");
 }
+
 function toggleReportSubmenu() {
     console.log("🔽 Reports submenu toggle clicked");
-
-    const submenu = document.getElementById("reportSubMenu");
-    if (!submenu) return;
-
-    // Close all other submenus when opening this one
-    closeAllSubmenus();
-
-    submenu.classList.toggle("open");
-
-    const reportButton = submenu.previousElementSibling;
-    if (reportButton) {
-        const chevron = reportButton.querySelector(".chevron");
-        if (chevron) {
-            chevron.classList.toggle("down");
-        }
-    }
+    toggleSubmenuWithGuard("reportSubMenu");
 }
 
 // Close sidebar on Escape key
@@ -314,9 +215,11 @@ document.addEventListener("click", function (event) {
 // LOGOUT FUNCTION
 // ============================================
 function logout() {
-
     localStorage.removeItem("rememberedUser");
     sessionStorage.removeItem("rememberedUser");
+    localStorage.removeItem("navigationHistory");
+    localStorage.removeItem("lastPage");
+    localStorage.removeItem("navigationCompletion");
     currentUser = null;
     window.location.replace("../index.html");
 }
@@ -326,57 +229,34 @@ function logout() {
 async function navigateTo(page) {
     console.log(`➡️ navigateTo("${page}")`);
 
-    // 🔹 ADD THIS LINE
-    addToHistory(page); // 👈 ADD THIS LINE
+
+    // 📍 ADD TO HISTORY
+    addToHistory(page);
+
+    // 🎯 HIGHLIGHT MENU ITEM
+    highlightMenuItemForPage(page);
+
+    // 📱 CLOSE SIDEBAR AFTER NAVIGATION (mobile)
+    closeSidebarAfterNavigation();
 
     currentPage = page;
     localStorage.setItem("lastPage", page);
-
-    const menuItems = document.querySelectorAll(".menu-item");
-    menuItems.forEach((item) => item.classList.remove("active"));
 
     const mainContent = document.getElementById("mainContent");
     if (!mainContent) return;
 
     switch (page) {
-        case "home":
-            mainContent.innerHTML = renderHomePage();
-            initHomePage();
+        case "inventory_orders":
+            mainContent.innerHTML = await renderInventoryOrdersPage();
             document
-                .querySelector('.menu-item[onclick*="home"]')
+                .querySelector('.submenu-item[onclick*="inventory_orders"]')
                 ?.classList.add("active");
             break;
 
-
-        case "items":
-            mainContent.innerHTML = await renderItemsTable();
+        case "staff":
+            mainContent.innerHTML = await renderstaffTable();
             document
-                .querySelector('.submenu-item[onclick*="items"]')
-                ?.classList.add("active");
-            break;
-
-        case "client":
-            mainContent.innerHTML = await renderclientTable();
-            document
-                .querySelector('.submenu-item[onclick*="client"]')
-                ?.classList.add("active");
-            break;
-
-        case "user":
-            if (typeof renderuserTable === "function") {
-                mainContent.innerHTML = await renderuserTable();
-            }
-            document
-                .querySelector('.submenu-item[onclick*="user"]')
-                ?.classList.add("active");
-            break;
-
-        case "shop":
-            if (typeof rendershopTable === "function") {
-                mainContent.innerHTML = await rendershopTable();
-            }
-            document
-                .querySelector('.submenu-item[onclick*="shop"]')
+                .querySelector('.submenu-item[onclick*="staff"]')
                 ?.classList.add("active");
             break;
 
@@ -399,21 +279,6 @@ async function navigateTo(page) {
             document.querySelector('.submenu-item[onclick*="staff_expense"]')?.classList.add("active");
             break;
 
-        // case "row_matireal":
-        //     mainContent.innerHTML = getRowMatirealContent();
-        //     document
-        //         .querySelector('.submenu-item[onclick*="row_matireal"]')
-        //         ?.classList.add("active");
-        //     break;
-
-        case "staff":
-            mainContent.innerHTML = await renderstaffTable();
-            document
-                .querySelector('.submenu-item[onclick*="staff"]')
-                ?.classList.add("active");
-            break;
-
-        // 🔹 OLD Inventory page (can keep for future)
         case "inventory":
             mainContent.innerHTML = getInventoryContent();
             document
@@ -428,18 +293,12 @@ async function navigateTo(page) {
             initInventoryStaffPage();
             break;
 
-        // 🔹 NEW: Inventory → Orders
-        case "inventory_orders":
-            mainContent.innerHTML = await renderInventoryOrdersPage();
-            document
-                .querySelector('.submenu-item[onclick*="inventory_orders"]')
-                ?.classList.add("active");
-            // After HTML inject, hook up events
-            // OrdersPage();    
-            // var date = document.getElementById("btnDate").value = new Date().toISOString().split("T")[0];
-            // console.log(date);
-
+        case "expancesReport":
+            mainContent.innerHTML = await initGeneralMothlyReportCard();
+            document.querySelector('.submenu-item[onclick*="expancesReport"]')?.classList.add("active");
+            initGeneralMonthDropdown();
             break;
+
         case "expances":
             mainContent.innerHTML = await renderInventoryExpancesPage();
             document
@@ -465,17 +324,11 @@ async function navigateTo(page) {
             initMonthDropdown();
             break;
 
-
         case "staffExpReports":
-            mainContent.innerHTML = await renderstaffExpancesReportTable();
-            document
-                .querySelector('.submenu-item[onclick*="inventory_orders"]')
-                ?.classList.add("active");
-            initMonthDropdown();
-
-
+            mainContent.innerHTML = await initStaffExpMothlyReportCard();
+            document.querySelector('.submenu-item[onclick*="staffExpReports"]')?.classList.add("active");
+            initStaffExpMonthDropdown();
             break;
-
 
         case "expancesReport":
             mainContent.innerHTML = await renderGeneralExpensesReportTable();
@@ -705,3 +558,17 @@ window.addEventListener("resize", function () {
     }
 });
 
+// ============================================
+// MAKE FUNCTIONS GLOBALLY ACCESSIBLE
+// ============================================
+window.navigateTo = navigateTo;
+window.logout = logout;
+window.toggleSidebar = toggleSidebar;
+window.closeSidebar = closeSidebar;
+window.toggleSubmenu = toggleSubmenu;
+window.toggleInventorySubmenu = toggleInventorySubmenu;
+window.toggleBillingSubmenu = toggleBillingSubmenu;
+window.toggleExpancesSubmenu = toggleExpancesSubmenu;
+window.toggleExpensesSubmenu = toggleExpensesSubmenu;
+window.toggleReportSubmenu = toggleReportSubmenu;
+window.toggleUserMenu = toggleUserMenu;

@@ -1,7 +1,8 @@
 // inventory.js - Live PHP API Integration with Edit & Delete
 // Purpose: Manage staff expenses with live PHP backend
 
-import { staffURLphp, bankURLphp, expenseURLphp, expenseCategoriesURLphp } from "../apis/api.js";
+import { staffURLphp, bankURLphp, expenseURLphp, staffAttendanceReportURLphp } from "../apis/api.js";
+import { getItemsData } from "../apis/master_api.js";
 import { showNotification, showConfirm } from "./notification.js";
 
 console.log("inventory.js: loaded with live API");
@@ -14,8 +15,12 @@ let invFilteredStaff = [];
 let invSelectedStaff = null;
 let invExpenses = [];
 let bankAccountData = [];
+let staffAttendanceData = [];
 let currentEditingExpense = null;
-
+let month = 0
+let year = 0
+let currentDate = null
+let check = 0
 /**
  * Public functions
  */
@@ -31,6 +36,66 @@ export function renderInventoryStaffPage() {
         });
 }
 
+async function randerStaffAttendanceData() {
+    if (month === 0 || year === 0) {
+        let today = new Date();
+        month = today.getMonth() + 1;
+        year = today.getFullYear();
+    }
+    month = currentDate ? parseInt(currentDate.split("-")[1], 10) : month;
+    year = currentDate ? parseInt(currentDate.split("-")[0], 10) : year;
+
+
+
+    let url = `${staffAttendanceReportURLphp}?user_id=${user_id}&month=${month}&year=${year}`
+    console.log(url);
+
+
+    let res = await getItemsData(url)
+
+    staffAttendanceData = res.records || [];
+
+    console.log(staffAttendanceData);
+
+}
+
+function setSummryData(staffId) {
+    console.log("🔥 setSummryData called with staffId:", staffId);
+    console.log("📦 staffAttendanceData:", staffAttendanceData);
+
+
+    if (!staffId || !staffAttendanceData.length) {
+        resetSummaryCards();
+        return;
+    }
+
+    const capEl = document.getElementById("capDaysWear");
+    const tshirtEl = document.getElementById("tshirtDaysWear");
+    const presentEl = document.getElementById("presentDayCount");
+    const halfdayEl = document.getElementById("halfDayCount");
+
+    // Find selected staff record from attendance API data
+    const staff = staffAttendanceData.find(
+        s => String(s.id) === String(staffId)
+    );
+
+    if (!staff) {
+        console.warn("No attendance data found for staff:", staffId);
+        resetSummaryCards();
+        return;
+    }
+
+    console.log("Summary Data:", staff);
+    console.log(staff.caps, staff.t_shirt, staff.present_days, staff.half_days);
+
+    // Set values safely
+    capEl.textContent = staff.caps || 0;
+    tshirtEl.textContent = staff.t_shirt || 0;
+    presentEl.textContent = staff.present_days || 0;
+    halfdayEl.textContent = staff.half_days || 0;
+}
+
+
 export function initInventoryStaffPage() {
     console.log("inventory.js: initInventoryStaffPage()");
 
@@ -38,7 +103,18 @@ export function initInventoryStaffPage() {
         setDefaultDateToday();
         initMonthDropdown();
         attachEventListeners();
-
+        
+        // Check if coming from expense report with selected month
+        const selectedMonth = localStorage.getItem("selectedMonth");
+        if (selectedMonth) {
+            currentDate = selectedMonth;
+            month = parseInt(selectedMonth.split("-")[1], 10);
+            year = parseInt(selectedMonth.split("-")[0], 10);
+            console.log(`📅 Month loaded from storage: ${selectedMonth} (${month}/${year})`);
+            localStorage.removeItem("selectedMonth"); // Clear after reading
+        }
+        
+        randerStaffAttendanceData();
         // Load all required data
         Promise.all([
             fetchStaffList(),
@@ -46,11 +122,14 @@ export function initInventoryStaffPage() {
         ]).then(() => {
             const staffIdFromUrl = getQueryParam("staff_id");
             const staffIdFromStorage = localStorage.getItem("selectedStaffId");
+            const staffNameFromStorage = localStorage.getItem("selectedStaffName");
             const staffIdToSelect = staffIdFromUrl || staffIdFromStorage;
 
             if (staffIdToSelect) {
                 if (staffIdFromStorage) {
+                    console.log(`✅ Staff loaded from expense report: ${staffNameFromStorage} (ID: ${staffIdToSelect})`);
                     localStorage.removeItem("selectedStaffId");
+                    localStorage.removeItem("selectedStaffName");
                 }
                 setTimeout(() => {
                     selectStaffById(staffIdToSelect);
@@ -290,11 +369,16 @@ function initMonthDropdown() {
     if (!monthSelect) return;
     monthSelect.innerHTML = "";
     const today = new Date();
+    const currentDate = today
+    console.log("today", currentDate);
+
     for (let i = 0; i < 12; i++) {
         const d = new Date();
         d.setMonth(today.getMonth() - i);
         const value = d.toISOString().slice(0, 7);
         const label = d.toLocaleString("default", { month: "long", year: "numeric" });
+        console.log("label", label);
+
         const opt = document.createElement("option");
         opt.value = value;
         opt.textContent = label;
@@ -409,6 +493,10 @@ function applyStatusFilter() {
 }
 
 function handleStaffSelection(staffId) {
+    check = check + 1
+    console.log("check  :  ", check);
+
+    setSummryData(staffId)
     if (!staffId) {
         invSelectedStaff = null;
         updateStaffHeader();
@@ -968,6 +1056,7 @@ async function handleSubmitExpense(event) {
 // Global handler functions
 window.handleStaffChange = function (staffId) {
     handleStaffSelection(staffId);
+    // setSummryData(staffId)
 };
 
 window.handleMonthChange = function (monthYear) {

@@ -13,7 +13,7 @@ body {
     background: linear-gradient(135deg, #f5f7fa 0%, #f0f2f5 100%);
     min-height: 100vh;
     padding: 20px;
-}   
+}
 
 /* Wrapper */
 .inv-wrapper {
@@ -479,6 +479,16 @@ input:checked~.delivery-status-text {
 .ord-empty-state p {
     font-size: 14px;
     color: #9ca3af;
+}
+
+#invMonthSelect {
+    padding: 10px 14px;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #374151;
+    background: white;
+    transition: all 0.3s ease;
 }
 
 /* ============================================
@@ -1287,10 +1297,11 @@ input:checked~.delivery-status-text {
     .order-items-table tfoot .total-row td:last-child {
         font-size: 15px;
     }
+
     .staff-header>div {
-    flex-direction: column;
-    
-}
+        flex-direction: column;
+
+    }
 }
 
 

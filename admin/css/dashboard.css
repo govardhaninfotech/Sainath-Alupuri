@@ -1256,7 +1256,7 @@ input:checked+.slider:before {
     }
 
     .pagination-controls {
-        width: 100%;
+        width: 50%;
         justify-content: space-between;
     }
 
@@ -2136,7 +2136,7 @@ input:checked+.slider:before {
 
     .modal .btn-cancel,
     .modal .btn-submit {
-        width: 100%;
+        width: 50%;
         min-height: 44px;
     }
 

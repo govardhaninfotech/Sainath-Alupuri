@@ -14,6 +14,7 @@ import {
     validateIndianMobile,
     validateDate,
     validateSalary,
+    validateRequiredField,
     validateAadharNumber,
     setupEscKeyHandler
 } from "./validation.js";
@@ -56,7 +57,7 @@ if (!user_id) {
 // ============================================
 async function loadClientData() {
     try {
-        const url = `${userURLphp}?user_id=${user_id}`;
+        const url = `${userURLphp}?user_id=${user_id}&status=active`;
         const res = await fetch(url);
         if (!res.ok) throw new Error(`Clients API returned ${res.status}`);
 
@@ -91,12 +92,20 @@ async function loadClientData() {
 // ============================================
 function loadstaffData() {
     // Build URL with query params for server-side pagination
-    let url = `${staffURLphp}?user_id=${user_id}&page=${currentstaffPage}&per_page=${staffPerPage}`;
+    // When client filter is applied, use the selected client's ID as user_id
+    // Otherwise use the logged-in user's ID
 
-    // Add client filter if selected
+    let urlUserId = user_id;  // Default: logged-in user's ID
+
     if (selectedClientFilter) {
-        url += `&client_id=${selectedClientFilter}`;
+        // When client filter is applied, use the selected client's ID
+        urlUserId = selectedClientFilter;
+        console.log("Loading staff for selected client:", selectedClientFilter);
     }
+
+    let url = `${staffURLphp}?user_id=${urlUserId}&page=${currentstaffPage}&per_page=${staffPerPage}`;
+
+    console.log("API URL:", url, "| User ID:", urlUserId, "| Page:", currentstaffPage);
 
     return getItemsData(url).then(data => {
         // API shape:
@@ -107,6 +116,8 @@ function loadstaffData() {
         staffPerPage = data.per_page ?? staffPerPage;
         staffTotalPages = data.total_pages ?? Math.max(1, Math.ceil(staffTotal / staffPerPage));
         currentstaffPage = data.page ?? currentstaffPage;
+
+        console.log("Staff data received:", staffData.length, "Total:", staffTotal, "For user_id:", urlUserId);
     });
 }
 
@@ -138,59 +149,81 @@ function generateTableHTML() {
     }
 
     let tableRows = "";
-    for (let index = 0; index < staffData.length; index++) {
-        const serialNo = (page - 1) * perPage + index + 1;
+    if (staffData.length === 0) {
+        let noDataMessage = "No staff found";
+        if (selectedClientFilter) {
+            const selectedClient = clientData.find(c => String(c.id) === String(selectedClientFilter));
+            const clientName = selectedClient ? (selectedClient.name || selectedClient.client_name || selectedClient.username || `Client ${selectedClient.id}`) : "selected client";
+            noDataMessage = `No staff available for ${clientName}`;
+        }
 
-        let staff = staffData[index];
-
-        // Check if user_id matches to show clickable link
-        const isOwnedByCurrentUser = String(staff.user_id) === String(user_id);
-        const nameDisplay = isOwnedByCurrentUser
-            ? `<a href="#" onclick="navigateToInventoryStaff('${staff.id}'); return false;" class="staff-name-link" style="cursor: pointer; color: #007bff; text-decoration: underline;">
-                    ${staff.name}
-                </a>`
-            : `<span style="color: #666;">${staff.name}</span>`;
-
-        tableRows += `
-    <tr>
-        <td>${serialNo}</td>
-                <td>
-                    ${nameDisplay}
-                </td>
-
-                <td>${staff.mobile}</td>
-                <td>${staff.aadhar}</td>
-                <td>${staff.salary}</td>
-                <td>${staff.address}</td>
-               
-               <!-- <td style="width: 150px;">
-                    <div style="display: flex; align-items: center; justify-content: center;">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id='${staff.id}'
-                                   onchange="togglestafftatus('${staff.id}', '${staff.status}')"
-                                   ${staff.status === 'active' ? 'checked' : ''}>
-                            <span class="slider"></span>
-                        </label>
-                        <span class="status-text" style="margin-left: 10px; font-weight: 500; min-width: 60px;">
-                        </span>
+        tableRows = `
+            <tr>
+                <td colspan="7" style="text-align: center; padding: 40px;">
+                    <div style="color: #6b7280;">
+                        <p style="font-size: 18px; margin-bottom: 8px;">${noDataMessage}</p>
+                        <p style="font-size: 14px;">Click "Add Staff" to create your first staff member.</p>
                     </div>
-                </td> -->
-                <td>
-                    <button class="btn-icon btn-edit" onclick="editstaff('${staff.id}')" title="Edit">
-                        <i class="icon-edit">✎</i>
-                    </button>
                 </td>
-                <!-- <td>
-                    <button class="btn-icon btn-delete-icon" onclick="deletestaff('${staff.id}')" title="Delete">
-                        <i class="icon-delete">🗑</i>
-                    </button>
-                </td> --> 
             </tr>
         `;
+    } else {
+        for (let index = 0; index < staffData.length; index++) {
+            const serialNo = (page - 1) * perPage + index + 1;
+
+            let staff = staffData[index];
+
+            // Check if user_id matches to show clickable link
+            const isOwnedByCurrentUser = String(staff.user_id) === String(user_id);
+            const nameDisplay = isOwnedByCurrentUser
+                ? `<a href="#" onclick="navigateToInventoryStaff('${staff.id}'); return false;" class="staff-name-link" style="cursor: pointer; color: #007bff; text-decoration: underline;">
+                        ${staff.name}
+                    </a>`
+                : `<span style="color: #666;">${staff.name}</span>`;
+
+            tableRows += `
+        <tr>
+            <td>${serialNo}</td>
+                    <td>
+                        ${nameDisplay}
+                    </td>
+
+                    <td>${staff.mobile}</td>
+                    <td>${staff.salary}</td>
+                    <td>${staff.address}</td>
+                   
+                   <!-- <td style="width: 150px;">
+                        <div style="display: flex; align-items: center; justify-content: center;">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id='${staff.id}'
+                                       onchange="togglestafftatus('${staff.id}', '${staff.status}')"
+                                       ${staff.status === 'active' ? 'checked' : ''}>
+                                <span class="slider"></span>
+                            </label>
+                            <span class="status-text" style="margin-left: 10px; font-weight: 500; min-width: 60px;">
+                            </span>
+                        </div>
+                    </td> -->
+                    <td>
+                        <button class="btn-icon btn-edit" 
+                                onclick="editstaff('${staff.id}')" 
+                                title="${selectedClientFilter ? 'Editing disabled for filtered clients' : 'Edit'}"
+                                ${selectedClientFilter ? ' disabled style="cursor: not-allowed;"' : ''}>
+                            <i class="icon-edit">✎</i>
+                        </button>
+                    </td>
+                    <!-- <td>
+                        <button class="btn-icon btn-delete-icon" onclick="deletestaff('${staff.id}')" title="Delete">
+                            <i class="icon-delete">🗑</i>
+                        </button>
+                    </td> --> 
+                </tr>
+            `;
+        }
     }
 
     // Build client filter dropdown options
-    let clientOptions = `<option value="">All Clients</option>`;
+    let clientOptions = `<option value="">Admin</option>`;
     if (clientData && clientData.length > 0) {
         clientData.forEach(client => {
             const clientName = client.name || client.client_name || client.username || `Client ${client.id}`;
@@ -201,11 +234,9 @@ function generateTableHTML() {
 
     return `
         <div class="content-card">
-            <div class="staff-header">
+            <div class="staff-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: nowrap;">
                 <h2>Staff Management</h2>
-                <div style="display: flex; gap: 10px; align-items: center;">
                     <button class="btn-add" onclick="openstaffForm()">Add Staff</button>
-                </div>
             </div>
             
             <div class="table-container">
@@ -215,7 +246,6 @@ function generateTableHTML() {
                             <th>Sr No</th>
                             <th>Name</th>
                             <th>Mobile</th>
-                            <th>Aadhar</th>
                             <th>Salary</th>
                             <th>Address</th>
                          <!--   <th>Status</th> -->
@@ -254,42 +284,40 @@ function generateTableHTML() {
                         <input type="hidden" id="itemId">
                         
                         <div class="form-row">
-                           
-
                             <div class="form-group">
                                 <label for="itemName">Staff Name <span class="required">*</span></label>
                                 <input type="text" id="itemName" required placeholder="Enter staff name">
                             </div>
+
                             <div class="form-group">
                                 <label for="itemPrice">Mobile <span class="required">*</span></label>
-                                <input type="text" id="itemPrice" required placeholder="Enter mobile number" pattern="[0-9]{10}" title="Mobile number must be 10 digits">
+                                <input type="text" id="itemPrice"  placeholder="Enter mobile number" pattern="[0-9]{10}" title="Mobile number must be 10 digits">
                             </div>
                         </div>
 
                         <div class="form-row">
+                            <div class="form-group">
+                                <label for="itemUnit">Aadhar Card Number <span class="required">*</span></label>
+                                <input type="text" id="itemadhar" placeholder="Enter 12-digit Aadhar number" pattern="[0-9]{12}" title="Aadhar number must be 12 digits">
+                            </div>
+
                             <div class="form-group">
                                 <label for="itemImagePath">Salary <span class="required">*</span></label>
                                 <input type="number" id="itemImagePath" step="0.01" min="0.01" value="0" required placeholder="Enter monthly salary">
                             </div>
-
-
-                             <div class="form-group">
-                                <label for="itemUnit">Aadhar Card Number <span class="required">*</span></label>
-                                <input type="text" id="itemadhar" required placeholder="Enter 12-digit Aadhar number" pattern="[0-9]{12}" title="Aadhar number must be 12 digits">
-                            </div>
                         </div>
-                        <div class="form-row">
+
+                        <div class="form-row">                        
                             <div class="form-group">
                                 <label for="staffReference">Reference <span class="optional">(Optional)</span></label>
                                 <input type="text" id="staffReference" placeholder="Enter reference file or ID">
                             </div>
                         </div>
+
                         <div class="form-row">
-
-                            <div class="form-group">
+                            <div class="form-group full-width">
                                 <label for="itemDescription">Address <span class="required">*</span></label>
-                                <textarea id="itemDescription" placeholder="Enter Address" style="width: 200%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-family: Arial, sans-serif; resize: vertical; min-height: 80px;"></textarea>
-
+                                <textarea id="itemDescription" placeholder="Enter staff address" style=" padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-family: inherit; min-height: 100px; box-sizing: border-box;"></textarea>
                             </div>
                         </div>
 
@@ -321,14 +349,26 @@ function generateTableHTML() {
 // CLIENT FILTER FUNCTION
 // ============================================
 function filterByClient(clientId) {
-    selectedClientFilter = clientId || null;
+    // Explicitly update the filter
+    selectedClientFilter = clientId && clientId !== "" ? clientId : null;
     currentstaffPage = 1; // Reset to first page
 
     return loadstaffData().then(() => {
         const mainContent = document.getElementById("mainContent");
         if (mainContent) {
             mainContent.innerHTML = generateTableHTML();
+
+            // After rendering, verify the dropdown has correct selected value
+            setTimeout(() => {
+                const dropdown = document.getElementById("clientFilterDropdown");
+                if (dropdown) {
+                    console.log("✅ Dropdown value verified:", dropdown.value);
+                }
+            }, 100);
         }
+    }).catch(error => {
+        console.error("❌ Error filtering by client:", error);
+        showNotification("Error loading staff data!", "error");
     });
 }
 
@@ -380,11 +420,11 @@ function openstaffForm() {
     document.getElementById("itemPrice").value = "";
     document.getElementById("itemImagePath").value = 0;
 
-    // Set current date as default and minimum (prevent past dates)
+    // Set date as default (allow any date - past, present, or future)
     const today = new Date().toISOString().split("T")[0];
     const staffDateInput = document.getElementById("staffDate");
     staffDateInput.value = today;
-    staffDateInput.min = today;  // Prevent selecting past dates
+    // No minimum date restriction - user can select any date
 
     const modal = document.getElementById("staffFormModal");
     modal.style.display = "flex";
@@ -434,7 +474,14 @@ function deletestaff(id) {
 // ============================================
 let currentlyEditingStaffStatus = 'Active';
 function editstaff(id) {
+    // Check if client filter is active - disable editing
+    if (selectedClientFilter) {
+        showNotification("Editing is disabled when filtering by client. Please clear the filter first.", "warning");
+        return;
+    }
+
     editingItemId = id;
+    console.log(editingItemId);
 
     const item = staffData.find(i => String(i.id) === String(id));
     if (!item) {
@@ -442,6 +489,8 @@ function editstaff(id) {
         showNotification("Staff not found!", "error");
         return;
     }
+    console.log(item);
+
 
     document.getElementById("formTitle").textContent = "Update Staff";
     document.getElementById("itemId").value = item.id;
@@ -471,6 +520,7 @@ function editstaff(id) {
 
 async function submitstaffForm(event) {
     event.preventDefault();
+
     const statusCheckbox = document.getElementById("stafftatus");
     const name = document.getElementById("itemName").value.trim();
     const mobile = document.getElementById("itemPrice").value.trim();
@@ -486,20 +536,31 @@ async function submitstaffForm(event) {
         return;
     }
 
+    console.log("submit");
+    // Validate Name
+    let validation = validateRequiredField(name, "Staff name", 3);
+    if (!validation.status) {
+        showNotification(validation.message, "error");
+        return;
+    }
 
     // Validate Mobile
-    let validation = validateIndianMobile(mobile);
-    if (!validation.status) {
-        showNotification(validation.message, "error");
-        return;
-    }
-    // Validate Aadhar Card Number
-    validation = validateAadharNumber(aadhar);
-    if (!validation.status) {
-        showNotification(validation.message, "error");
-        return;
+    if (mobile != 0) {
+        validation = validateIndianMobile(mobile);
+        if (validation.status != true) {
+            showNotification(validation.message, "error");
+            return
+        }
     }
 
+    // Validate Aadhar Card Number
+    if (aadhar != 0) {
+        validation = validateAadharNumber(aadhar);
+        if (validation.status != true) {
+            showNotification(validation.message, "error");
+            return
+        }
+    }
 
     // Validate Salary
     validation = validateSalary(salary);
@@ -508,20 +569,14 @@ async function submitstaffForm(event) {
         return;
     }
 
-    // Validate Date
-    validation = validateDate(date);
-    if (!validation.status) {
-        showNotification(validation.message, "error");
-        return;
-    }
 
     const formData = {
         user_id: user_id,
         name: name,
-        mobile: mobile,
-        aadhar: aadhar,
+        mobile: mobile || "",
+        aadhar: aadhar || "",
         salary: parseFloat(salary),
-        address: address || "N/A",
+        address: address,
         start_date: date,
         ref: reference || "",
         status: statusCheckbox.checked ? "active" : "inactive"
@@ -544,7 +599,7 @@ async function submitstaffForm(event) {
             return updateItem(staffURLphp, editingItemId, formData, user_id).then(result => {
                 console.log(result);
 
-                if (result) {
+                if (result.status === 'ok') {
                     showNotification("Staff updated successfully!", "success");
                 } else {
                     showNotification(result.detail, "error");

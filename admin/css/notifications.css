@@ -9,7 +9,7 @@
 }
 
 .notification-header_ntf {
-    margin-bottom: 30px;
+    margin-bottom: 10px;
 }
 
 .notification-header_ntf h1 {
@@ -30,6 +30,13 @@
     gap: 10px;
     margin-bottom: 30px;
     flex-wrap: wrap;
+}
+
+.notification-page-header_ntf {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
 }
 
 .btn-add-notification_ntf {
@@ -69,6 +76,7 @@
     display: flex !important;
 }
 
+
 .modal-content_ntf {
     background: white;
     border-radius: 12px;
@@ -87,6 +95,7 @@
         opacity: 0;
         transform: translateY(30px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -265,7 +274,7 @@
 .action-buttons_ntf {
     display: flex;
     gap: 8px;
-    justify-content: center;
+    /* justify-content: center; */
 }
 
 .btn-icon_ntf {
@@ -322,6 +331,7 @@
         opacity: 0;
         transform: translateX(-20px);
     }
+
     to {
         opacity: 1;
         transform: translateX(0);
@@ -381,7 +391,7 @@
         font-size: 12px;
     }
 
-    .table-container_ntf th, 
+    .table-container_ntf th,
     .table-container_ntf td {
         padding: 10px;
     }
@@ -389,5 +399,15 @@
     .action-buttons_ntf {
         flex-direction: column;
         gap: 5px;
+    }
+}
+
+@media  (max-width: 480px) {
+    .notification-page-header_ntf {
+        display: flex;
+        /* justify-content: flex-end; */
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 8px;
     }
 }
