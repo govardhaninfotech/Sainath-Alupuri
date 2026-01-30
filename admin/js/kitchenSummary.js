@@ -212,8 +212,8 @@ function generateTableHTML() {
                             <span style="font-size: 18px;">📥</span> Export
                         </button>
                         <div id="exportDropdown" class="export-dropdown-menu" style="display: none; position: absolute; right: 0; top: 100%; background: white; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); z-index: 1000; min-width: 150px; margin-top: 5px;">
-                            <button onclick="exportKitchenPDF()" class="export-option" style="display: block; width: 100%; padding: 10px 15px; border: none; background: none; text-align: left; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='none'"><span>📄</span> PDF</button>
-                            <button onclick="exportKitchenExcel()" class="export-option" style="display: block; width: 100%; padding: 10px 15px; border: none; background: none; text-align: left; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='none'"><span>📊</span> Excel</button>
+                            <button onclick="handleExportPDFURLFromBackendKitchenSummary()" class="export-option" style="display: block; width: 100%; padding: 10px 15px; border: none; background: none; text-align: left; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='none'"><span>📄</span> PDF</button>
+                            <button onclick="handleExportExcelURLFromBackendKitchenSummary()" class="export-option" style="display: block; width: 100%; padding: 10px 15px; border: none; background: none; text-align: left; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='none'"><span>📊</span> Excel</button>
                         </div>
                     </div>
                 </div>
@@ -512,7 +512,17 @@ function refreshkitchenSummaryTable() {
     });
 }
 
+function handleExportPDFURLFromBackendKitchenSummary() {
+    let url = 'https://gisurat.com/govardhan/sainath_aloopuri/api/reports/kitchen_summary.php?user_id=1&date=2026-01-30&export=pdf';
+    window.open(url, '_blank');
+    toggleExportDropdown();
+}
 
+function handleExportExcelURLFromBackendKitchenSummary() {
+    let url = 'https://gisurat.com/govardhan/sainath_aloopuri/api/reports/kitchen_summary.php?user_id=1&date=2026-01-30&export=excel';
+    window.open(url, '_blank');
+    toggleExportDropdown();
+}
 
 
 // ============================================
@@ -527,6 +537,8 @@ window.renderKitchenSummary = renderKitchenSummary;
 window.refreshkitchenSummaryTable = refreshkitchenSummaryTable;
 window.handleDateChange = handleDateChange;
 window.toggleExportDropdown = toggleExportDropdown;
+window.handleExportPDFURLFromBackendKitchenSummary = handleExportPDFURLFromBackendKitchenSummary;
+window.handleExportExcelURLFromBackendKitchenSummary = handleExportExcelURLFromBackendKitchenSummary;
 // window.toggleExportDropdown = toggleExportDropdown;
 // window.printKitchenReport = printKitchenReport;
 // window.exportKitchenPDF = exportKitchenPDF;

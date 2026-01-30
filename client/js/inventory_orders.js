@@ -107,7 +107,8 @@ async function viewOrderDetails(orderId) {
 
     // Fetch order items using orderItemsURLphp
     const date = order.expected_delivery.split(" ")[0];
-    const orderItemsURL = `${orderItemsURLphp}?order_id=${orderId}&date=${date}`;
+    const orderItemsURL = `${orderItemsURLphp}?user_id=${user_id}&order_id=${orderId}`;
+    console.log(orderItemsURL);
 
     try {
         const itemsData = await getItemsData(orderItemsURL);
@@ -122,7 +123,7 @@ async function viewOrderDetails(orderId) {
 
 function displayOrderDetailsModal(order, orderItemsList) {
     // Generate items table - ONLY showing ordered items (from orderItemsList, not all items)
-    console.log(order)
+    console.log(order, orderItemsList)
     let itemsTableHTML = "";
     if (orderItemsList.length > 0) {
         orderItemsList.forEach((item, index) => {
@@ -445,10 +446,10 @@ function generateTableHTML() {
                             <input type="date" id="endDate" value="${currentEndDate}" max="" required/>
                         </div>
                         <button class="btn-filter" onclick="validateAndRefreshOrders()">Apply Filter</button>
+                        <button class="btn-add" onclick="openorderform()">+ Add Order</button>
                     </div>
                 </div>
                 
-                <button class="btn-add" onclick="openorderform()">+ Add Order</button>
             </div>
             
             <div class="table-container">

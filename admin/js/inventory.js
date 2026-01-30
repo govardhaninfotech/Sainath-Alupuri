@@ -1910,5 +1910,70 @@ function resetSummaryCards() {
     document.getElementById("presentDayCount").textContent = "0";
 }
 
+// Excel : https://gisurat.com/govardhan/sainath_aloopuri/api/reports/staff_attendance_report.php?user_id=1&month=1&year=2026&page=1&per_page=10&category_id=1&staff_id=4&export = excel
+
+// PDF : https://gisurat.com/govardhan/sainath_aloopuri/api/reports/staff_attendance_report.php?user_id=1&month=1&year=2026&page=1&per_page=10&category_id=1&staff_id=4&export = pdf
+
+function handleExportExcelURLFromBackendStaffAttendance() {
+    // Check if staff is selected
+    if (!invSelectedStaff || !invSelectedStaff.id) {
+        showNotification("Please select a staff member first.", "warning");
+        return;
+    }
+
+    const staffId = invSelectedStaff.id;
+    
+    // Get month and year from the current selection
+    const monthSelect = document.getElementById("invMonthSelect");
+    const selectedMonth = monthSelect ? monthSelect.value : null;
+    
+    if (!selectedMonth) {
+        showNotification("Please select a month first.", "warning");
+        return;
+    }
+    
+    // Parse month and year from selectedMonth (format: YYYY-MM)
+    const [selectedYear, selectedMonthNum] = selectedMonth.split('-');
+    
+    let url = `https://gisurat.com/govardhan/sainath_aloopuri/api/reports/staff_attendance_report.php?user_id=${user_id}&month=${selectedMonthNum}&year=${selectedYear}&page=1&per_page=10&staff_id=${staffId}&export=excel`;
+    
+    console.log("Excel Export URL:", url);
+    
+    window.open(url, '_blank');
+    toggleExportDropdown();
+}
+
+function handleExportPDFURLFromBackendStaffAttendance() {
+    // Check if staff is selected
+    if (!invSelectedStaff || !invSelectedStaff.id) {
+        showNotification("Please select a staff member first.", "warning");
+        return;
+    }
+
+    const staffId = invSelectedStaff.id;
+    
+    // Get month and year from the current selection
+    const monthSelect = document.getElementById("invMonthSelect");
+    const selectedMonth = monthSelect ? monthSelect.value : null;
+    
+    if (!selectedMonth) {
+        showNotification("Please select a month first.", "warning");
+        return;
+    }
+    
+    // Parse month and year from selectedMonth (format: YYYY-MM)
+    const [selectedYear, selectedMonthNum] = selectedMonth.split('-');
+    
+    let url = `https://gisurat.com/govardhan/sainath_aloopuri/api/reports/staff_attendance_report.php?user_id=${user_id}&month=${selectedMonthNum}&year=${selectedYear}&page=1&per_page=10&staff_id=${staffId}&export=pdf`;
+    
+    console.log("PDF Export URL:", url);
+    
+    window.open(url, '_blank');
+    toggleExportDropdown();
+}
+window.handleExportExcelURLFromBackendStaffAttendance = handleExportExcelURLFromBackendStaffAttendance;
+window.handleExportPDFURLFromBackendStaffAttendance = handleExportPDFURLFromBackendStaffAttendance; 
+
 // Update summary cards when staff changes
+
 window.updateSummaryCards = updateSummaryCards;

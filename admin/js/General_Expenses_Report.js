@@ -135,8 +135,8 @@ export function initGeneralMothlyReportCard() {
     let tableRows = "";
     return `
         <div class="content-card" id="table-container">
-            <div class="items-header" >
-                <h2>General Monthly Report</h2>
+            <div class="items-header">
+                <h2>General Expense Monthly Report</h2>
                 <div style="display: flex; gap: 10px; align-items: center;">
                     <div class="inv-filter-group">
                         <select id="invMonthSelect" onchange="handleGeneralMonthChange(event)"></select>
@@ -150,10 +150,10 @@ export function initGeneralMothlyReportCard() {
                             <span style="font-size: 18px;">📥</span> Export
                         </button>
                         <div id="exportDropdown" class="export-dropdown-menu" style="display: none; position: absolute; right: 0; top: 100%; background: white; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); z-index: 1000; min-width: 150px; margin-top: 5px;">
-                            <button onclick="handleExportPDF()" class="export-option" style="display: block; width: 100%; padding: 10px 15px; border: none; background: none; text-align: left; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='none'">
+                            <button onclick="handleExportPDFURLFromBackendGeneralExpense()" class="export-option" style="display: block; width: 100%; padding: 10px 15px; border: none; background: none; text-align: left; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='none'">
                                 <span>📄</span> PDF
                             </button>
-                            <button onclick="handleExportExcel()" class="export-option" style="display: block; width: 100%; padding: 10px 15px; border: none; background: none; text-align: left; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='none'">
+                            <button onclick="handleExportExcelURLFromBackendGeneralExpense()" class="export-option" style="display: block; width: 100%; padding: 10px 15px; border: none; background: none; text-align: left; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='none'">
                                 <span>📊</span> Excel
                             </button>
                         </div>
@@ -236,6 +236,14 @@ function loadCategoryDetails(categoryId, page = 1) {
         categoryDetailPage = data.page ?? page;
     });
 }
+function capitalizeEachWord(text) {
+    return text
+        .toLowerCase()
+        .split(" ")
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ");
+}
+
 
 function generateCategoryDetailTableHTML() {
     let tableRows = "";
@@ -250,8 +258,7 @@ function generateCategoryDetailTableHTML() {
                 <td>${item.expense_date || 'N/A'}</td>
                 <td>${item.category_name || ''}</td>
                 <td>Rs. ${parseFloat(item.amount || 0).toFixed(2)}</td>
-                <td>${item.transaction_type || ''}</td>
-                <td>${item.account_name || ''}</td>
+                <td>${item.account_name == "Cash" ? "N/A" : item.account_name}</td>
                 <td>${item.payment_mode || ''}</td>
                 <td>${item.notes || 'N/A'}</td>
             </tr>
@@ -268,7 +275,7 @@ function generateCategoryDetailTableHTML() {
                     <button onclick="backToMainReport()" class="btn-back" title="Back to Main Report" style="display: flex; align-items: center; gap: 5px; padding: 8px 12px; background:linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 4px; cursor: pointer;">
                         <span>←</span>Back
                     </button>
-                    <h2 style="margin: 0;">${selectedCategoryName} - Expense Details</h2>
+                    <h2 style="margin: 0; text-transform: capitalize;">${capitalizeEachWord(selectedCategoryName)} - Expense Details</h2>
                 </div>
                 <div style="display: flex; gap: 10px; align-items: center;">
                     <button onclick="handlePrintCategoryDetail()" class="btn-print" title="Print Report">
@@ -279,10 +286,10 @@ function generateCategoryDetailTableHTML() {
                             <span style="font-size: 18px;">📥</span> Export
                         </button>
                         <div id="categoryExportDropdown" class="export-dropdown-menu" style="display: none; position: absolute; right: 0; top: 100%; background: white; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); z-index: 1000; min-width: 150px; margin-top: 5px;">
-                            <button onclick="handleCategoryExportPDF()" class="export-option" style="display: block; width: 100%; padding: 10px 15px; border: none; background: none; text-align: left; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='none'">
+                            <button onclick="handleExportPDFURLFromBackendGeneralExpenseWithCategoryId()" class="export-option" style="display: block; width: 100%; padding: 10px 15px; border: none; background: none; text-align: left; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='none'">
                                 <span>📄</span> PDF
                             </button>
-                            <button onclick="handleCategoryExportExcel()" class="export-option" style="display: block; width: 100%; padding: 10px 15px; border: none; background: none; text-align: left; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='none'">
+                            <button onclick="handleExportExcelURLFromBackendGeneralExpenseWithCategoryId()" class="export-option" style="display: block; width: 100%; padding: 10px 15px; border: none; background: none; text-align: left; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='none'">
                                 <span>📊</span> Excel
                             </button>
                         </div>
@@ -298,7 +305,6 @@ function generateCategoryDetailTableHTML() {
                             <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Date</th>
                             <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Category</th>
                             <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Amount</th>
-                            <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Type</th>
                             <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Account</th>
                             <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Payment Mode</th>
                             <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Notes</th>
@@ -592,10 +598,54 @@ async function prepareGeneralExpensePrintData() {
     };
 }
 
+
+// =========================================================================================================
+// general_expense_report : without category id
+// PDF : https://gisurat.com/govardhan/sainath_aloopuri/api/reports/general_expense_report.php?user_id=1&month=1&year=2026&page=1&per_page=10&export=pdf
+
+// Excel : https://gisurat.com/govardhan/sainath_aloopuri/api/reports/general_expense_report.php?user_id=1&month=1&year=2026&page=1&per_page=10&export=excel
+
+// =========================================================================================================
+// general_expense_report : with category id
+// PDF = https://gisurat.com/govardhan/sainath_aloopuri/api/reports/general_expense_report.php?user_id=1&month=1&year=2026&page=1&per_page=10&category_id=1&export=pdf
+
+// Excel = https://gisurat.com/govardhan/sainath_aloopuri/api/reports/general_expense_report.php?user_id=1&month=1&year=2026&page=1&per_page=10&category_id=1&export=excel
+
+// =========================================================================================================
+
+function handleExportPDFURLFromBackendGeneralExpense() {
+    let url = 'https://gisurat.com/govardhan/sainath_aloopuri/api/reports/general_expense_report.php?user_id=1&month=1&year=2026&page=1&per_page=10&export=pdf';
+    window.open(url, '_blank');
+    toggleExportDropdown();
+}
+function handleExportExcelURLFromBackendGeneralExpense() {
+    let url = 'https://gisurat.com/govardhan/sainath_aloopuri/api/reports/general_expense_report.php?user_id=1&month=1&year=2026&page=1&per_page=10&export=excel';
+    window.open(url, '_blank');
+    toggleExportDropdown();
+}
+// with category id
+function handleExportPDFURLFromBackendGeneralExpenseWithCategoryId() {
+    let url = `https://gisurat.com/govardhan/sainath_aloopuri/api/reports/general_expense_report.php?user_id=1&month=1&year=2026&page=1&per_page=10&category_id=${selectedCategoryId}&export=pdf`;
+    window.open(url, '_blank');
+    toggleExportDropdown();
+}
+function handleExportExcelURLFromBackendGeneralExpenseWithCategoryId() {
+    let url = `https://gisurat.com/govardhan/sainath_aloopuri/api/reports/general_expense_report.php?user_id=1&month=1&year=2026&page=1&per_page=10&category_id=${selectedCategoryId}&export=excel`;
+    window.open(url, '_blank');
+    toggleExportDropdown();
+}
+
+window.handleExportPDFURLFromBackendGeneralExpense = handleExportPDFURLFromBackendGeneralExpense;
+window.handleExportExcelURLFromBackendGeneralExpense = handleExportExcelURLFromBackendGeneralExpense;
+window.handleExportPDFURLFromBackendGeneralExpenseWithCategoryId = handleExportPDFURLFromBackendGeneralExpenseWithCategoryId;
+window.handleExportExcelURLFromBackendGeneralExpenseWithCategoryId = handleExportExcelURLFromBackendGeneralExpenseWithCategoryId;
+
+
 // ============================================
 // MAKE FUNCTIONS GLOBALLY ACCESSIBLE (ITEMS-ONLY NAMES)
 // ============================================
 window.changeItemPage = changeItemPage;
+
 window.changeItemPerPage = changeItemPerPage;
 window.showNotification = showNotification;
 window.generateItemsTableHTML = generateItemsTableHTML;

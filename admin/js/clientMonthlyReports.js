@@ -115,7 +115,14 @@ function viewClientMonthlyReport(clientIndex) {
     isViewingClientOrders = true;
     currentClientOrderPage = 1;
 
-    return loadClientOrders(clientInfo.id).then(() => {
+    // Derive clientId defensively in case API uses a different property name
+    const clientId = clientInfo.id ?? clientInfo.client_id ?? clientInfo.user_id ?? clientInfo.clientId;
+    if (!clientId) {
+        showNotification("Client ID not found for selected client", "error");
+        return Promise.resolve();
+    }
+
+    return loadClientOrders(clientId).then(() => {
         const mainContent = document.getElementById("mainContent");
         if (mainContent) {
             mainContent.innerHTML = generateClientOrdersPageHTML();
@@ -169,7 +176,8 @@ function loadClientOrders(clientId) {
         return Promise.reject("Missing user_id");
     }
 
-    const url = `${ordersURLphp}?user_id=${clientId}`;
+    // Build URL with authenticated user id and client id
+    const url = `${ordersURLphp}?user_id=${encodeURIComponent(clientId)}`;
     console.log("Loading client orders from URL:", url);
 
     return getItemsData(url).then(data => {
@@ -192,6 +200,8 @@ function loadClientOrders(clientId) {
 // VIEW CLIENT ORDER DETAILS
 // ============================================
 async function viewClientOrderDetails(orderId) {
+    console.log("order id in viewClientOrderDetails", orderId);
+
     const order = clientOrdersData.find(o => String(o.id) === String(orderId));
     if (!order) {
         showNotification("Order not found!", "error");
@@ -200,7 +210,8 @@ async function viewClientOrderDetails(orderId) {
 
     // Fetch order items
     const date = order.expected_delivery.split(" ")[0];
-    const orderItemsURL = `${orderItemsURLphp}?order_id=${orderId}&date=${date}`;
+    const orderItemsURL = `${orderItemsURLphp}?user_id=${encodeURIComponent(order.user_id)}&order_id=${orderId}`;
+    console.log("Fetching order items from URL:", orderItemsURL);
 
     try {
         const itemsData = await getItemsData(orderItemsURL);
@@ -358,16 +369,49 @@ function generateClientOrdersPageHTML() {
 
     return `
         <div class="content-card">
+            <style>
+                /* Scoped styles for orders header layout */
+                .content-card .staff-header { width:100%; display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; gap:12px; flex-wrap:wrap; }
+                .content-card .staff-header .header-left { display:flex; gap:12px; align-items:center; }
+                .content-card .staff-header .header-right { display:flex; gap:10px; align-items:center; margin-left:auto; }
+                .content-card .btn-print, .content-card .btn-export, .content-card .btn-back { padding:8px 12px; border-radius:4px; font-size:14px; cursor:pointer; }
+                .content-card .btn-back { background:#667eea; color:#fff; border:none; }
+                .content-card .export-dropdown-menu { position:absolute; right:0; top:100%; background:white; border:1px solid #ddd; border-radius:4px; box-shadow:0 2px 8px rgba(0,0,0,0.15); z-index:1000; min-width:150px; margin-top:5px; }
+                @media (max-width:700px) {
+                    .content-card .staff-header { flex-direction:column; align-items:flex-start; }
+                    .content-card .staff-header .header-right { width:100%; justify-content:flex-start  ; margin-top:8px; }
+                    .content-card .header-right .btn-print, .content-card .header-right .btn-export { padding:8px 10px; }
+                }
+            </style>
+
             <div class="staff-header">
-                <div style="display: flex; gap: 12px; align-items: center;">
-                    <button onclick="backToClientMonthlyReport()" class="btn-back" style="padding: 8px 12px; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 500;">
+                <div class="header-left">
+                    <button onclick="backToClientMonthlyReport()" class="btn-back">
                         ← Back
                     </button>
-                    <h2 style="margin: 0;">${selectedClientInfo?.client_name || 'Client'} - Orders</h2>
+                    <h2 style="margin:0;">${selectedClientInfo?.client_name || 'Client'} - Orders</h2>
+                </div>
+                <div class="header-right">
+                    <button onclick="handlePrintClientMonthly()" class="btn-print" title="Print Report">
+                        <span style="font-size:18px;">🖨️</span> Print
+                    </button>
+                    <div class="export-dropdown-wrapper" style="position:relative;">
+                        <button onclick="toggleExportDropdown()" class="btn-export" title="Export Report">
+                            <span style="font-size:18px;">📥</span> Export
+                        </button>
+                        <div id="exportDropdown" class="export-dropdown-menu" style="display:none;">
+                            <button onclick="handleExportPDFURLFromBackend()" class="export-option" style="display:block; width:100%; padding:10px 15px; border:none; background:none; text-align:left; cursor:pointer;">
+                                <span>📄</span> PDF
+                            </button>
+                            <button onclick="handleExportExcel()" class="export-option" style="display:block; width:100%; padding:10px 15px; border:none; background:none; text-align:left; cursor:pointer;">
+                                <span>📊</span> Excel
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="client-info-summary" style="background: #f8fafc; padding: 16px; border-radius: 8px; margin-bottom: 16px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+           <!--  <div class="client-info-summary" style="background: #f8fafc; padding: 16px; border-radius: 8px; margin-bottom: 16px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
                 <div style="border-left: 4px solid #667eea; padding-left: 12px;">
                     <div style="font-size: 12px; color: #666; margin-bottom: 4px;">Total Orders</div>
                     <div style="font-size: 18px; font-weight: 700; color: #333;">${selectedClientInfo?.total_orders || 0}</div>
@@ -384,7 +428,7 @@ function generateClientOrdersPageHTML() {
                     <div style="font-size: 12px; color: #666; margin-bottom: 4px;">Outstanding</div>
                     <div style="font-size: 18px; font-weight: 700; color: #333;">₹${parseFloat(selectedClientInfo?.outstanding_amount || 0).toFixed(2)}</div>
                 </div>
-            </div>
+            </div> -->
 
             <div class="table-container">
                 <table class="data-table">
@@ -500,7 +544,7 @@ export function initClientMothlyReportCard() {
                             <button onclick="handleExportPDFURLFromBackend()" class="export-option" style="display: block; width: 100%; padding: 10px 15px; border: none; background: none; text-align: left; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='none'">
                                 <span>📄</span> PDF
                             </button>
-                            <button onclick="handleExportExcel()" class="export-option" style="display: block; width: 100%; padding: 10px 15px; border: none; background: none; text-align: left; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='none'">
+                            <button onclick="handleExportExcelURLFromBackend()" class="export-option" style="display: block; width: 100%; padding: 10px 15px; border: none; background: none; text-align: left; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='none'">
                                 <span>📊</span> Excel
                             </button>
                         </div>
@@ -681,25 +725,20 @@ function prepareClientMonthlyPrintData() {
 
 async function handleExportPDFURLFromBackend() {
     let url = 'https://gisurat.com/govardhan/sainath_aloopuri/api/reports/client_monthly_summary.php?user_id=1&month=12&year=2026&export=pdf';
-
-    // let res = await fetch(url, {
-    //     method: 'GET',
-    //     headers: {
-    //         'Content-Type': 'application/json'
-    //     }
-    // });
-    // console.log(res);
-
     window.open(url, '_blank');
-
     toggleExportDropdown();
-
+}
+async function handleExportExcelURLFromBackend() {
+    let url = 'https://gisurat.com/govardhan/sainath_aloopuri/api/reports/client_monthly_summary.php?user_id=1&month=12&year=2026&export=excel';
+    window.open(url, '_blank');
+    toggleExportDropdown();
 }
 
 // ============================================
 // MAKE FUNCTIONS GLOBALLY ACCESSIBLE (ITEMS-ONLY NAMES)
 // ============================================
 window.handleExportPDFURLFromBackend = handleExportPDFURLFromBackend;
+window.handleExportExcelURLFromBackend = handleExportExcelURLFromBackend;
 window.changeItemPage = changeItemPage;
 window.changeItemPerPage = changeItemPerPage;
 window.showNotification = showNotification;
