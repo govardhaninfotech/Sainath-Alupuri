@@ -55,9 +55,77 @@ function addToHistory(page) {
     isNavigatingBack = false;
 }
 
+// Check if any modal/form is open
+function isModalOrFormOpen() {
+    // Check for any open modals
+    const modals = document.querySelectorAll('.modal.show');
+    if (modals.length > 0) {
+        return true;
+    }
+    
+    // Check for order form modal
+    const orderFormModal = document.getElementById("orderFormModal");
+    const viewOrderModal = document.getElementById("viewOrderModal");
+    
+    if ((orderFormModal && orderFormModal.classList.contains('show')) ||
+        (viewOrderModal && viewOrderModal.classList.contains('show'))) {
+        return true;
+    }
+    
+    return false;
+}
+
+// Close all open modals and forms
+function closeAllModalsAndForms() {
+    console.log('🔄 Closing all open modals and forms...');
+    
+    // Close all modals with animation
+    const modals = document.querySelectorAll('.modal.show');
+    modals.forEach(modal => {
+        modal.classList.remove('show');
+        setTimeout(() => {
+            modal.style.display = 'none';
+        }, 300);
+    });
+    
+    // Close order form if open
+    if (window.closeOrderForm) {
+        window.closeOrderForm();
+    }
+    
+    // Close view order modal if open
+    if (window.closeViewOrderModal) {
+        window.closeViewOrderModal();
+    }
+    
+    // Force close any remaining modals
+    const orderFormModal = document.getElementById("orderFormModal");
+    const viewOrderModal = document.getElementById("viewOrderModal");
+    
+    if (orderFormModal) {
+        orderFormModal.classList.remove('show');
+        orderFormModal.style.display = 'none';
+    }
+    if (viewOrderModal) {
+        viewOrderModal.classList.remove('show');
+        viewOrderModal.style.display = 'none';
+    }
+    
+    return true;
+}
+
 // Handle browser back button press
 async function handleBrowserBack() {
     console.log('📱 Browser back button pressed. Current history:', navigationHistory);
+    
+    // PRIORITY 1: Check if any modal/form is open
+    if (isModalOrFormOpen()) {
+        console.log('⚠️ Modal/Form is open. Closing it first...');
+        closeAllModalsAndForms();
+        // Prevent actual back navigation
+        history.pushState({ page: navigationHistory[navigationHistory.length - 1] }, '', '');
+        return;
+    }
     
     // If we're at the first page (home or initial page)
     if (navigationHistory.length <= 1) {

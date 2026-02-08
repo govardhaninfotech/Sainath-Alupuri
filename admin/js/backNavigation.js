@@ -19,12 +19,12 @@ function initializeNavigationHistory() {
             navigationHistory = [];
         }
     }
-    
+
     // If history is empty, add home as initial page
     if (navigationHistory.length === 0) {
         navigationHistory.push('home');
     }
-    
+
     // Push initial state to browser history
     history.pushState({ page: navigationHistory[navigationHistory.length - 1] }, '', '');
 }
@@ -38,7 +38,7 @@ function saveNavigationHistory() {
 function addToHistory(page) {
     if (!isNavigatingBack) {
         const currentIndex = navigationHistory.length - 1;
-        
+
         // Only add if it's different from the last page
         if (navigationHistory[currentIndex] !== page) {
             navigationHistory.push(page);
@@ -47,7 +47,7 @@ function addToHistory(page) {
                 navigationHistory.shift();
             }
             saveNavigationHistory();
-            
+
             // Push to browser history
             history.pushState({ page: page }, '', '');
         }
@@ -55,10 +55,81 @@ function addToHistory(page) {
     isNavigatingBack = false;
 }
 
+// Check if any modal/form is open
+function isModalOrFormOpen() {
+    // Check for any open modals
+    const modals = document.querySelectorAll('.modal.show');
+    if (modals.length > 0) {
+        return true;
+    }
+
+    // Check for expense form modal (admin)
+    const expenseFormModal = document.getElementById("expenseFormModal");
+    const expenseForm = document.getElementById("expenseForm");
+
+    // Check by classList.contains('show') for modals
+    if (expenseFormModal) {
+        if (expenseFormModal.classList.contains('show') ||
+            expenseFormModal.style.display !== 'none') {
+            return true;
+        }
+    }
+
+    // Check by display style for forms
+    if (expenseForm && expenseForm.style.display !== 'none') {
+        return true;
+    }
+
+    return false;
+}
+
+// Close all open modals and forms
+function closeAllModalsAndForms() {
+    console.log('🔄 Closing all open modals and forms...');
+
+    // Close all modals with animation
+    const modals = document.querySelectorAll('.modal.show');
+    modals.forEach(modal => {
+        modal.classList.remove('show');
+        setTimeout(() => {
+            modal.style.display = 'none';
+        }, 300);
+    });
+
+    // Close expense form if open (using window function)
+    if (window.closeExpenseForm) {
+        window.closeExpenseForm();
+    }
+
+    // Force close expense form modal
+    const expenseFormModal = document.getElementById("expenseFormModal");
+    const expenseForm = document.getElementById("expenseForm");
+
+    if (expenseFormModal) {
+        expenseFormModal.classList.remove('show');
+        expenseFormModal.style.display = 'none';
+    }
+    if (expenseForm) {
+        expenseForm.style.display = 'none';
+    }
+
+    console.log('✅ All modals and forms closed');
+    return true;
+}
+
 // Handle browser back button press
 async function handleBrowserBack() {
     console.log('📱 Browser back button pressed. Current history:', navigationHistory);
-    
+
+    // PRIORITY 1: Check if any modal/form is open
+    if (isModalOrFormOpen()) {
+        console.log('⚠️ Modal/Form is open. Closing it first...');
+        closeAllModalsAndForms();
+        // Prevent actual back navigation
+        history.pushState({ page: navigationHistory[navigationHistory.length - 1] }, '', '');
+        return;
+    }
+
     // If we're at the first page (home or initial page)
     if (navigationHistory.length <= 1) {
         // Show exit confirmation using existing notification system
@@ -66,7 +137,7 @@ async function handleBrowserBack() {
             "Are you sure you want to exit the dashboard?",
             "warning"
         );
-        
+
         if (confirmed) {
             // User wants to exit
             confirmExit();
@@ -76,17 +147,17 @@ async function handleBrowserBack() {
         }
         return;
     }
-    
+
     // Remove current page
     navigationHistory.pop();
     saveNavigationHistory();
-    
+
     // Get previous page
     const previousPage = navigationHistory[navigationHistory.length - 1];
-    
+
     // Set flag to prevent adding to history during back navigation
     isNavigatingBack = true;
-    
+
     console.log('⬅️ Navigating back to:', previousPage);
     navigateTo(previousPage);
 }
@@ -102,7 +173,7 @@ function confirmExit() {
 }
 
 // Listen to browser back/forward button
-window.addEventListener('popstate', function(event) {
+window.addEventListener('popstate', function (event) {
     event.preventDefault();
     handleBrowserBack();
 });
@@ -122,7 +193,7 @@ window.initBackNavigation = initBackNavigation;
 window.addToHistory = addToHistory;
 
 // Export for use in other modules
-export { 
+export {
     initBackNavigation,
-    addToHistory 
+    addToHistory
 };

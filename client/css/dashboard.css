@@ -962,7 +962,7 @@ input:checked+.slider:before {
 
 .form-group input,
 .form-group textarea {
-    width: 200%;
+    width: 100%;
     padding: 10px 12px;
     border: 1px solid #d1d5db;
     border-radius: 6px;
@@ -2134,9 +2134,9 @@ input:checked+.slider:before {
         max-width: 95vw;
     }
 
-    .modal .form-actions {
+    /* .modal .form-actions {
         flex-direction: column-reverse;
-    }
+    } */
 
     .modal .btn-cancel,
     .modal .btn-submit {

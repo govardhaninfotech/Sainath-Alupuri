@@ -6,6 +6,7 @@ import { generalExpenseReportURLphp } from "../apis/api.js";
 import { getItemsData } from "../apis/master_api.js";
 import { showNotification } from "./notification.js";
 import { printReport, exportToPDF, exportToExcel, toggleExportDropdown } from "./print/print.js";
+// import { initAutoRefresh, createRefreshButton, updateRefreshButtonUI } from "./autoRefresh.js";
 
 // Items Data Storage
 let itemsData = [];
@@ -87,8 +88,15 @@ export function initGeneralMonthDropdown() {
         opt.textContent = label;
         monthSelect.appendChild(opt);
     }
+
+    // Initialize auto-refresh
+    const refreshFunction = () => loadGeneralMonthlyReport().then(() => generateItemsTableHTML());
+    // initAutoRefresh('general-expenses', refreshFunction, 30);
+
     return loadGeneralMonthlyReport().then(() => generateItemsTableHTML());
 }
+
+
 
 export function handleGeneralMonthChange(event) {
 
@@ -128,11 +136,12 @@ export function initGeneralMothlyReportCard() {
     return `
         <div class="content-card" id="table-container">
             <div class="items-header">
-                <h2>General Monthly Report</h2>
+                <h2>General Expense Monthly Report</h2>
                 <div style="display: flex; gap: 10px; align-items: center;">
                     <div class="inv-filter-group">
                         <select id="invMonthSelect" onchange="handleGeneralMonthChange(event)"></select>
                     </div>
+                   
                     <button onclick="handlePrintGeneralExpense()" class="btn-print" title="Print Report">
                         <span style="font-size: 18px;">🖨️</span> Print
                     </button>
@@ -141,10 +150,10 @@ export function initGeneralMothlyReportCard() {
                             <span style="font-size: 18px;">📥</span> Export
                         </button>
                         <div id="exportDropdown" class="export-dropdown-menu" style="display: none; position: absolute; right: 0; top: 100%; background: white; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); z-index: 1000; min-width: 150px; margin-top: 5px;">
-                            <button onclick="handleExportPDF()" class="export-option" style="display: block; width: 100%; padding: 10px 15px; border: none; background: none; text-align: left; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='none'">
+                            <button onclick="handleExportPDFURLFromBackendGeneralExpense()" class="export-option" style="display: block; width: 100%; padding: 10px 15px; border: none; background: none; text-align: left; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='none'">
                                 <span>📄</span> PDF
                             </button>
-                            <button onclick="handleExportExcel()" class="export-option" style="display: block; width: 100%; padding: 10px 15px; border: none; background: none; text-align: left; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='none'">
+                            <button onclick="handleExportExcelURLFromBackendGeneralExpense()" class="export-option" style="display: block; width: 100%; padding: 10px 15px; border: none; background: none; text-align: left; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='none'">
                                 <span>📊</span> Excel
                             </button>
                         </div>
@@ -227,6 +236,14 @@ function loadCategoryDetails(categoryId, page = 1) {
         categoryDetailPage = data.page ?? page;
     });
 }
+function capitalizeEachWord(text) {
+    return text
+        .toLowerCase()
+        .split(" ")
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ");
+}
+
 
 function generateCategoryDetailTableHTML() {
     let tableRows = "";
@@ -241,8 +258,7 @@ function generateCategoryDetailTableHTML() {
                 <td>${item.expense_date || 'N/A'}</td>
                 <td>${item.category_name || ''}</td>
                 <td>Rs. ${parseFloat(item.amount || 0).toFixed(2)}</td>
-                <td>${item.transaction_type || ''}</td>
-                <td>${item.account_name || ''}</td>
+                <td>${item.account_name == "Cash" ? "N/A" : item.account_name}</td>
                 <td>${item.payment_mode || ''}</td>
                 <td>${item.notes || 'N/A'}</td>
             </tr>
@@ -254,12 +270,12 @@ function generateCategoryDetailTableHTML() {
 
     return `
         <div class="content-card" id="categoryDetailPage">
-            <div class="items-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <div class="items-header" >
                 <div style="display: flex; align-items: center; gap: 10px;" >
                     <button onclick="backToMainReport()" class="btn-back" title="Back to Main Report" style="display: flex; align-items: center; gap: 5px; padding: 8px 12px; background:linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 4px; cursor: pointer;">
-                        <span>←</span> Back
+                        <span>←</span>Back
                     </button>
-                    <h2 style="margin: 0;">${selectedCategoryName} - Expense Details</h2>
+                    <h2 style="margin: 0; text-transform: capitalize;">${capitalizeEachWord(selectedCategoryName)} - Expense Details</h2>
                 </div>
                 <div style="display: flex; gap: 10px; align-items: center;">
                     <button onclick="handlePrintCategoryDetail()" class="btn-print" title="Print Report">
@@ -270,10 +286,10 @@ function generateCategoryDetailTableHTML() {
                             <span style="font-size: 18px;">📥</span> Export
                         </button>
                         <div id="categoryExportDropdown" class="export-dropdown-menu" style="display: none; position: absolute; right: 0; top: 100%; background: white; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); z-index: 1000; min-width: 150px; margin-top: 5px;">
-                            <button onclick="handleCategoryExportPDF()" class="export-option" style="display: block; width: 100%; padding: 10px 15px; border: none; background: none; text-align: left; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='none'">
+                            <button onclick="handleExportPDFURLFromBackendGeneralExpenseWithCategoryId()" class="export-option" style="display: block; width: 100%; padding: 10px 15px; border: none; background: none; text-align: left; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='none'">
                                 <span>📄</span> PDF
                             </button>
-                            <button onclick="handleCategoryExportExcel()" class="export-option" style="display: block; width: 100%; padding: 10px 15px; border: none; background: none; text-align: left; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='none'">
+                            <button onclick="handleExportExcelURLFromBackendGeneralExpenseWithCategoryId()" class="export-option" style="display: block; width: 100%; padding: 10px 15px; border: none; background: none; text-align: left; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='none'">
                                 <span>📊</span> Excel
                             </button>
                         </div>
@@ -289,7 +305,6 @@ function generateCategoryDetailTableHTML() {
                             <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Date</th>
                             <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Category</th>
                             <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Amount</th>
-                            <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Type</th>
                             <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Account</th>
                             <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Payment Mode</th>
                             <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Notes</th>
@@ -583,10 +598,54 @@ async function prepareGeneralExpensePrintData() {
     };
 }
 
+
+// =========================================================================================================
+// general_expense_report : without category id
+// PDF : https://gisurat.com/govardhan/sainath_aloopuri/api/reports/general_expense_report.php?user_id=1&month=1&year=2026&page=1&per_page=10&export=pdf
+
+// Excel : https://gisurat.com/govardhan/sainath_aloopuri/api/reports/general_expense_report.php?user_id=1&month=1&year=2026&page=1&per_page=10&export=excel
+
+// =========================================================================================================
+// general_expense_report : with category id
+// PDF = https://gisurat.com/govardhan/sainath_aloopuri/api/reports/general_expense_report.php?user_id=1&month=1&year=2026&page=1&per_page=10&category_id=1&export=pdf
+
+// Excel = https://gisurat.com/govardhan/sainath_aloopuri/api/reports/general_expense_report.php?user_id=1&month=1&year=2026&page=1&per_page=10&category_id=1&export=excel
+
+// =========================================================================================================
+
+function handleExportPDFURLFromBackendGeneralExpense() {
+    let url = 'https://gisurat.com/govardhan/sainath_aloopuri/api/reports/general_expense_report.php?user_id=1&month=1&year=2026&page=1&per_page=10&export=pdf';
+    window.open(url, '_blank');
+    toggleExportDropdown();
+}
+function handleExportExcelURLFromBackendGeneralExpense() {
+    let url = 'https://gisurat.com/govardhan/sainath_aloopuri/api/reports/general_expense_report.php?user_id=1&month=1&year=2026&page=1&per_page=10&export=excel';
+    window.open(url, '_blank');
+    toggleExportDropdown();
+}
+// with category id
+function handleExportPDFURLFromBackendGeneralExpenseWithCategoryId() {
+    let url = `https://gisurat.com/govardhan/sainath_aloopuri/api/reports/general_expense_report.php?user_id=1&month=1&year=2026&page=1&per_page=10&category_id=${selectedCategoryId}&export=pdf`;
+    window.open(url, '_blank');
+    toggleExportDropdown();
+}
+function handleExportExcelURLFromBackendGeneralExpenseWithCategoryId() {
+    let url = `https://gisurat.com/govardhan/sainath_aloopuri/api/reports/general_expense_report.php?user_id=1&month=1&year=2026&page=1&per_page=10&category_id=${selectedCategoryId}&export=excel`;
+    window.open(url, '_blank');
+    toggleExportDropdown();
+}
+
+window.handleExportPDFURLFromBackendGeneralExpense = handleExportPDFURLFromBackendGeneralExpense;
+window.handleExportExcelURLFromBackendGeneralExpense = handleExportExcelURLFromBackendGeneralExpense;
+window.handleExportPDFURLFromBackendGeneralExpenseWithCategoryId = handleExportPDFURLFromBackendGeneralExpenseWithCategoryId;
+window.handleExportExcelURLFromBackendGeneralExpenseWithCategoryId = handleExportExcelURLFromBackendGeneralExpenseWithCategoryId;
+
+
 // ============================================
 // MAKE FUNCTIONS GLOBALLY ACCESSIBLE (ITEMS-ONLY NAMES)
 // ============================================
 window.changeItemPage = changeItemPage;
+
 window.changeItemPerPage = changeItemPerPage;
 window.showNotification = showNotification;
 window.generateItemsTableHTML = generateItemsTableHTML;
@@ -607,130 +666,308 @@ window.handleCategoryExportPDF = handleCategoryExportPDF;
 window.handleCategoryExportExcel = handleCategoryExportExcel;
 
 // ============================================
-// RESPONSIVE DESIGN - MEDIA QUERIES FOR CATEGORY DETAIL TABLE
+// RESPONSIVE DESIGN - MEDIA QUERIES FOR CONTENT CARD
 // ============================================
 const style = document.createElement('style');
 style.textContent = `
-    /* Tablet and smaller screens - Category Detail Page */
-    @media (max-width: 1024px) {
-        #categoryDetailPage .items-header {
-            //flex-direction: column !important;
-            width: 100% !important;
-            gap: 15px !important;
-            justify-content:space-between !important;
-            align-items: flex-start !important;
-        }
-        
-        #categoryDetailPage .items-header > div {
-            width: 100%;
-        }
-        
-        #categoryDetailPage .items-header > div:last-child {
-            width: 100%;
-            justify-content: flex-start !important;
-        }
+/* Base styles for content card */
+.content-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+/* Large Desktop (1440px and up) */
+@media (min-width: 1440px) {
+    .content-card {
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+}
+
+/* Desktop and Laptop (1024px to 1439px) */
+@media (max-width: 1439px) {
+    .content-card {
+        margin: 20px;
+    }
+}
+
+/* Tablet (768px to 1023px) */
+@media (max-width: 600px) {
+   
+    .content-card .items-header > div {
+        width: 100% !important;
     }
     
-    /* Mobile screens - Category Detail Page */
-    @media (max-width: 768px) {
-        #categoryDetailPage .items-header {
-            padding: 15px !important;
-        }
-        
-        #categoryDetailPage .items-header h2 {
-            font-size: 18px !important;
-        }
-        
-        #categoryDetailPage .items-header > div {
-            display: flex !important;
-            //flex-direction: column !important;
-            gap: 10px !important;
-            width: 100% !important;
-        }
-        
-        #categoryDetailPage .items-header > div:first-child {
-            flex-direction: row !important;
-            gap: 10px !important;
-        }
-        
-        #categoryDetailPage .btn-print, 
-        #categoryDetailPage .btn-export, 
-        #categoryDetailPage .btn-back {
-            padding: 6px 10px !important;
-            font-size: 12px !important;
-        }
-        
-        #categoryDetailPage .btn-print span, 
-        #categoryDetailPage .btn-export span, 
-        #categoryDetailPage .btn-back span {
-            font-size: 14px !important;
-        }
-        
-        #categoryDetailPage .table-container {
-            padding: 10px !important;
-            overflow-x: auto;
-        }
-        
-        #categoryDetailPage .data-table {
-            font-size: 12px !important;
-        }
-        
-        #categoryDetailPage .data-table th, 
-        #categoryDetailPage .data-table td {
-            padding: 8px !important;
-        }
-        
-        #categoryDetailPage .pagination {
-            flex-direction: column !important;
-            gap: 15px !important;
-            padding: 15px !important;
-        }
-        
-        #categoryDetailPage .pagination-controls {
-            flex-direction: column !important;
-            width: 100% !important;
-        }
-        
-        #categoryDetailPage .pagination-controls button {
-            width: 100% !important;
-        }
+    .content-card .items-header h2 {
+        font-size: 20px !important;
     }
     
-    /* Extra small screens - Category Detail Page */
-    @media (max-width: 480px) {
-        #categoryDetailPage .items-header h2 {
-            font-size: 16px !important;
-        }
-        
-        #categoryDetailPage .items-header > div {
-            flex-wrap: wrap !important;
-        }
-        
-        #categoryDetailPage .btn-print, 
-        #categoryDetailPage .btn-export, 
-        #categoryDetailPage .btn-back {
-            padding: 5px 8px !important;
-            font-size: 11px !important;
-            flex: 1 1 auto;
-            min-width: 60px;
-        }
-        
-        #categoryDetailPage .table-container {
-            padding: 5px !important;
-        }
-        
-        #categoryDetailPage .data-table {
-            font-size: 11px !important;
-        }
-        
-        #categoryDetailPage .data-table th, 
-        #categoryDetailPage .data-table td {
-            padding: 5px !important;
-        }
-        
-        #categoryDetailPage .pagination-info {
-            font-size: 12px !important;
-        }
+    .content-card .items-header > div:last-child {
+        justify-content: space-between !important;
     }
+    
+    .content-card .table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .content-card .data-table {
+        min-width: 700px;
+    }
+}
+
+/* Mobile Landscape & Small Tablet (640px to 767px) */
+@media (max-width: 767px) {
+  
+    .content-card .items-header {
+        padding: 15px !important;
+        gap: 12px !important;
+    }
+    
+    .content-card .items-header h2 {
+        font-size: 18px !important;
+        margin-bottom: 0 !important;
+    }
+    
+    .content-card .items-header > div {
+        flex-direction: column !important;
+        gap: 10px !important;
+    }
+    
+    .content-card .items-header > div:first-child {
+        flex-direction: row !important;
+        align-items: center !important;
+    }
+    
+    .content-card .items-header select,
+    .content-card .items-header .btn-refresh {
+        font-size: 13px !important;
+        padding: 8px 12px !important;
+    }
+    
+    .content-card .items-header > div:last-child {
+        flex-direction: row !important;
+        gap: 8px !important;
+    }
+    
+    .content-card .btn-print,
+    .content-card .btn-export,
+    .content-card .btn-back {
+        padding: 8px 12px !important;
+        font-size: 13px !important;
+    }
+    
+    .content-card .btn-print span,
+    .content-card .btn-export span,
+    .content-card .btn-back span {
+        font-size: 16px !important;
+    }
+    
+    .content-card .table-container {
+        padding: 10px !important;
+        margin: 0 !important;
+    }
+    
+    .content-card .data-table {
+        font-size: 13px !important;
+        min-width: 600px;
+    }
+    
+    .content-card .data-table th,
+    .content-card .data-table td {
+        padding: 10px 8px !important;
+    }
+    
+    .content-card .data-table th {
+        font-size: 12px !important;
+        font-weight: 600 !important;
+    }
+    
+    .content-card .pagination {
+        flex-direction: column !important;
+        gap: 12px !important;
+        padding: 15px !important;
+    }
+    
+    .content-card .pagination-info {
+        text-align: center;
+        order: 1;
+    }
+    
+    .content-card .pagination-controls {
+        
+        order: 2;
+        justify-content: center !important;
+    }
+    
+    .content-card .pagination-controls button {
+        padding: 8px 16px !important;
+        font-size: 13px !important;
+    }
+}
+
+/* Mobile Portrait (480px to 639px) */
+@media (max-width: 639px) {
+    .content-card {
+        margin: 8px;
+        border-radius: 6px;
+    }
+    
+    .content-card .items-header {
+        padding: 12px !important;
+    }
+    
+    .content-card .items-header h2 {
+        font-size: 16px !important;
+    }
+    
+    .content-card .items-header select {
+        font-size: 12px !important;
+        padding: 6px 10px !important;
+    }
+    
+    .content-card .table-container {
+        padding: 8px !important;
+    }
+    
+    .content-card .data-table {
+        font-size: 12px !important;
+        min-width: 500px;
+    }
+    
+    .content-card .data-table th,
+    .content-card .data-table td {
+        padding: 8px 6px !important;
+    }
+    
+    .content-card .pagination {
+        padding: 12px !important;
+        gap: 10px !important;
+    }
+    
+    .content-card .pagination-controls {
+        flex-direction: column !important;
+        gap: 8px !important;
+    }
+    
+    .content-card .pagination-controls button {
+        width: 50% !important;
+        padding: 10px !important;
+    }
+    
+    .content-card .pagination-info {
+        font-size: 12px !important;
+    }
+}
+
+/* Extra Small Mobile (up to 479px) */
+@media (max-width: 479px) {
+    .content-card {
+        margin: 5px;
+        border-radius: 4px;
+    }
+    
+    .content-card .items-header {
+        padding: 10px !important;
+        gap: 8px !important;
+    }
+    
+    .content-card .items-header h2 {
+        font-size: 14px !important;
+    }
+
+    .content-card .items-header > div:last-child {
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        justify-content: flex-start !important;
+        align-items: flex-start !important;
+    }
+    
+    .content-card .items-header select,
+    .content-card .btn-print,
+    .content-card .btn-export,
+    .content-card .btn-back,
+    .content-card .btn-refresh {
+        
+        max-width: 90px !important;
+        max-height: 32px !important;
+    }
+    
+    .content-card .btn-print span,
+    .content-card .btn-export span,
+    .content-card .btn-back span {
+        font-size: 14px !important;
+    }
+    
+    .content-card .table-container {
+        padding: 5px !important;
+    }
+    
+    .content-card .data-table {
+        font-size: 11px !important;
+        min-width: 450px;
+    }
+    
+    .content-card .data-table th,
+    .content-card .data-table td {
+        padding: 6px 4px !important;
+        white-space: nowrap;
+    }
+    
+    .content-card .data-table th {
+        font-size: 10px !important;
+    }
+    
+    .content-card .clickable-row {
+        cursor: pointer;
+    }
+    
+    .content-card .pagination {
+        padding: 10px !important;
+        gap: 8px !important;
+    }
+    
+    .content-card .pagination-controls button {
+        padding: 8px !important;
+        font-size: 11px !important;
+    }
+    
+    .content-card .pagination-info {
+        font-size: 11px !important;
+    }
+    
+    /* Make dropdown menu more mobile-friendly */
+    .content-card .export-dropdown {
+        min-width: 120px !important;
+        font-size: 11px !important;
+    }
+    
+    .content-card .export-dropdown button {
+        padding: 8px 10px !important;
+    }
+}
+
+/* Ultra Small Devices (up to 360px) */
+@media (max-width: 360px) {
+    .content-card {
+        margin: 3px;
+    }
+    
+    .content-card .items-header h2 {
+        font-size: 13px !important;
+    }
+    
+    .content-card .data-table {
+        font-size: 10px !important;
+        min-width: 400px;
+    }
+    
+    .content-card .data-table th,
+    .content-card .data-table td {
+        padding: 5px 3px !important;
+    }
+}
 `;
 document.head.appendChild(style);

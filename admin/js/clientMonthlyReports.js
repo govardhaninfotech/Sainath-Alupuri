@@ -23,6 +23,7 @@ let currentDate = null;
 let totalPages = itemsTotalPages || 1;
 let showingFrom = 0;
 let showingTo = 0;
+let currentUser = null;
 
 // Client Orders Pagination
 let currentClientOrderPage = 1;
@@ -30,12 +31,16 @@ let clientOrdersPerPage = 10;
 let clientOrdersTotal = 0;
 let clientOrdersTotalPages = 1;
 let isViewingClientOrders = false;
+currentUser =
+    JSON.parse(sessionStorage.getItem("rememberedUser")) ||
+    JSON.parse(localStorage.getItem("rememberedUser"));
+
+let user_id = currentUser ? currentUser.id : '';
 
 // ============================================
 // LOAD ITEMS DATA FROM API (SERVER PAGINATION)
 // ============================================
 function loadClientMonthlyReport() {
-    let currentUser = null;
 
     try {
         currentUser =
@@ -378,7 +383,7 @@ function generateClientOrdersPageHTML() {
                 .content-card .btn-back { background:#667eea; color:#fff; border:none; }
                 .content-card .export-dropdown-menu { position:absolute; right:0; top:100%; background:white; border:1px solid #ddd; border-radius:4px; box-shadow:0 2px 8px rgba(0,0,0,0.15); z-index:1000; min-width:150px; margin-top:5px; }
                 @media (max-width:700px) {
-                    .content-card .staff-header { flex-direction:column; align-items:flex-start; }
+                    .content-card .staff-header {margin-top: 20px; flex-direction:column; align-items:flex-start; }
                     .content-card .staff-header .header-right { width:100%; justify-content:flex-start  ; margin-top:8px; }
                     .content-card .header-right .btn-print, .content-card .header-right .btn-export { padding:8px 10px; }
                 }
@@ -724,15 +729,50 @@ function prepareClientMonthlyPrintData() {
 
 
 async function handleExportPDFURLFromBackend() {
-    let url = 'https://gisurat.com/govardhan/sainath_aloopuri/api/reports/client_monthly_summary.php?user_id=1&month=12&year=2026&export=pdf';
+
+    if (user_id) {
+        let currentUser = null;
+        try {
+            currentUser =
+                JSON.parse(sessionStorage.getItem("rememberedUser")) ||
+                JSON.parse(localStorage.getItem("rememberedUser"));
+        } catch (e) {
+            currentUser = null;
+        }
+        if (!currentUser || !currentUser.id) {
+            showNotification("User not logged in!", "error");
+            return;
+        }
+        user_id = currentUser.id;
+    }
+
+
+    let url = `https://gisurat.com/govardhan/sainath_aloopuri/api/reports/client_monthly_summary.php?user_id=${user_id}&month=${month}&year=${year}&export=pdf`;
     window.open(url, '_blank');
     toggleExportDropdown();
 }
 async function handleExportExcelURLFromBackend() {
-    let url = 'https://gisurat.com/govardhan/sainath_aloopuri/api/reports/client_monthly_summary.php?user_id=1&month=12&year=2026&export=excel';
+    if (user_id) {
+        let currentUser = null;
+        try {
+            currentUser =
+                JSON.parse(sessionStorage.getItem("rememberedUser")) ||
+                JSON.parse(localStorage.getItem("rememberedUser"));
+        } catch (e) {
+            currentUser = null;
+        }
+        if (!currentUser || !currentUser.id) {
+            showNotification("User not logged in!", "error");
+            return;
+        }
+        user_id = currentUser.id;
+    }
+    let url = `https://gisurat.com/govardhan/sainath_aloopuri/api/reports/client_monthly_summary.php?user_id=${user_id}&month=${month}&year=${year}&export=excel`;
     window.open(url, '_blank');
     toggleExportDropdown();
 }
+
+
 
 // ============================================
 // MAKE FUNCTIONS GLOBALLY ACCESSIBLE (ITEMS-ONLY NAMES)

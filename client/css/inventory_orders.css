@@ -1081,7 +1081,7 @@ input:checked~.delivery-status-text {
     }
 
     .staff-header {
-        flex-direction: column;
+        /* flex-direction: column; */
         align-items: stretch;
     }
 
@@ -1342,4 +1342,433 @@ input:checked~.delivery-status-text {
     display: flex;
     /*flex-direction: column;*/
     gap: 12px;
+}
+
+/* ============================================
+   MODAL CORE STYLES - RESPONSIVE
+   ============================================ */
+
+/* Modal Overlay */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+    overflow-y: auto;
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+}
+
+.modal.show {
+    display: flex !important;
+}
+
+/* Modal Content Wrapper */
+.modal-content {
+    background: white;
+    border-radius: 14px;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+    max-height: 90vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    animation: slideIn 0.3s ease-out;
+}
+
+/* Modal Body */
+.modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+}
+
+/* Modal Close Animation */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ============================================
+   RESPONSIVE MODAL - TABLET (768px - 1024px)
+   ============================================ */
+
+@media (max-width: 1024px) {
+    .modal {
+        padding: 16px;
+    }
+
+    .modal-content {
+        max-height: 85vh;
+    }
+
+    .modal-large {
+        max-width: 95%;
+        width: 95%;
+    }
+
+    .modal-header {
+        padding: 20px;
+        gap: 12px;
+    }
+
+    .modal-header h3 {
+        font-size: 18px;
+    }
+
+    .modal-body {
+        padding: 20px;
+    }
+
+    .order-details-container {
+        padding: 8px 0;
+    }
+
+    .order-info-section {
+        padding: 16px;
+        margin-bottom: 20px;
+    }
+
+    .section-title {
+        font-size: 15px;
+        margin-bottom: 14px;
+    }
+
+    .info-grid {
+        gap: 12px;
+    }
+
+    .info-label {
+        font-size: 11px;
+    }
+
+    .info-value {
+        font-size: 13px;
+    }
+}
+
+/* ============================================
+   RESPONSIVE MODAL - MOBILE (480px - 768px)
+   ============================================ */
+
+@media (max-width: 768px) {
+    .modal {
+        padding: 12px;
+        align-items: flex-start;
+        padding-top: 40px;
+    }
+
+    .modal-content {
+        max-height: 80vh;
+        border-radius: 12px;
+    }
+
+    .modal-large {
+        max-width: 100%;
+        width: 100%;
+    }
+
+    .modal-header {
+        flex-direction: column;
+        padding: 16px;
+        gap: 10px;
+        align-items: flex-start;
+    }
+
+    .modal-header h3 {
+        font-size: 16px;
+        font-weight: 700;
+        width: 100%;
+    }
+
+    .modal-header span {
+        font-size: 12px;
+        color: #6b7280;
+    }
+
+    .modal-header .close-btn {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        width: 36px;
+        height: 36px;
+        font-size: 24px;
+    }
+
+    .modal-body {
+        padding: 16px;
+    }
+
+    .order-details-container {
+        padding: 6px 0;
+    }
+
+    .order-info-section {
+        padding: 14px;
+        margin-bottom: 16px;
+        border-radius: 8px;
+    }
+
+    .section-title {
+        font-size: 14px;
+        margin-bottom: 12px;
+    }
+
+    .info-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .info-item {
+        gap: 3px;
+    }
+
+    .info-label {
+        font-size: 10px;
+    }
+
+    .info-value {
+        font-size: 12px;
+    }
+
+    .order-number {
+        font-size: 14px;
+    }
+
+    /* Order Items Table Responsive */
+    .order-items-table-wrapper {
+        margin-top: 10px;
+        border-radius: 8px;
+    }
+
+    .order-items-table thead th {
+        padding: 10px 8px;
+        font-size: 10px;
+    }
+
+    .order-items-table tbody td {
+        padding: 10px 8px;
+        font-size: 12px;
+    }
+
+    .order-items-table tfoot .total-row td {
+        padding: 12px 8px;
+        font-size: 13px;
+    }
+}
+
+/* ============================================
+   RESPONSIVE MODAL - SMALL MOBILE (Below 480px)
+   ============================================ */
+
+@media (max-width: 480px) {
+    .modal {
+        padding: 8px;
+        align-items: flex-start;
+        padding-top: 30px;
+        background: rgba(0, 0, 0, 0.6);
+    }
+
+    .modal-content {
+        max-height: 75vh;
+        border-radius: 10px;
+        width: 100%;
+    }
+
+    .modal-large {
+        max-width: 100%;
+        width: 100%;
+    }
+
+    .modal-header {
+        position: relative;
+        flex-direction: column;
+        padding: 14px;
+        gap: 8px;
+        align-items: stretch;
+    }
+
+    .modal-header h3 {
+        font-size: 15px;
+        font-weight: 700;
+        margin: 0;
+        padding-right: 32px;
+        word-break: break-word;
+    }
+
+    .modal-header span {
+        font-size: 11px;
+        color: #6b7280;
+        font-weight: 500;
+    }
+
+    .modal-header .close-btn {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        width: 32px;
+        height: 32px;
+        font-size: 24px;
+        color: #9ca3af;
+    }
+
+    .modal-header .close-btn:hover {
+        background: #f3f4f6;
+        color: #374151;
+    }
+
+    .modal-body {
+        padding: 12px;
+    }
+
+    .order-details-container {
+        padding: 4px 0;
+    }
+
+    .order-info-section {
+        padding: 12px;
+        margin-bottom: 12px;
+        border-radius: 8px;
+        border: 1px solid #e5e7eb;
+    }
+
+    .section-title {
+        font-size: 13px;
+        font-weight: 700;
+        margin-bottom: 10px;
+        padding-bottom: 8px;
+        border-bottom: 2px solid #667eea;
+    }
+
+    .info-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    .info-item {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .info-label {
+        font-size: 9px;
+        font-weight: 700;
+        color: #9ca3af;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    .info-value {
+        font-size: 11px;
+        color: #374151;
+        font-weight: 500;
+    }
+
+    .order-number {
+        color: #667eea;
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    /* Order Items Table - Highly Responsive */
+    .order-items-table-wrapper {
+        margin-top: 8px;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        overflow: hidden;
+    }
+
+    .order-items-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 11px;
+    }
+
+    .order-items-table thead {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .order-items-table thead th {
+        padding: 8px 6px;
+        font-size: 9px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        color: white;
+        text-align: center;
+    }
+
+    .order-items-table thead th:first-child {
+        text-align: center;
+        width: 35px;
+    }
+
+    .order-items-table thead th:last-child {
+        text-align: right;
+    }
+
+    .order-items-table tbody td {
+        padding: 8px 6px;
+        font-size: 10px;
+        color: #374151;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .order-items-table tbody td:first-child {
+        text-align: center;
+        font-weight: 600;
+        color: #667eea;
+        background: #f9fafb;
+        width: 35px;
+    }
+
+    .order-items-table tbody td:nth-child(4),
+    .order-items-table tbody td:last-child {
+        text-align: right;
+        font-family: 'Courier New', monospace;
+    }
+
+    .order-items-table tbody td:last-child {
+        color: #667eea;
+        font-weight: 600;
+    }
+
+    .order-items-table tfoot {
+        background: #f9fafb;
+    }
+
+    .order-items-table tfoot .total-row td {
+        padding: 10px 6px;
+        font-size: 11px;
+        border-top: 2px solid #667eea;
+        border-bottom: none;
+    }
+
+    .order-items-table tfoot .total-row td:last-child {
+        text-align: right;
+        font-weight: 700;
+        color: #667eea;
+        font-size: 12px;
+    }
+
+    /* Empty State */
+    .order-items-table tbody td[colspan="5"] {
+        padding: 30px 10px;
+        text-align: center;
+        font-size: 11px;
+        color: #9ca3af;
+    }
 }

@@ -7,6 +7,11 @@ import { getItemsData } from "../apis/master_api.js";
 import { showNotification } from "./notification.js";
 import { printReport, exportToPDF, exportToExcel, toggleExportDropdown } from "./print/print.js";
 
+// Auto-refresh configuration
+let autoRefreshInterval = null;
+const AUTO_REFRESH_INTERVAL = 30000; // 30 seconds
+import { initAutoRefresh } from "./autoRefresh.js";
+
 let itemsData = [];
 
 // Server-side pagination meta
@@ -93,15 +98,21 @@ export function initStaffExpMonthDropdown() {
         opt.textContent = label;
         monthSelect.appendChild(opt);
     }
+    
+    // Initialize auto-refresh
+    const refreshFunction = () => loadStaffAttendanceData().then(() => generateItemsTableHTML());
+    initAutoRefresh('staff-expense', refreshFunction, 30);
+    
     return loadStaffAttendanceData().then(() => generateItemsTableHTML());
 }
+
 export function handleStaffExpMonthChange(event) {
     currentDate = event.target.value;
     currentItemsPage = 1;
     return loadStaffAttendanceData().then(() => generateItemsTableHTML());
 }
 
-function viewClientMonthlyReport(staffId) {
+function viewStaffMonthlyReport(staffId) {
     // Get the month from dropdown
     const monthSelect = document.getElementById('invMonthSelect');
     const selectedMonth = monthSelect ? monthSelect.value : null;
@@ -159,7 +170,7 @@ function generateItemsTableHTML() {
         tableRows += `
             <tr>
                 <td>${serialNo}</td>
-                <td><a href="javascript:void(0)" class="order-link" onclick="viewClientMonthlyReport('${item.staff_id}')">${item.staff_name}</a></td>
+                <td><a href="javascript:void(0)" class="order-link" onclick="viewStaffMonthlyReport('${item.staff_id}')">${item.staff_name}</a></td>
                 <td>${item.amount}</td>
                <!--  <td>${item.payment_mode}</td>
                 <td>${item.expense_date}</td>
@@ -181,6 +192,7 @@ export function initStaffExpMothlyReportCard() {
                     <div class="inv-filter-group">
                         <select id="invMonthSelect" onchange="handleStaffExpMonthChange(event)"></select>
                     </div>
+                   
                     <button onclick="handlePrintStaffExpense()" class="btn-print" title="Print Report">
                         <span style="font-size: 18px;">🖨️</span> Print
                     </button>
@@ -189,10 +201,10 @@ export function initStaffExpMothlyReportCard() {
                             <span style="font-size: 18px;">📥</span> Export
                         </button>
                         <div id="exportDropdown" class="export-dropdown-menu" style="display: none; position: absolute; right: 0; top: 100%; background: white; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); z-index: 1000; min-width: 150px; margin-top: 5px;">
-                            <button onclick="handleStaffExportPDF()" class="export-option" style="display: block; width: 100%; padding: 10px 15px; border: none; background: none; text-align: left; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='none'">
+                            <button onclick="handleExportPDFURLFromBackendStaffAttendance()" class="export-option" style="display: block; width: 100%; padding: 10px 15px; border: none; background: none; text-align: left; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='none'">
                                 <span>📄</span> PDF
                             </button>
-                            <button onclick="handleStaffExportExcel()" class="export-option" style="display: block; width: 100%; padding: 10px 15px; border: none; background: none; text-align: left; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='none'">
+                            <button onclick="handleExportExcelURLFromBackendStaffAttendance()" class="export-option" style="display: block; width: 100%; padding: 10px 15px; border: none; background: none; text-align: left; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='none'">
                                 <span>📊</span> Excel
                             </button>
                         </div>
@@ -365,7 +377,23 @@ function changeItemPerPage(value) {
         }
     });
 }
+// PDF = https://gisurat.com/govardhan/sainath_aloopuri/api/reports/staff_attendance_report.php?user_id=1&month=1&year=2026&page=1&per_page=10&category_id=1&export=pdf
 
+// Excel = https://gisurat.com/govardhan/sainath_aloopuri/api/reports/staff_attendance_report.php?user_id=1&month=1&year=2026&page=1&per_page=10&category_id=1&export=excel
+
+function handleExportPDFURLFromBackendStaffAttendance() {
+    let url = 'https://gisurat.com/govardhan/sainath_aloopuri/api/reports/staff_attendance_report.php?user_id=1&month=1&year=2026&page=1&per_page=10&export=pdf';
+    window.open(url, '_blank');
+    toggleExportDropdown();
+}
+function handleExportExcelURLFromBackendStaffAttendance() {
+    let url = 'https://gisurat.com/govardhan/sainath_aloopuri/api/reports/staff_attendance_report.php?user_id=1&month=1&year=2026&page=1&per_page=10&export=excel';
+    window.open(url, '_blank');
+    toggleExportDropdown();
+}       
+
+window.handleExportPDFURLFromBackendStaffAttendance = handleExportPDFURLFromBackendStaffAttendance;
+window.handleExportExcelURLFromBackendStaffAttendance = handleExportExcelURLFromBackendStaffAttendance;
 // ============================================
 // MAKE FUNCTIONS GLOBALLY ACCESSIBLE (ITEMS-ONLY NAMES)
 // ============================================
@@ -376,8 +404,35 @@ window.generateItemsTableHTML = generateItemsTableHTML;
 window.initStaffExpMonthDropdown = initStaffExpMonthDropdown;
 window.initStaffExpMothlyReportCard = initStaffExpMothlyReportCard;
 window.handleStaffExpMonthChange = handleStaffExpMonthChange;
-window.viewClientMonthlyReport = viewClientMonthlyReport;
+window.viewStaffMonthlyReport = viewStaffMonthlyReport;
 window.toggleExportDropdown = toggleExportDropdown;
 window.handlePrintStaffExpense = handlePrintStaffExpense;
 window.handleStaffExportPDF = handleStaffExportPDF;
 window.handleStaffExportExcel = handleStaffExportExcel;
+
+// ============================================
+// AUTO-REFRESH FUNCTIONALITY
+// ============================================
+function startAutoRefresh() {
+    if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+    
+    autoRefreshInterval = setInterval(() => {
+        console.log('🔄 Auto-refreshing Staff Expense Report data...');
+        loadStaffAttendanceData().catch(err => {
+            console.error('❌ Auto-refresh error:', err);
+        });
+    }, AUTO_REFRESH_INTERVAL);
+    
+    console.log('✅ Auto-refresh started (30s interval)');
+}
+
+function stopAutoRefresh() {
+    if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+        autoRefreshInterval = null;
+        console.log('⏸️  Auto-refresh stopped');
+    }
+}
+
+window.startAutoRefresh = startAutoRefresh;
+window.stopAutoRefresh = stopAutoRefresh;

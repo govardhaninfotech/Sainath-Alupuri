@@ -864,9 +864,9 @@ button {
         padding: 20px;
     } */
 
-    .form-actions {
+    /* .form-actions {
         flex-direction: column-reverse;
-    }
+    } */
 
     .btn-cancel,
     .btn-submit {

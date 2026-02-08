@@ -489,7 +489,7 @@ function generateTableHTML() {
 
                         <div class="form-actions">
                             <button type="button" class="btn-cancel" onclick="closeExpenseForm()">Cancel</button>
-                            <button type="submit" class="btn-submit">Save</button>
+                            <button style="min-width: 85px;" type="submit" class="btn-submit">Save</button>
                         </div>
                     </form>
                 </div>

@@ -417,7 +417,7 @@ body {
     border-top: 1px solid var(--border-color);
     background-color: #f9fafb;
     border-radius: 0 0 12px 12px;
-    flex-wrap: wrap;
+    /* flex-wrap: wrap; */
 }
 
 .form-footer {
@@ -661,13 +661,13 @@ body {
     color: white;
     border: none;
     padding: 9px 18px;
-    width: 20px !important;
+    max-width: 85px !important;
     border-radius: 6px;
     font-weight: 600;
     cursor: pointer;
     font-size: 13px;
     transition: all 0.3s ease;
-    max-width: 110px;
+    min-width: 85px;
     min-height: 38px;
 }
 
@@ -715,14 +715,10 @@ body {
         padding: 16px;
     }
 
-    .staff-page-header {
-        flex-direction: column;
-        align-items: stretch;
-    }
 
     .btn-add-attendance {
         width: 100%;
-        margin-top: 5%;
+        /* margin-top: 5%; */
         text-align: center;
     }
 
@@ -793,8 +789,10 @@ body {
     }
 
     .staff-page-header {
-        gap: 12px;
+        flex-direction: column;
+        align-items: stretch;
     }
+
 
     .header-table-wrapper-staff {
         overflow-x: auto;
@@ -899,6 +897,7 @@ body {
     .edit-btn-submit,
     .edit-btn-cancel {
         flex: 1;
+        min-width: 50%;
         /* min-width: auto; */
         padding: 10px 12px;
     }

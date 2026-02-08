@@ -87,7 +87,7 @@ async function loadAttendanceData(filterDate = null) {
         console.log('[LOG] Attendance API Response:', data);
         mainDate = data.date;
         console.log(mainDate);
-        
+
         attendanceData = data.records || [];
 
         // Sort by date descending
@@ -238,7 +238,7 @@ function generatePageHTML() {
                 <div class="header-content-staff">
                     <h1>Staff Attendance</h1>
                 </div>
-                <div>
+                <div style="display: flex; align-items: center; gap: 10px;">
                     <input type="date" id="filterDate" class="filter-input" value="${currentFilterDate || TODAY_DATE}" onchange="applyDateFilterAttendnace()">
                     <button class="btn-add-attendance" onclick="openAttendanceForm()">➕ Add Attendance</button>
                 </div>
@@ -277,16 +277,16 @@ function generatePageHTML() {
         </div>
 
         <!-- Add Attendance Modal -->
-        <div id="attendanceModal" class="modal">
-            <div class="modal-overlay" onclick="closeAttendanceForm()"></div>
+        <div id="addAttendanceModal" class="modal">
+            <div class="modal-overlay" onclick="closeAddAttendanceForm(event)"></div>
             <div class="modal-box-staff add-attendance-form">
                 <div class="modal_staff-header">
                     <h2>Add Staff Attendance</h2>
-                    <input type="date" class="date-display" id="staffAttDate" onchange="staffAttDateChange()" required style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; flex: 0 0 auto;">
-                    <button class="close-btn" onclick="closeAttendanceForm()">✕</button>
+                    <input type="date" class="date-display" id="addStaffAttDate" onchange="staffAttDateChange()" required style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; flex: 0 0 auto;">
+                    <button class="close-btn" onclick="closeAddAttendanceForm()">✕</button>
                 </div>
                 
-                <form id="attendanceForm" onsubmit="submitAttendanceForm(event)">
+                <form id="addAttendanceForm" onsubmit="submitAddAttendanceForm(event)">
                     <div class="form-header-table-wrapper-staff">
                         <table class="form-table">
                             <thead>
@@ -305,7 +305,7 @@ function generatePageHTML() {
                     </div>
 
                     <div class="modal-footer form-footer">
-                        <button type="button" class="btn-cancel" onclick="closeAttendanceForm()">Cancel</button>
+                        <button type="button" class="btn-cancel" onclick="closeAddAttendanceForm()">Cancel</button>
                         <button type="submit" class="btn-submit">Save</button>
                     </div>
                 </form>
@@ -342,7 +342,6 @@ function generatePageHTML() {
                             <option value="fullday">Full Day</option>
                             <option value="halfday">Half Day</option>
                             <option value="leave">Leave</option>
-                            <option value="absent">Absent</option>
                         </select>
                     </div>
 
@@ -417,163 +416,304 @@ function refreshPage() {
 }
 
 async function staffAttDateChange() {
-    console.log('[LOG] Staff attendance date changed');
-    let date = document.getElementById("staffAttDate").value;
+    console.log('[LOG] ✓ Staff attendance date changed');
+    let date = document.getElementById("addStaffAttDate").value;
+    console.log('[LOG] New date selected:', date);
 
     if (!validateFilterDate(date)) {
-        document.getElementById("staffAttDate").value = TODAY_DATE;
+        document.getElementById("addStaffAttDate").value = TODAY_DATE;
+        console.log('[LOG] Invalid date, reset to today');
         return;
     }
 
+    console.log('[LOG] Loading staff for new date...');
     await loadStaffData(date);
     populateStaffTable();
+    console.log('[LOG] ✓ Staff table refreshed with new date');
 }
 
 // ============================================
-// MODAL FUNCTIONS
+// MODAL FUNCTION
 // ============================================
 
 async function openAttendanceForm() {
-    console.log('[LOG] Opening attendance form');
-    const formDate = currentFilterDate || TODAY_DATE;
-    document.getElementById("staffAttDate").value = formDate;
+    console.log('[LOG] ========================================');
+    console.log('[LOG] OPENING ATTENDANCE FORM - START');
 
-    await loadStaffData(formDate);
-    const modal = document.getElementById("attendanceModal");
+    try {
+        const formDate = currentFilterDate || TODAY_DATE;
+        console.log('[LOG] Using date:', formDate);
 
-    document.getElementById("attendanceForm").reset();
-    populateStaffTable();
+        // Set date input
+        const dateInput = document.getElementById("addStaffAttDate");
+        if (dateInput) {
+            dateInput.value = formDate;
+            console.log('[LOG] ✓ Date input set to:', formDate);
+        } else {
+            console.log('[LOG] ℹ️ Date input not found, using default:', formDate);
+        }
 
-    modal.style.display = "flex";
-    setTimeout(() => {
-        modal.classList.add("show");
-    }, 10);
+        // Load staff data for selected date
+        console.log('[LOG] Loading staff data for date:', formDate);
+        await loadStaffData(formDate);
+        console.log(`[LOG] ✓ Loaded ${staffData.length} staff members`);
+
+        // Get modal element
+        const modal = document.getElementById("addAttendanceModal");
+        if (!modal) {
+            console.error('[LOG] ❌ Attendance modal not found');
+            showNotification("Error: Modal not found!", "error");
+            return;
+        }
+
+        // Reset form
+        const form = document.getElementById("addAttendanceForm");
+        if (form) {
+            form.reset();
+            console.log('[LOG] ✓ Form reset');
+        }
+
+        // Populate staff table
+        populateStaffTable();
+
+        // Show modal
+        modal.style.display = "flex";
+        setTimeout(() => {
+            modal.classList.add("show");
+            console.log('[LOG] ✓ Modal shown');
+        }, 10);
+
+        console.log('[LOG] ✅ ATTENDANCE FORM OPENED SUCCESSFULLY');
+        console.log('[LOG] ========================================');
+
+    } catch (error) {
+        console.error('[LOG] ❌ Error opening attendance form:', error);
+        showNotification("Error opening attendance form: " + error.message, "error");
+    }
 }
 
-function closeAttendanceForm() {
-    console.log('[LOG] Closing attendance form');
-    const modal = document.getElementById("attendanceModal");
+function closeAddAttendanceForm(event) {
+    // Prevent closing if click is on the form itself (not on overlay)
+    if (event && event.target.id !== "addAttendanceModal") {
+        console.log('[LOG] ⚠️ Click was on form content, not overlay. Ignoring.');
+        return;
+    }
+
+    console.log('[LOG] ✅ CLOSING ADD ATTENDANCE FORM');
+    const modal = document.getElementById("addAttendanceModal");
+    if (!modal) {
+        console.error('[LOG] ❌ Modal not found');
+        return;
+    }
+
+    console.log('[LOG] Removing show class...');
     modal.classList.remove("show");
+
     setTimeout(() => {
+        console.log('[LOG] Setting display to none...');
         modal.style.display = "none";
+        console.log('[LOG] ✓ Modal closed completely');
     }, 300);
 }
 
 function populateStaffTable() {
-    console.log('[LOG] Populating staff attendance table');
+    console.log('[LOG] ========================================');
+    console.log('[LOG] POPULATING STAFF ATTENDANCE TABLE');
+    console.log('[LOG] Staff data available:', staffData.length);
+    console.log('[LOG] Staff data:', staffData);
+
     const tbody = document.getElementById("staffTableBody");
 
     if (!tbody) {
-        console.warn('[LOG] Staff table body not found');
+        console.error('[LOG] ❌ Staff table body element not found');
+        showNotification("Error: Staff table not found in DOM!", "error");
         return;
     }
 
     tbody.innerHTML = '';
 
+    if (staffData.length === 0) {
+        console.warn('[LOG] ⚠️ No staff data available to populate');
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px; color: #9ca3af;">No staff members available</td></tr>';
+        return;
+    }
+
     staffData.forEach((staff, index) => {
-        const row = document.createElement('tr');
-        row.className = 'staff-row';
-        row.innerHTML = `
-            <td class="sr-no">${index + 1}</td>
-            <td class="staff-name">${staff.name || 'Unknown'}</td>
-            <td class="status-cell">
-                <select class="status-select" id="status_${staff.id}" data-staff-id="${staff.id}">
-                    <option value="fullday" selected>Full Day</option>
-                    <option value="halfday">Half Day</option>
-                    <option value="leave">Leave</option>
-                </select>
-            </td>
-            <td class="checkbox-cell">
-                <input type="checkbox" class="tshirt-check" id="tshirt_${staff.id}" data-staff-id="${staff.id}" checked>
-            </td>
-            <td class="checkbox-cell">
-                <input type="checkbox" class="cap-check" id="cap_${staff.id}" data-staff-id="${staff.id}" checked>
-            </td>
-        `;
-        tbody.appendChild(row);
+        try {
+            console.log(`[LOG] Processing staff ${index + 1}: ID=${staff.id}, Name=${staff.name}`);
+
+            const row = document.createElement('tr');
+            row.className = 'staff-row';
+            row.innerHTML = `
+                <td class="sr-no">${index + 1}</td>
+                <td class="staff-name">${staff.name || 'Unknown'}</td>
+                <td class="status-cell">
+                    <select class="status-select" id="status_${staff.id}" data-staff-id="${staff.id}" required>
+                        <option value="">-- Select Status --</option>
+                        <option value="fullday" selected>Full Day</option>
+                        <option value="halfday">Half Day</option>
+                        <option value="leave">Leave</option>
+                    </select>
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="tshirt-check" id="tshirt_${staff.id}" data-staff-id="${staff.id}" checked>
+                </td>
+                <td class="checkbox-cell">
+                    <input type="checkbox" class="cap-check" id="cap_${staff.id}" data-staff-id="${staff.id}" checked>
+                </td>
+            `;
+            tbody.appendChild(row);
+            console.log(`[LOG] ✓ Row created for staff ${staff.id}`);
+        } catch (error) {
+            console.error(`[LOG] Error creating row for staff ${index}:`, error);
+        }
     });
 
-    console.log(`[LOG] Populated ${staffData.length} staff members in attendance table`);
+    console.log(`[LOG] ✓ Populated ${staffData.length} staff members in attendance table`);
+    console.log('[LOG] ========================================');
 }
 
 // ============================================
 // SUBMIT FUNCTIONS
 // ============================================
 
-async function submitAttendanceForm(event) {
+async function submitAddAttendanceForm(event) {
     event.preventDefault();
-    console.log('[LOG] Submitting attendance form for all staff');
+    console.log('[LOG] ========================================');
+    console.log('[LOG] ✓ SUBMIT EVENT FIRED');
+    console.log('[LOG] SUBMITTING ADD ATTENDANCE FORM - START');
 
-    const formDate = document.getElementById("staffAttDate").value;
+    // VALIDATION 1: Get form date
+    const formDate = document.getElementById("addStaffAttDate").value;
+    console.log('[LOG] Form element ID: addStaffAttDate, Value:', formDate);
+    if (!formDate) {
+        console.error('[LOG] ❌ Form date is missing');
+        showNotification("Please select a date!", "error");
+        return;
+    }
+    console.log('[LOG] ✓ Form date:', formDate);
+
+    // VALIDATION 2: Collect staff attendance data
     const staffArray = [];
     const staffRows = document.querySelectorAll('.staff-row');
+    console.log('[LOG] Found staff rows:', staffRows.length);
 
-    staffRows.forEach(row => {
-        const staffIdCells = row.querySelectorAll('[data-staff-id]');
-        if (staffIdCells.length === 0) return;
+    if (staffRows.length === 0) {
+        console.error('[LOG] ❌ No staff rows found in form');
+        showNotification("No staff members loaded! Please reload the form.", "error");
+        return;
+    }
 
-        const staffId = staffIdCells[0].getAttribute('data-staff-id');
-        const statusSelect = row.querySelector(`#status_${staffId}`);
-        const tshirtCheck = row.querySelector(`#tshirt_${staffId}`);
-        const capCheck = row.querySelector(`#cap_${staffId}`);
+    staffRows.forEach((row, index) => {
+        try {
+            // Get staff ID from data attribute
+            const staffIdCells = row.querySelectorAll('[data-staff-id]');
+            if (staffIdCells.length === 0) {
+                console.warn(`[LOG] ⚠️ Row ${index + 1}: No data-staff-id found, skipping`);
+                return;
+            }
 
-        const status = statusSelect?.value;
+            const staffId = staffIdCells[0].getAttribute('data-staff-id');
+            console.log(`[LOG] Processing staff ID: ${staffId}`);
 
-        if (status && status !== '') {
-            staffArray.push({
+            // Get form elements
+            const statusSelect = row.querySelector(`#status_${staffId}`);
+            const tshirtCheck = row.querySelector(`#tshirt_${staffId}`);
+            const capCheck = row.querySelector(`#cap_${staffId}`);
+
+            // Validate elements exist
+            if (!statusSelect) {
+                console.warn(`[LOG] ⚠️ Status select not found for staff ${staffId}`);
+                return;
+            }
+
+            const status = statusSelect.value;
+
+            // Validate status is selected
+            if (!status || status === '') {
+                console.warn(`[LOG] ⚠️ Staff ${staffId}: No status selected, skipping`);
+                return;
+            }
+
+            // Add to staff array
+            const staffRecord = {
                 staff_id: parseInt(staffId),
                 status: status,
                 t_shirt: tshirtCheck?.checked ? 1 : 0,
                 cap: capCheck?.checked ? 1 : 0
-            });
+            };
+
+            staffArray.push(staffRecord);
+            console.log(`[LOG] ✓ Staff ${staffId} added:`, staffRecord);
+
+        } catch (error) {
+            console.error(`[LOG] Error processing row ${index}:`, error);
         }
     });
 
+    // VALIDATION 3: Check if at least one staff has been selected
     if (staffArray.length === 0) {
-        console.warn('[LOG] Validation failed - no staff selected');
+        console.error('[LOG] ❌ VALIDATION FAILED: No staff member with status selected');
         showNotification("Please select status for at least one staff member!", "warning");
         return;
     }
+    console.log(`[LOG] ✓ Total staff with status: ${staffArray.length}`);
 
+    // VALIDATION 4: Build final attendance data
     const attendanceData = {
         user_id: parseInt(user_id),
         date: formDate,
         staffs: staffArray
     };
 
-    console.log('[LOG] Attendance data prepared:', JSON.stringify(attendanceData, null, 2));
+    console.log('[LOG] ========================================');
+    console.log('[LOG] FINAL ATTENDANCE DATA TO SEND:');
+    console.log(JSON.stringify(attendanceData, null, 2));
+    console.log('[LOG] ========================================');
 
     try {
+        // VALIDATION 5: Get user confirmation
         const confirmed = await showConfirm(
             `Confirm attendance for ${staffArray.length} staff member(s) on ${formatDateForDisplay(formDate)}?`,
             "info"
         );
 
         if (!confirmed) {
-            console.log('[LOG] Form submission cancelled by user');
+            console.log('[LOG] ℹ️ User cancelled form submission');
             return;
         }
 
+        console.log('[LOG] ✓ User confirmed, sending to API...');
+
+        // VALIDATION 6: Send to API
         const result = await addItemToAPI(`${attendanceURLphp}?user_id=${user_id}`, attendanceData);
 
-        if (result?.error) {
-            console.error('[LOG] API Error:', result);
-            showNotification(result.message || "Error saving attendance!", "error");
+        console.log('[LOG] API Response:', result);
+
+        // VALIDATION 7: Check for API errors
+        if (result.error) {
+            console.error('[LOG] ❌ API ERROR:', result.error);
+            showNotification(result.error, "error");
             return;
         }
 
-        console.log('[LOG] Attendance submitted successfully');
+        // SUCCESS
+        console.log('[LOG] ✅ Attendance submitted successfully');
         showNotification(`✓ Attendance recorded for ${staffArray.length} staff member(s)!`, "success");
-        closeAttendanceForm();
+        console.log('[LOG] About to close form...');
+        closeAddAttendanceForm();
 
+        // Reload attendance data
         await loadAttendanceData(currentFilterDate || TODAY_DATE);
         refreshPage();
 
     } catch (error) {
-        console.error('[LOG] Error submitting form:', error);
-        showNotification("Error saving attendance!", "error");
+        console.error('[LOG] ❌ EXCEPTION ERROR submitting form:', error);
+        showNotification(result.error);
     }
 }
+
+
 
 // ============================================
 // EDIT FUNCTIONS - FIXED
@@ -618,7 +758,7 @@ async function editAttendance(recordId) {
         document.getElementById("editAttendanceDate").value = record.date;
 
         console.log(mainDate);
-        
+
         const statusSelect = document.getElementById("editStatus");
         const statusValue = (record.status || 'fullday').toLowerCase();
         statusSelect.value = statusValue;
@@ -663,11 +803,11 @@ async function submitEditAttendanceForm(event) {
         console.log('[LOG] - T-Shirt:', tshirt);
         console.log('[LOG] - Cap:', cap);
 
-            // if (!recordId) {
-            //     console.error('[LOG] ❌ Record ID not found');
-            //     showNotification("Error: Record ID not found!", "error");
-            //     return;
-            // }
+        // if (!recordId) {
+        //     console.error('[LOG] ❌ Record ID not found');
+        //     showNotification("Error: Record ID not found!", "error");
+        //     return;
+        // }
 
         // CRITICAL FIX: Build update data with proper structure
         const editData = {
@@ -812,7 +952,8 @@ async function deleteAttendance(recordId) {
 // ============================================
 
 window.openAttendanceForm = openAttendanceForm;
-window.closeAttendanceForm = closeAttendanceForm;
+window.closeAddAttendanceForm = closeAddAttendanceForm;
+window.submitAddAttendanceForm = submitAddAttendanceForm;
 window.editAttendance = editAttendance;
 window.submitEditAttendanceForm = submitEditAttendanceForm;
 window.closeEditAttendanceForm = closeEditAttendanceForm;
