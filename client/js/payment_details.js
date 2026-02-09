@@ -32,10 +32,11 @@ function getBankDetails() {
 function generateUPIQRCode(upiId, name, amount = "") {
     // UPI payment URL format
     const upiUrl = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(name)}${amount ? `&am=${amount}` : ""}`;
-    
+
     // Use a QR code API to generate the image
-    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(upiUrl)}`;
-    
+    // const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(upiUrl)}`;
+    const qrCodeUrl = "../images/Qr.jpeg"; // Placeholder image for demo purposes
+
     return qrCodeUrl;
 }
 
@@ -344,10 +345,10 @@ export function renderPaymentDetailsPage() {
 }
 
 // Copy bank details to clipboard
-window.copyBankDetails = function(bankId) {
+window.copyBankDetails = function (bankId) {
     const bankDetails = getBankDetails();
     const bank = bankDetails.find(b => b.id === bankId);
-    
+
     if (!bank) return;
 
     const details = `
@@ -370,7 +371,7 @@ ${bank.branch ? `Branch: ${bank.branch}` : ""}
 };
 
 // Download QR Code
-window.downloadQRCode = function(qrCodeUrl, accountHolderName) {
+window.downloadQRCode = function (qrCodeUrl, accountHolderName) {
     const link = document.createElement("a");
     link.href = qrCodeUrl;
     link.download = `QR_Code_${accountHolderName.replace(/\s+/g, "_")}.png`;
