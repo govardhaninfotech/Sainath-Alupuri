@@ -4,12 +4,12 @@
 const STATIC_BANK_DETAILS = [
     {
         id: 1,
-        account_holder_name: "SAINATH ALUPURI",
-        bank_name: "State Bank of India",
-        account_number: "1234567890",
-        ifsc_code: "SBIN0001234",
-        upi_id: "sainath@sbi",
-        branch: "Main Branch"
+        account_holder_name: "BKT FOODSERVE LLP",
+        bank_name: "Axis Bank",
+        account_number: "924020022894770",
+        ifsc_code: "UITB0004630",
+        // upi_id: "sainath@sbi",
+        branch: "L.P. Savani Road"
     }
     // You can add more bank accounts here if needed
     // {
@@ -35,7 +35,7 @@ function generateUPIQRCode(upiId, name, amount = "") {
 
     // Use a QR code API to generate the image
     // const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(upiUrl)}`;
-    const qrCodeUrl = "../images/Qr.jpeg"; // Placeholder image for demo purposes
+    const qrCodeUrl = "https://govardhaninfotech.github.io/Sainath-Alupuri/admin/images/Qr.jpeg";
 
     return qrCodeUrl;
 }
@@ -357,7 +357,6 @@ Account Holder: ${bank.account_holder_name || "N/A"}
 Bank Name: ${bank.bank_name || "N/A"}
 Account Number: ${bank.account_number || "N/A"}
 IFSC Code: ${bank.ifsc_code || "N/A"}
-${bank.upi_id ? `UPI ID: ${bank.upi_id}` : ""}
 ${bank.branch ? `Branch: ${bank.branch}` : ""}
     `.trim();
 
