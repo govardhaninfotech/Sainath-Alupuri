@@ -277,7 +277,7 @@ function generateCategoryDetailTableHTML() {
                     </button>
                     <h2 style="margin: 0; text-transform: capitalize;">${capitalizeEachWord(selectedCategoryName)} - Expense Details</h2>
                 </div>
-                <div style="display: flex; gap: 10px; align-items: center;">
+                <!-- <div style="display: flex; gap: 10px; align-items: center;">
                     <button onclick="handlePrintCategoryDetail()" class="btn-print" title="Print Report">
                         <span style="font-size: 18px;">🖨️</span> Print
                     </button>
@@ -294,7 +294,7 @@ function generateCategoryDetailTableHTML() {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div> -->
              </div>
 
             <div class="table-container" style="overflow-x: auto; padding: 20px;">

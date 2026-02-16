@@ -14,6 +14,7 @@ import { initNavigationGuards, validateNavigation, markPageVisited, resetNavigat
 import { closeAllSubmenus, highlightMenuItemForPage, closeSidebarAfterNavigation, initMenuSystem, toggleSubmenuWithGuard } from "./menuSystem.js";
 import { showMessage } from "./message.js";
 
+
 // 🔹 NEW: Inventory module imports
 import { renderInventoryStaffPage, initInventoryStaffPage } from "./inventory.js";
 import { renderInventoryOrdersPage } from "./inventory_orders.js";
@@ -30,6 +31,7 @@ import { initClientDuesReportCard, initClientDuesDropdown } from "./Billing/clie
 import { initPaymentHistoryCard, initClientDropdown } from "./Billing/payment_history.js";
 import { initPaymentHistoryCard as initPaymentCard, initClientDropdown as initPaymentClientDropdown } from "./Billing/payment.js";
 import { renderPaymentDetailsPage } from "./payment_details.js";
+import { renderClientMonthlyFeesPage, initClientMonthlyFeesPage } from "./ClientMonthlyFees.js";
 import { renderNotificationsPage } from "./notifications_page.js";
 import { renderCompanyInfoPage } from "./company_info.js";
 
@@ -67,7 +69,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         // 🛡️ Initialize navigation guards
         initNavigationGuards(currentUser.role);
-        
+
         // 🔹 Initialize menu system
         initMenuSystem();
 
@@ -352,10 +354,10 @@ document.addEventListener("click", function (event) {
 // ============================================
 function logout() {
     console.log("👋 Logging out admin user");
-    
+
     // 🔄 Reset navigation guards for next login
     resetNavigationGuards();
-    
+
     localStorage.removeItem("rememberedUser");
     sessionStorage.removeItem("rememberedUser");
     localStorage.removeItem("navigationHistory");
@@ -372,12 +374,12 @@ async function navigateTo(page) {
     console.log(`➡️ navigateTo("${page}")`);
 
     // �️ VALIDATE NAVIGATION AGAINST GUARDS
-    const validation = validateNavigation(page, currentUser.role);
-    if (!validation.allowed) {
-        console.warn(`❌ Navigation blocked: ${validation.reason}`);
-        showMessage('mainAlert', validation.reason, 'warning');
-        return;
-    }
+    // const validation = validateNavigation(page, currentUser.role);
+    // if (!validation.allowed) {
+    //     console.warn(`❌ Navigation blocked: ${validation.reason}`);
+    //     showMessage('mainAlert', validation.reason, 'warning');
+    //     return;
+    // }
 
     // ✅ MARK PAGE AS VISITED (for navigation flow)
     markPageVisited(page);
@@ -540,7 +542,7 @@ async function navigateTo(page) {
             document.querySelector('.submenu-item[onclick*="stockMovement"]')?.classList.add("active");
             initClientDropdown();
             break;
-            
+
         case "company":
             renderCompanyInfoPage();
             document.querySelector('.menu-item[onclick*="company"]')?.classList.add("active");
@@ -549,6 +551,12 @@ async function navigateTo(page) {
         case "notifications":
             renderNotificationsPage();
             document.querySelector('.menu-item[onclick*="notifications"]')?.classList.add("active");
+            break;
+
+        case "Client_Monthly_Fees":
+            mainContent.innerHTML = await renderClientMonthlyFeesPage();
+            // content.innerHTML = await renderClientMonthlyFeesPage();
+            initClientMonthlyFeesPage(); // ✅ DOM is ready now
             break;
 
         case "profile":

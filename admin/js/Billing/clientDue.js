@@ -101,7 +101,7 @@ function generateItemsTableHTML() {
     for (let index = 0; index < itemsData.length; index++) {
         const item = itemsData[index];
         console.log(item);
-
+        
 
         const serialNo = (currentItemsPage - 1) * itemsPerPage + index + 1;
         tableRows += `
@@ -201,44 +201,9 @@ function changeItemPerPage(value) {
 // ============================================
 // MAKE FUNCTIONS GLOBALLY ACCESSIBLE (ITEMS-ONLY NAMES)
 // ============================================
-// ============================================
-// HANDLE DUE AMOUNT CLICK - REDIRECT TO PAYMENT
-// ============================================
-function viewClientDueslyReport(clientId) {
-    // Find the client data from itemsData
-    const clientData = itemsData.find(item => item.id == clientId);
-
-    if (!clientData) {
-        showNotification("Client not found!", "error");
-        return;
-    }
-    console.log("itemdata", itemsData);
-
-    // Show confirmation dialog
-    showConfirm(
-        `Redirect to payment for ${clientData.client_name}?\nDue Amount: ${clientData.due_amount}`,
-        "warning"
-    ).then(confirmed => {
-        if (confirmed) {
-
-            // Store client data in sessionStorage for payment form to use
-            sessionStorage.setItem("paymentClientData", JSON.stringify({
-                client_id: clientData.id,
-                client_name: clientData.client_name,
-                due_amount: clientData.due_amount,
-                order_id: clientData.order_id || null
-            }));
-
-            // Navigate to payment page
-            navigateTo("addPayment");
-        }
-    });
-}
-
 window.changeItemPage = changeItemPage;
 window.changeItemPerPage = changeItemPerPage;
 window.showNotification = showNotification;
 window.generateItemsTableHTML = generateItemsTableHTML;
 window.initClientDuesDropdown = initClientDuesDropdown;
 window.handleClientDuesChange = handleClientDuesChange;
-window.viewClientDueslyReport = viewClientDueslyReport;

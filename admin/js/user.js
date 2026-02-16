@@ -11,6 +11,7 @@ import {
 } from "../apis/master_api.js";
 import { showNotification, showConfirm } from "./notification.js";
 import { printReport, exportToPDF, exportToExcel, toggleExportDropdown } from "./print/print.js";
+import { getCUrrenetUser } from "./utility.js";
 import {
     validateRequiredField,
     validateIndianMobile,
@@ -101,24 +102,24 @@ function generateTableHTML() {
             <div class="staff-header">
                 <h2>Client Management</h2>
                  <div class="header-actions" style="display: flex; gap: 10px; align-items: center;">
-                <button onclick="printReportclient()" class="btn-print" title="Print Report">
-                    <span style="font-size: 18px;">🖨️</span> Print
-                </button>
-                <div class="export-dropdown-wrapper">
-                    <button onclick="toggleExportDropdown()" class="btn-export" title="Export Report">
-                        <span style="font-size: 18px;">📥</span> Export
+                    <button onclick="printReportclient()" class="btn-print" title="Print Report">
+                        <span style="font-size: 18px;">🖨️</span> Print
                     </button>
-                    <div id="exportDropdown" class="export-dropdown-menu">
-                        <button onclick="exportToPDFmain()" class="export-option">
-                            <span>📄</span> PDF
+                    <div class="export-dropdown-wrapper">
+                        <button onclick="toggleExportDropdown()" class="btn-export" title="Export Report">
+                            <span style="font-size: 18px;">📥</span> Export
                         </button>
-                        <button onclick="exportToExcelmain()" class="export-option">
-                            <span>📊</span> Excel
-                        </button>
+                        <div id="exportDropdown" class="export-dropdown-menu">
+                            <button onclick="exportToPDFFromBackend()" class="export-option">
+                                <span>📄</span> PDF
+                            </button>
+                            <button onclick="exportToExcelFromBackend()" class="export-option">
+                                <span>📊</span> Excel
+                            </button>
+                        </div>
                     </div>
+                    <button class="btn-add" style="max-width: 107px !important;" onclick="openUserForm()">Add User</button>
                 </div>
-            </div>
-                <button class="btn-add" style="max-width: 107px !important;" onclick="openUserForm()">Add User</button>
             </div>
             
             <div class="table-container">
@@ -279,59 +280,47 @@ export function preparePrintDatainclient() {
  * PRINT CLIENT REPORT
  */
 window.printReportclient = async function () {
-    const printData = preparePrintDatainclient();
 
-    await printReport({
-        headers: printData.headers,
-        rows: printData.rows,
-        reportTitle: 'Client Management Report',
-        companyName: 'Sainath Alupuri',
-        companySubtitle: 'Client Management System',
-        logo: 'SA',
-        additionalInfo: `
+
+    // let userId = getCUrrenetUser() ? getCUrrenetUser().id : null;
+
+    // Android WebView
+    if (window.Android && Android.printPdf) {
+        let url = `https://gisurat.com/govardhan/sainath_aloopuri/api/users.php?page=1&per_page=15&export=pdf`;
+        Android.printPdf(url);
+    } else {
+        const printData = preparePrintDatainclient();
+
+        await printReport({
+            headers: printData.headers,
+            rows: printData.rows,
+            reportTitle: 'Client Management Report',
+            companyName: 'Sainath Alupuri',
+            companySubtitle: 'Client Management System',
+            logo: 'SA',
+            additionalInfo: `
             <p><strong>Total Clients:</strong> ${printData.rows.length}</p>
             <p><strong>Report Date:</strong> ${new Date().toLocaleDateString('en-IN')}</p>
         `
-    });
+        });
+    }
 };
 
-/**
- * EXPORT CLIENT REPORT TO PDF
- */
-window.exportToPDFmain = async function () {
-    const printData = preparePrintDatainclient();
-
-    await exportToPDF({
-        headers: printData.headers,
-        rows: printData.rows,
-        reportTitle: 'Client Management Report',
-        companyName: 'Sainath Alupuri',
-        companySubtitle: 'Client Management System',
-        logo: 'SA',
-        additionalInfo: `
-            <p><strong>Total Clients:</strong> ${printData.rows.length}</p>
-            <p><strong>Report Date:</strong> ${new Date().toLocaleDateString('en-IN')}</p>
-        `
-    });
+// New functions to export from backend (server-side export)
+function exportToPDFFromBackend () {
+    let url = `https://gisurat.com/govardhan/sainath_aloopuri/api/users.php?page=1&per_page=15&export=pdf`;
+    window.open(url, '_blank');
+    toggleExportDropdown();
 };
 
-/**
- * EXPORT CLIENT REPORT TO EXCEL
- */
-window.exportToExcelmain = async function () {
-    const printData = preparePrintDatainclient();
-
-    await exportToExcel({
-        headers: printData.headers,
-        rows: printData.rows,
-        reportTitle: 'Client Management Report',
-        companyName: 'Sainath Alupuri',
-        companySubtitle: 'Client Management System'
-    });
+function exportToExcelFromBackend () {
+    toggleExportDropdown();
+    let url = `https://gisurat.com/govardhan/sainath_aloopuri/api/users.php?page=1&per_page=15&export=excel`;
+    window.open(url, '_blank');
 };
 
-// Toggle dropdown (already global, just expose it)
-
+window.exportToExcelFromBackend = exportToExcelFromBackend;
+window.exportToPDFFromBackend = exportToPDFFromBackend;
 
 
 // ============================================

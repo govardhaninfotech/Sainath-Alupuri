@@ -1275,9 +1275,7 @@ input:checked+.slider:before {
         max-width: 100%;
     }
 
-    .form-actions {
-        flex-direction: column;
-    }
+  
 
     .btn-cancel,
     .btn-submit {
@@ -2134,13 +2132,11 @@ input:checked+.slider:before {
         max-width: 95vw;
     }
 
-    /* .modal .form-actions {
-        flex-direction: column-reverse;
-    } */
-
+  
     .modal .btn-cancel,
     .modal .btn-submit {
-        width: 100%;
+        /* width: 100%; */
+        min-width: 50%;
         min-height: 44px;
     }
 

@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monthly Clients Fees</title>
+    <link rel="stylesheet" href="./css/ClientMonthlyFees.css">
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Monthly clients fees</h1>
+            <div class="date-selection">
+                <label for="dateFilter">Date selection</label>
+                <input type="month" id="dateFilter" class="date-input">
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table class="fees-table">
+                <thead>
+                    <tr>
+                        <th>Sr No</th>
+                        <th>Client Name</th>
+                        <th>Amount</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="feesTableBody">
+                    <!-- Data will be populated by JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Payment Modal -->
+    <div id="paymentModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Payment Details</h2>
+                <span class="close">&times;</span>
+            </div>
+            <form id="paymentForm">
+                <div class="form-group">
+                    <label for="clientName">Client Name</label>
+                    <input type="text" id="clientName" name="clientName" readonly>
+                </div>
+
+                <div class="form-group">
+                    <label for="paymentDate">Date</label>
+                    <input type="date" id="paymentDate" name="paymentDate" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="amount">Amount</label>
+                    <input type="number" id="amount" name="amount" step="0.01" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="paymentMode">Payment Mode</label>
+                    <select id="paymentMode" name="paymentMode" required>
+                        <option value="">Select Payment Mode</option>
+                        <option value="cash">Cash</option>
+                        <option value="upi">UPI</option>
+                        <option value="card">Card</option>
+                        <option value="bank_transfer">Bank Transfer</option>
+                        <option value="cheque">Cheque</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="bankSelection">Bank Selection</label>
+                    <select id="bankSelection" name="bankSelection">
+                        <option value="">Select Bank</option>
+                        <option value="sbi">State Bank of India</option>
+                        <option value="hdfc">HDFC Bank</option>
+                        <option value="icici">ICICI Bank</option>
+                        <option value="axis">Axis Bank</option>
+                        <option value="pnb">Punjab National Bank</option>
+                        <option value="kotak">Kotak Mahindra Bank</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-pay">Pay</button>
+                    <button type="button" class="btn btn-cancel" id="cancelBtn">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Edit Client Details</h2>
+                <span class="close">&times;</span>
+            </div>
+            <form id="editForm">
+                <input type="hidden" id="editClientId">
+
+                <div class="form-group">
+                    <label for="editClientName">Client Name</label>
+                    <input type="text" id="editClientName" name="editClientName" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="editAmount">Amount</label>
+                    <input type="number" id="editAmount" name="editAmount" step="0.01" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="editDate">Date</label>
+                    <input type="date" id="editDate" name="editDate" required>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-save">Save</button>
+                    <button type="button" class="btn btn-cancel" id="editCancelBtn">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="module" src="./js/clientMonthlyReports.js"></script>
+</body>
+
+</html>

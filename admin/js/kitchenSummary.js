@@ -18,6 +18,7 @@ import {
     validateRequiredField,
     setupEscKeyHandler
 } from "./validation.js";
+import { getCUrrenetUser } from "./utility.js";
 
 // Initialize ESC key handler on page load
 setupEscKeyHandler();
@@ -352,43 +353,65 @@ document.addEventListener("click", function (event) {
 // ============================================
 // STEP 1: PREPARE DATA FUNCTION
 // ============================================
+/**
+ * Transform kitchen summary data to match PDF format:
+ * - Headers: Sr No, Client Name, [Product Names...]
+ * - Rows: Client data with quantities for each product
+ * - Last Row: Total quantities for each product
+ */
 function prepareKitchenPrintData() {
-    const headers = ['Type', 'Client', 'Item Name', 'Quantity', 'Unit'];
+    // Step 1: Get all unique item names from overall summary
+    const allItems = overallSummary.map(item => item.item_name);
+    
+    // Step 2: Create headers - Sr No, Client Name, then all item names
+    const headers = ['Sr No', 'Client Name', ...allItems];
+    
+    // Step 3: Create rows for each client
     const rows = [];
-
-    // Add overall summary
-    if (overallSummary && overallSummary.length) {
-        overallSummary.forEach(item => {
-            rows.push([
-                'Overall',
-                '-',
-                item.item_name || '',
-                item.total_qty || 0,
-                item.unit || ''
-            ]);
-        });
-    }
-
-    // Add client-wise summary
+    
     if (clientWiseSummary && clientWiseSummary.length) {
-        clientWiseSummary.forEach(client => {
-            if (client.items && client.items.length) {
-                client.items.forEach(item => {
-                    rows.push([
-                        'Client',
-                        client.client_name || '',
-                        item.item_name || '',
-                        item.total_qty || 0,
-                        item.unit || ''
-                    ]);
-                });
-            }
+        clientWiseSummary.forEach((client, index) => {
+            const row = [
+                index + 1, // Sr No
+                client.client_name || '' // Client Name
+            ];
+            
+            // For each item in overall summary, find matching quantity in client's items
+            allItems.forEach(itemName => {
+                const clientItem = client.items?.find(item => item.item_name === itemName);
+                if (clientItem) {
+                    // Format quantity with unit
+                    const qty = clientItem.total_qty || '';
+                    const unit = clientItem.unit || '';
+                    row.push(qty ? `${qty} ${unit}`.trim() : '-');
+                } else {
+                    row.push('-');
+                }
+            });
+            
+            rows.push(row);
         });
     }
-
+    
+    // Step 4: Add Total row
+    const totalRow = ['', 'Total']; // Empty Sr No, "Total" as client name
+    
+    // Calculate total for each item from overall summary
+    allItems.forEach(itemName => {
+        const overallItem = overallSummary.find(item => item.item_name === itemName);
+        if (overallItem) {
+            const qty = overallItem.total_qty || '';
+            const unit = overallItem.unit || '';
+            totalRow.push(qty ? `${qty} ${unit}`.trim() : '-');
+        } else {
+            totalRow.push('-');
+        }
+    });
+    
+    rows.push(totalRow);
+    
     return { headers, rows };
 }
-
 // ============================================
 // STEP 2: CREATE WRAPPER FUNCTIONS
 // ============================================
@@ -397,21 +420,31 @@ function prepareKitchenPrintData() {
  * PRINT KITCHEN REPORT
  */
 window.printKitchenReport = async function () {
-    const printData = prepareKitchenPrintData();
+    console.log(currentDate);
 
-    await printReport({
-        headers: printData.headers,
-        rows: printData.rows,
-        reportTitle: 'Kitchen Summary Report',
-        companyName: 'Sainath Alupuri',
-        companySubtitle: 'Kitchen Management System',
-        logo: 'SA',
-        additionalInfo: `
+    let userId = getCUrrenetUser() ? getCUrrenetUser().id : null;
+    // Android WebView
+    if (window.Android && Android.printPdf) {
+        // Kitchen_summary : https://gisurat.com/govardhan/sainath_aloopuri/api/kitchen_summary_reports.php?user_id=1&date=2026-02-09&export=pdf
+        let url = `https://gisurat.com/govardhan/sainath_aloopuri/api/kitchen_summary_reports.php?user_id=${userId}&date=${currentDate}&export=pdf`;
+        Android.printPdf(url);
+    } else {
+        const printData = prepareKitchenPrintData();
+
+        await printReport({
+            headers: printData.headers,
+            rows: printData.rows,
+            reportTitle: 'Kitchen Summary Report',
+            companyName: 'Sainath Alupuri',
+            companySubtitle: 'Kitchen Management System',
+            logo: 'SA',
+            additionalInfo: `
             <p><strong>Report Date:</strong> ${currentDate || new Date().toLocaleDateString('en-IN')}</p>
             <p><strong>Total Items:</strong> ${overallSummary.length}</p>
             <p><strong>Total Clients:</strong> ${clientWiseSummary.length}</p>
         `
-    });
+        });
+    }
 };
 
 /**
@@ -513,13 +546,21 @@ function refreshkitchenSummaryTable() {
 }
 
 function handleExportPDFURLFromBackendKitchenSummary() {
-    let url = 'https://gisurat.com/govardhan/sainath_aloopuri/api/reports/kitchen_summary.php?user_id=1&date=2026-01-30&export=pdf';
+    // Kitchen_summary : https://gisurat.com/govardhan/sainath_aloopuri/api/kitchen_summary_reports.php?user_id=1&date=2026-02-09&export=pdf
+    let currentUser = getCUrrenetUser();
+    let user_id = currentUser ? currentUser.id : ""; // Default to 1 if no user found
+
+    let url = `https://gisurat.com/govardhan/sainath_aloopuri/api/kitchen_summary_reports.php?user_id=${user_id}&date=${currentDate}&export=pdf`;
     window.open(url, '_blank');
     toggleExportDropdown();
 }
 
 function handleExportExcelURLFromBackendKitchenSummary() {
-    let url = 'https://gisurat.com/govardhan/sainath_aloopuri/api/reports/kitchen_summary.php?user_id=1&date=2026-01-30&export=excel';
+
+    let currentUser = getCUrrenetUser();
+    let user_id = currentUser ? currentUser.id : ""; // Default to 1 if no user found
+
+    let url = `https://gisurat.com/govardhan/sainath_aloopuri/api/kitchen_summary_reports.php?user_id=${user_id}&date=${currentDate}&export=excel`;
     window.open(url, '_blank');
     toggleExportDropdown();
 }

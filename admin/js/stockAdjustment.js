@@ -288,6 +288,11 @@ function submitStockAdjuForm(event) {
             },
             body: JSON.stringify(formData)
         })
+        .then(response => {
+            console.log("📥 Response status:", response.status);
+            console.log("📥 Response status text:", response.statusText);
+            return response.json().then(data => ({ status: response.status, data: data }));
+        })
         .then(result => {
             console.log("✅ API response received:");
             console.log(JSON.stringify(result.data, null, 2));
@@ -295,7 +300,6 @@ function submitStockAdjuForm(event) {
             if (result.status === 200 || result.data.status === "ok" || result.data.success) {
                 showNotification("Stock adjustment recorded successfully!", "success");
                 resetstaffForm();
-                nevigateToPage('stockmovement');
                 
                 // Reload the page to show updated stock
                 const mainContent = document.querySelector('.main-content');

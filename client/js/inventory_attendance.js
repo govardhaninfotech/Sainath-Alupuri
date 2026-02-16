@@ -749,7 +749,6 @@ async function editAttendance(recordId) {
             console.error('[LOG] ❌ Edit modal not found');
             return;
         }
-
         // CRITICAL FIX: Store the attendance record ID, not staff_id
         document.getElementById("editRecordId").value = record.id;
         document.getElementById("editStaffId").value = record.staff_id;

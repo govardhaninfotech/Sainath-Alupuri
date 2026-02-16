@@ -54,7 +54,8 @@ export function loginUers(mobile, password, remember) {
             if (data.role === "admin") {
                 showMessage('loginMessage', 'Admin login successful!', 'success');
                 // Redirect to dashboard home page
-                window.location.href = './admin/dashboard.html?page=home';
+                // window.location.href = './admin/dashboard.html?page=home';
+                window.location.href = './admin/dashboard.html?page=kitchenSummary';
                 return;
             }
 

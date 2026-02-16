@@ -153,6 +153,7 @@
 .btn-edit,
 .btn-reset {
     flex: 1;
+    max-width: 100px;
     padding: 12px 20px;
     border: none;
     border-radius: 8px;
@@ -438,7 +439,7 @@
 
     .modal-content {
         width: 95%;
-        
+
     }
 
     .form-row {

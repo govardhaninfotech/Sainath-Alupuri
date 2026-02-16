@@ -63,16 +63,11 @@ function setSummryData(staffId) {
     console.log("🔥 setSummryData called with staffId:", staffId);
     console.log("📦 staffAttendanceData:", staffAttendanceData);
 
-
     if (!staffId || !staffAttendanceData.length) {
+        console.warn("⚠️ No staffId or no attendance data available");
         resetSummaryCards();
         return;
     }
-
-    const capEl = document.getElementById("capDaysWear");
-    const tshirtEl = document.getElementById("tshirtDaysWear");
-    const presentEl = document.getElementById("presentDayCount");
-    const halfdayEl = document.getElementById("halfDayCount");
 
     // Find selected staff record from attendance API data
     const staff = staffAttendanceData.find(
@@ -80,19 +75,53 @@ function setSummryData(staffId) {
     );
 
     if (!staff) {
-        console.warn("No attendance data found for staff:", staffId);
+        console.warn("❌ No attendance data found for staff:", staffId);
         resetSummaryCards();
         return;
     }
 
-    console.log("Summary Data:", staff);
-    console.log(staff.caps, staff.t_shirt, staff.present_days, staff.half_days);
+    console.log("✓ Summary Data found:", staff);
+    console.log("  - caps:", staff.caps);
+    console.log("  - t_shirt:", staff.t_shirt);
+    console.log("  - present_days:", staff.present_days);
+    console.log("  - half_days:", staff.half_days);
 
-    // Set values safely
-    capEl.textContent = staff.caps || 0;
-    tshirtEl.textContent = staff.t_shirt || 0;
-    presentEl.textContent = staff.present_days || 0;
-    halfdayEl.textContent = staff.half_days || 0;
+    // Get DOM elements with error checking
+    const capEl = document.getElementById("capDaysWear");
+    const tshirtEl = document.getElementById("tshirtDaysWear");
+    const presentEl = document.getElementById("presentDayCount");
+    const halfdayEl = document.getElementById("halfDayCount");
+
+    // Validate elements exist before setting values
+    if (!capEl) {
+        console.error("❌ Element 'capDaysWear' not found in DOM");
+    } else {
+        capEl.textContent = staff.caps || 0;
+        console.log("✓ capDaysWear updated to:", staff.caps || 0);
+    }
+
+    if (!tshirtEl) {
+        console.error("❌ Element 'tshirtDaysWear' not found in DOM");
+    } else {
+        tshirtEl.textContent = staff.t_shirt || 0;
+        console.log("✓ tshirtDaysWear updated to:", staff.t_shirt || 0);
+    }
+
+    if (!presentEl) {
+        console.error("❌ Element 'presentDayCount' not found in DOM");
+    } else {
+        presentEl.textContent = staff.present_days || 0;
+        console.log("✓ presentDayCount updated to:", staff.present_days || 0);
+    }
+
+    if (!halfdayEl) {
+        console.error("❌ Element 'halfDayCount' not found in DOM");
+    } else {
+        halfdayEl.textContent = staff.half_days || 0;
+        console.log("✓ halfDayCount updated to:", staff.half_days || 0);
+    }
+
+    console.log("✓ Summary cards updated successfully");
 }
 
 
@@ -1905,9 +1934,17 @@ function updateSummaryCards() {
  * Reset summary cards to default
  */
 function resetSummaryCards() {
-    document.getElementById("capDaysWear").textContent = "0";
-    document.getElementById("tshirtDaysWear").textContent = "0";
-    document.getElementById("presentDayCount").textContent = "0";
+    const capEl = document.getElementById("capDaysWear");
+    const tshirtEl = document.getElementById("tshirtDaysWear");
+    const presentEl = document.getElementById("presentDayCount");
+    const halfdayEl = document.getElementById("halfDayCount");
+
+    if (capEl) capEl.textContent = "0";
+    if (tshirtEl) tshirtEl.textContent = "0";
+    if (presentEl) presentEl.textContent = "0";
+    if (halfdayEl) halfdayEl.textContent = "0";
+
+    console.log("✓ Summary cards reset to defaults");
 }
 
 // Excel : https://gisurat.com/govardhan/sainath_aloopuri/api/reports/staff_attendance_report.php?user_id=1&month=1&year=2026&page=1&per_page=10&category_id=1&staff_id=4&export = excel

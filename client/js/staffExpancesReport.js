@@ -41,6 +41,11 @@ function reset() {
     showingTo = 0;
 
 }
+let currentUser =
+    JSON.parse(sessionStorage.getItem("rememberedUser")) ||
+    JSON.parse(localStorage.getItem("rememberedUser"));
+
+let user_id = currentUser ? currentUser.id : null;
 // ============================================
 // LOAD ITEMS DATA FROM API (SERVER PAGINATION)
 // ============================================
@@ -382,12 +387,12 @@ function changeItemPerPage(value) {
 // Excel = https://gisurat.com/govardhan/sainath_aloopuri/api/reports/staff_attendance_report.php?user_id=1&month=1&year=2026&page=1&per_page=10&category_id=1&export=excel
 
 function handleExportPDFURLFromBackendStaffAttendance() {
-    let url = 'https://gisurat.com/govardhan/sainath_aloopuri/api/reports/staff_attendance_report.php?user_id=1&month=1&year=2026&page=1&per_page=10&export=pdf';
+    let url = `https://gisurat.com/govardhan/sainath_aloopuri/api/reports/staff_attendance_report.php?user_id=${user_id}&month=1&year=2026&page=1&per_page=10&export=pdf`;
     window.open(url, '_blank');
     toggleExportDropdown();
 }
 function handleExportExcelURLFromBackendStaffAttendance() {
-    let url = 'https://gisurat.com/govardhan/sainath_aloopuri/api/reports/staff_attendance_report.php?user_id=1&month=1&year=2026&page=1&per_page=10&export=excel';
+    let url = `https://gisurat.com/govardhan/sainath_aloopuri/api/reports/staff_attendance_report.php?user_id=${user_id}&month=1&year=2026&page=1&per_page=10&export=excel`;
     window.open(url, '_blank');
     toggleExportDropdown();
 }       

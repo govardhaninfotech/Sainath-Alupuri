@@ -2,7 +2,7 @@
    STAFF ATTENDANCE - ENHANCED RESPONSIVE DESIGN
    ============================================ */
 
-* {
+   * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
@@ -360,7 +360,6 @@ body {
         transform: translateY(40px);
         opacity: 0;
     }
-
     to {
         transform: translateY(0);
         opacity: 1;
@@ -430,7 +429,7 @@ body {
    ============================================ */
 
 .add-attendance-form {
-    max-width: 650px;
+    max-width:650px;
 }
 
 .date-display {
@@ -667,7 +666,7 @@ body {
     cursor: pointer;
     font-size: 13px;
     transition: all 0.3s ease;
-    max-width: 150px;
+    /* min-width: 85px; */
     min-height: 38px;
 }
 
@@ -854,7 +853,6 @@ body {
             transform: scale(0.95);
             opacity: 0;
         }
-
         to {
             transform: scale(1);
             opacity: 1;
@@ -899,7 +897,7 @@ body {
     .edit-btn-submit,
     .edit-btn-cancel {
         flex: 1;
-        min-width: 50%;
+        /* min-width: auto; */
         padding: 10px 12px;
     }
 
@@ -967,7 +965,6 @@ body {
    ============================================ */
 
 @media (max-height: 600px) and (orientation: landscape) {
-
     .modal-box-staff,
     .edit-attendance-form-container {
         max-height: 95vh;

@@ -49,5 +49,3 @@ export let addPaymentURLphp = `${baseURL}/billing/add_payment.php`;
 export let notificationsURLphp = `${baseURL}/notifications/notifications.php`;
 
 export let companyProfileURLphp = `${baseURL}/profile/company.php`;
-
-// 

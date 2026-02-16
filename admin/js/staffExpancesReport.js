@@ -11,6 +11,7 @@ import { printReport, exportToPDF, exportToExcel, toggleExportDropdown } from ".
 let autoRefreshInterval = null;
 const AUTO_REFRESH_INTERVAL = 30000; // 30 seconds
 import { initAutoRefresh } from "./autoRefresh.js";
+import { getCUrrenetUser } from "./utility.js";
 
 let itemsData = [];
 
@@ -98,11 +99,11 @@ export function initStaffExpMonthDropdown() {
         opt.textContent = label;
         monthSelect.appendChild(opt);
     }
-    
+
     // Initialize auto-refresh
     const refreshFunction = () => loadStaffAttendanceData().then(() => generateItemsTableHTML());
     initAutoRefresh('staff-expense', refreshFunction, 30);
-    
+
     return loadStaffAttendanceData().then(() => generateItemsTableHTML());
 }
 
@@ -249,27 +250,44 @@ export function initStaffExpMothlyReportCard() {
 // ============================================
 // EXPORT FUNCTIONS
 // ============================================
+
 async function handlePrintStaffExpense() {
-    const printStaffData = await prepareStaffExpensePrintData();
 
-    if (!printStaffData || printStaffData.rows.length === 0) {
-        showNotification("No data available to print", "warning");
-        return;
-    }
+    let userId = getCUrrenetUser() ? getCUrrenetUser().id : null;
+    const { month, year } = getCurrentSelectedMonthYear();
 
-    await printReport({
-        headers: printStaffData.headers,
-        rows: printStaffData.rows,
-        reportTitle: 'Staff Expense Report',
-        companyName: 'Sainath Alupuri',
-        companySubtitle: 'Staff Management System',
-        logo: 'SA',
-        additionalInfo: `
+
+    console.log(month, year);
+
+    // Android WebView
+    if (window.Android && Android.printPdf) {
+        let url = `https://gisurat.com/govardhan/sainath_aloopuri/api/reports/staff_expense_report.php?user_id=${userId}&month=${month}&year=${year}&page=1&per_page=10&export=pdf`;
+        Android.printPdf(url);
+    } else {
+        const printStaffData = await prepareStaffExpensePrintData();
+        // console.log(url);
+
+        if (!printStaffData || printStaffData.rows.length === 0) {
+            showNotification("No data available to print", "warning");
+            return;
+        }
+
+        await printReport({
+            headers: printStaffData.headers,
+            rows: printStaffData.rows,
+            reportTitle: 'Staff Expense Report',
+            companyName: 'Sainath Alupuri',
+            companySubtitle: 'Staff Management System',
+            logo: 'SA',
+            additionalInfo: `
             <p><strong>Report Period:</strong> ${currentDate || new Date().toLocaleDateString('en-IN')}</p>
             <p><strong>Total Records:</strong> ${itemsData.length}</p>
         `
-    });
+        });
+    }
 }
+
+
 
 async function handleStaffExportPDF() {
     const printData = prepareStaffExpensePrintData();
@@ -337,7 +355,7 @@ function prepareStaffExpensePrintData() {
         (currentItemsPage - 1) * itemsPerPage + index + 1,
         item.staff_name || item.name || '',
         item.expense_amount || item.amount || 0
-       
+
     ]);
 
     return {
@@ -381,16 +399,42 @@ function changeItemPerPage(value) {
 
 // Excel = https://gisurat.com/govardhan/sainath_aloopuri/api/reports/staff_attendance_report.php?user_id=1&month=1&year=2026&page=1&per_page=10&category_id=1&export=excel
 
+function getCurrentSelectedMonthYear() {
+    const monthSelect = document.getElementById('invMonthSelect');
+    let selectedMonth = monthSelect ? monthSelect.value : '';
+
+    let year, month;
+
+    if (selectedMonth && selectedMonth.includes('-')) {
+        [year, month] = selectedMonth.split('-');
+    } else {
+        const today = new Date();
+        year = today.getFullYear();
+        month = today.getMonth() + 1;
+    }
+
+    console.log('Selected Month:', month, 'Selected Year:', year);
+
+    return { month, year };
+}
+
+
 function handleExportPDFURLFromBackendStaffAttendance() {
-    let url = 'https://gisurat.com/govardhan/sainath_aloopuri/api/reports/staff_attendance_report.php?user_id=1&month=1&year=2026&page=1&per_page=10&export=pdf';
+    const { month, year } = getCurrentSelectedMonthYear();
+    let currentUser = getCUrrenetUser();
+    let user_id = currentUser ? currentUser.id : null;
+    let url = `https://gisurat.com/govardhan/sainath_aloopuri/api/reports/staff_expense_report.php?user_id=${user_id}&month=${month}&year=${year}&page=1&per_page=10&export=pdf`;
     window.open(url, '_blank');
     toggleExportDropdown();
 }
 function handleExportExcelURLFromBackendStaffAttendance() {
-    let url = 'https://gisurat.com/govardhan/sainath_aloopuri/api/reports/staff_attendance_report.php?user_id=1&month=1&year=2026&page=1&per_page=10&export=excel';
+    const { month, year } = getCurrentSelectedMonthYear();
+    let currentUser = getCUrrenetUser();
+    let user_id = currentUser ? currentUser.id : null;
+    let url = `https://gisurat.com/govardhan/sainath_aloopuri/api/reports/staff_expense_report.php?user_id=${user_id}&month=${month}&year=${year}&page=1&per_page=10&export=excel`;
     window.open(url, '_blank');
     toggleExportDropdown();
-}       
+}
 
 window.handleExportPDFURLFromBackendStaffAttendance = handleExportPDFURLFromBackendStaffAttendance;
 window.handleExportExcelURLFromBackendStaffAttendance = handleExportExcelURLFromBackendStaffAttendance;
@@ -415,14 +459,14 @@ window.handleStaffExportExcel = handleStaffExportExcel;
 // ============================================
 function startAutoRefresh() {
     if (autoRefreshInterval) clearInterval(autoRefreshInterval);
-    
+
     autoRefreshInterval = setInterval(() => {
         console.log('🔄 Auto-refreshing Staff Expense Report data...');
         loadStaffAttendanceData().catch(err => {
             console.error('❌ Auto-refresh error:', err);
         });
     }, AUTO_REFRESH_INTERVAL);
-    
+
     console.log('✅ Auto-refresh started (30s interval)');
 }
 

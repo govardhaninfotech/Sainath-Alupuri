@@ -4,8 +4,9 @@
 
 import { clientMonthlySummaryURLphp, ordersURLphp, orderItemsURLphp } from "../apis/api.js";
 import { getItemsData } from "../apis/master_api.js";
-import { showNotification } from "./notification.js";
+import { showNotification, showConfirm } from "./notification.js";
 import { printReport, exportToPDF, exportToExcel, toggleExportDropdown } from "./print/print.js";
+import { getCUrrenetUser } from "./utility.js";
 
 // Items Data Storage
 let itemsData = [];
@@ -156,12 +157,13 @@ function generateItemsTableHTML() {
                 <td>${item.total_orders}</td>
                 <td>${item.total_order_amount}</td>
                 <td>${item.total_paid_amount}</td>
-                <td>${item.outstanding_amount}</td>
+                <td><a href="javascript:void(0)" class="order-link" onclick="handleOutstandingClick(${index})">₹${parseFloat(item.outstanding_amount).toFixed(2)}</a></td>
             </tr>
         `;
     }
     document.getElementById("itemsTableBody").innerHTML = tableRows || `<tr><td colspan="6" style="text-align:center;">No records found</td></tr>`;
 }
+
 // ============================================
 // LOAD CLIENT ORDERS FROM API
 // ============================================
@@ -396,7 +398,7 @@ function generateClientOrdersPageHTML() {
                     </button>
                     <h2 style="margin:0;">${selectedClientInfo?.client_name || 'Client'} - Orders</h2>
                 </div>
-                <div class="header-right">
+                <!-- <div class="header-right">
                     <button onclick="handlePrintClientMonthly()" class="btn-print" title="Print Report">
                         <span style="font-size:18px;">🖨️</span> Print
                     </button>
@@ -413,7 +415,7 @@ function generateClientOrdersPageHTML() {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div> -->
             </div>
 
            <!--  <div class="client-info-summary" style="background: #f8fafc; padding: 16px; border-radius: 8px; margin-bottom: 16px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
@@ -628,26 +630,80 @@ function changeItemPerPage(value) {
 // EXPORT FUNCTIONS
 // ============================================
 async function handlePrintClientMonthly() {
-    const printData = await prepareClientMonthlyPrintData();
+    let userId = getCUrrenetUser() ? getCUrrenetUser().id : null;
 
-    console.log(printData);
+    let currentUser = getCUrrenetUser();
+    user_id = currentUser.id;
 
-    if (!printData.headers || !printData.rows || printData.rows.length === 0) {
-        showNotification("No data available to print", "warning");
-        return;
-    }
+    const { month, year } = getCurrentSelectedMonthYear();
 
-    await printReport({
-        headers: printData.headers,
-        rows: printData.rows,
-        reportTitle: 'Client Monthly Report',
-        companyName: 'Sainath Alupuri',
-        companySubtitle: 'Client Management System',
-        logo: 'SA',
-        additionalInfo: `
+    console.log(month, year);
+
+
+    if (window.Android && Android.printPdf) {
+        let url = `https://gisurat.com/govardhan/sainath_aloopuri/api/reports/client_monthly_summary.php?user_id=${userId}&month=${month}&year=${year}&page=1&per_page=10&export=pdf`;
+        Android.printPdf(url);
+    } else {
+        const printData = await prepareClientMonthlyPrintData();
+
+        if (!printData || printData.rows.length === 0) {
+            showNotification("No data available to print", "warning");
+            return;
+        }
+
+        await printReport({
+            headers: printData.headers,
+            rows: printData.rows,
+            reportTitle: 'Client Monthly Report',
+            companyName: 'Sainath Alupuri',
+            companySubtitle: 'Client Management System',
+            logo: 'SA',
+            additionalInfo: `
             <p><strong>Report Period:</strong> ${currentDate || new Date().toLocaleDateString('en-IN')}</p>
             <p><strong>Total Clients:</strong> ${itemsData.length}</p>
         `
+        });
+    }
+}
+
+// ============================================
+// HANDLE OUTSTANDING AMOUNT CLICK
+// ============================================
+function handleOutstandingClick(clientIndex) {
+    if (clientIndex < 0 || clientIndex >= itemsData.length) {
+        showNotification("Client not found!", "error");
+        return;
+    }
+
+    const clientInfo = itemsData[clientIndex];
+    const outstandingAmount = parseFloat(clientInfo.outstanding_amount || 0);
+
+    if (outstandingAmount <= 0) {
+        showNotification("No outstanding amount for this client!", "info");
+        return;
+    }
+
+    // Show confirmation dialog
+    const confirmMessage = `Do you want to pay ₹${outstandingAmount.toFixed(2)} for ${clientInfo.client_name}?`;
+
+    return showConfirm(confirmMessage, "info").then(confirmed => {
+        if (!confirmed) return;
+
+        // Prepare payment data
+        const paymentClientData = {
+            client_id: clientInfo.id || clientInfo.client_id,
+            client_name: clientInfo.client_name,
+            amount: outstandingAmount,
+            due_amount: outstandingAmount,
+            order_id: null,
+            payment_mode: "cash"
+        };
+
+        // Store in session storage
+        sessionStorage.setItem("paymentClientData", JSON.stringify(paymentClientData));
+
+        // Navigate to add payment page
+        navigateTo("addPayment");
     });
 }
 
@@ -727,53 +783,108 @@ function prepareClientMonthlyPrintData() {
     };
 }
 
+function getCurrentSelectedMonthYear() {
+    const monthSelect = document.getElementById('invMonthSelect');
+    let selectedMonth = monthSelect ? monthSelect.value : '';
+
+    let year, month;
+
+    if (selectedMonth && selectedMonth.includes('-')) {
+        [year, month] = selectedMonth.split('-');
+    } else {
+        const today = new Date();
+        year = today.getFullYear();
+        month = today.getMonth() + 1;
+    }
+
+    console.log('Selected Month:', month, 'Selected Year:', year);
+
+    return { month, year };
+}
+
 
 async function handleExportPDFURLFromBackend() {
 
-    if (user_id) {
-        let currentUser = null;
-        try {
-            currentUser =
-                JSON.parse(sessionStorage.getItem("rememberedUser")) ||
-                JSON.parse(localStorage.getItem("rememberedUser"));
-        } catch (e) {
-            currentUser = null;
-        }
-        if (!currentUser || !currentUser.id) {
-            showNotification("User not logged in!", "error");
-            return;
-        }
-        user_id = currentUser.id;
-    }
+    let currentUser = getCUrrenetUser();
+    user_id = currentUser.id;
 
+    const { month, year } = getCurrentSelectedMonthYear();
+
+    console.log(month, year);
 
     let url = `https://gisurat.com/govardhan/sainath_aloopuri/api/reports/client_monthly_summary.php?user_id=${user_id}&month=${month}&year=${year}&export=pdf`;
+    console.log(url);
+
     window.open(url, '_blank');
     toggleExportDropdown();
 }
+
+
 async function handleExportExcelURLFromBackend() {
-    if (user_id) {
-        let currentUser = null;
-        try {
-            currentUser =
-                JSON.parse(sessionStorage.getItem("rememberedUser")) ||
-                JSON.parse(localStorage.getItem("rememberedUser"));
-        } catch (e) {
-            currentUser = null;
-        }
-        if (!currentUser || !currentUser.id) {
-            showNotification("User not logged in!", "error");
-            return;
-        }
-        user_id = currentUser.id;
-    }
+    let currentUser = getCUrrenetUser();
+    user_id = currentUser.id;
+    const { month, year } = getCurrentSelectedMonthYear();
+    console.log(month, year);
     let url = `https://gisurat.com/govardhan/sainath_aloopuri/api/reports/client_monthly_summary.php?user_id=${user_id}&month=${month}&year=${year}&export=excel`;
     window.open(url, '_blank');
     toggleExportDropdown();
 }
 
+// with category id
+function handleExportPdfURLFromBackendClientMonthlyReportWithClientId() {
+    // const { month: selectedMonth, year: selectedYear } = getCurrentSelectedMonthYear();
 
 
+    let selectedMonth = sessionStorage.getItem('selectedMonthYear') || '';
+
+    let year, month;
+
+    if (selectedMonth && selectedMonth.includes('-')) {
+        [year, month] = selectedMonth.split('-');
+    } else {
+        const today = new Date();
+        year = today.getFullYear();
+        month = today.getMonth() + 1;
+    }
+
+    month = String(month).padStart(2, '0');
+
+    console.log('Selected Month:', month, 'Selected Year:', year);
+
+
+    let url = `https://gisurat.com/govardhan/sainath_aloopuri/api/reports/general_expense_report.php?user_id=${user_id}&month=${month}&year=${year}&page=1&per_page=10&category_id=${selectedCategoryId}&export=pdf`;
+    console.log(url);
+    window.open(url, '_blank');
+    toggleExportDropdown();
+}
+function handleExportExcelURLFromBackendClientMonthlyReportWithClientId() {
+    // const { month: selectedMonth, year: selectedYear } = getCurrentSelectedMonthYear();
+
+    let selectedMonth = sessionStorage.getItem('selectedMonthYear') || '';
+
+    let year, month;
+
+    if (selectedMonth && selectedMonth.includes('-')) {
+        [year, month] = selectedMonth.split('-');
+    } else {
+        const today = new Date();
+        year = today.getFullYear();
+        month = today.getMonth() + 1;
+    }
+
+    month = String(month).padStart(2, '0');
+
+    console.log('Selected Month:', month, 'Selected Year:', year);
+
+    let url = `https://gisurat.com/govardhan/sainath_aloopuri/api/reports/general_expense_report.php?user_id=${user_id}&month=${month}&year=${year}&page=1&per_page=10&category_id=${selectedCategoryId}&export=excel`;
+
+    console.log(url);
+    window.open(url, '_blank');
+    toggleExportDropdown();
+}
+
+window.handleExportPdfURLFromBackendClientMonthlyReportWithClientId = handleExportPdfURLFromBackendClientMonthlyReportWithClientId;
+window.handleExportExcelURLFromBackendClientMonthlyReportWithClientId = handleExportExcelURLFromBackendClientMonthlyReportWithClientId;
 // ============================================
 // MAKE FUNCTIONS GLOBALLY ACCESSIBLE (ITEMS-ONLY NAMES)
 // ============================================
@@ -782,6 +893,7 @@ window.handleExportExcelURLFromBackend = handleExportExcelURLFromBackend;
 window.changeItemPage = changeItemPage;
 window.changeItemPerPage = changeItemPerPage;
 window.showNotification = showNotification;
+window.showConfirm = showConfirm;
 window.generateItemsTableHTML = generateItemsTableHTML;
 window.initClientMonthDropdown = initClientMonthDropdown;
 window.handleClientMonthChange = handleClientMonthChange;
@@ -794,4 +906,5 @@ window.handleExportExcel = handleExportExcel;
 window.closeViewOrderModal = closeViewOrderModal;
 window.changeClientOrderPage = changeClientOrderPage;
 window.backToClientMonthlyReport = backToClientMonthlyReport;
+window.handleOutstandingClick = handleOutstandingClick;
 window.initClientMothlyReportCard = initClientMothlyReportCard;

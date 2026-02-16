@@ -6,6 +6,7 @@ import { generalExpenseReportURLphp } from "../apis/api.js";
 import { getItemsData } from "../apis/master_api.js";
 import { showNotification } from "./notification.js";
 import { printReport, exportToPDF, exportToExcel, toggleExportDropdown } from "./print/print.js";
+import { getCUrrenetUser } from "./utility.js";
 // import { initAutoRefresh, createRefreshButton, updateRefreshButtonUI } from "./autoRefresh.js";
 
 // Items Data Storage
@@ -32,6 +33,10 @@ let categoryDetailTotalPages = 1;
 let selectedCategoryName = '';
 let selectedCategoryId = null;
 
+let currentUser =
+    JSON.parse(sessionStorage.getItem("rememberedUser")) ||
+    JSON.parse(localStorage.getItem("rememberedUser"));
+let user_id = currentUser ? currentUser.id : null;
 // ============================================
 // LOAD ITEMS DATA FROM API (SERVER PAGINATION)
 // ============================================
@@ -123,7 +128,7 @@ function generateItemsTableHTML() {
         tableRows += `
             <tr>
                 <td>${serialNo}</td>
-                <td><a href="javascript:void(0)" class="order-link" onclick="viewCategoryDetails('${item.category_id}')" style="cursor: pointer; color: #007bff; text-decoration: underline;">${item.category_name}</a></td>
+                <td><a href="javascript:void(0)" class="order-link" onclick="viewGeneralExpanseCategoryDetails('${item.category_id}')" style="cursor: pointer; color: #007bff; text-decoration: underline;">${item.category_name}</a></td>
                 <td>${item.total_amount || item.amount || 0}</td>
             </tr>
         `;
@@ -245,7 +250,7 @@ function capitalizeEachWord(text) {
 }
 
 
-function generateCategoryDetailTableHTML() {
+function generateGeneralExpenseCategoryDetailTableHTML() {
     let tableRows = "";
 
     for (let index = 0; index < categoryDetailData.length; index++) {
@@ -277,7 +282,7 @@ function generateCategoryDetailTableHTML() {
                     </button>
                     <h2 style="margin: 0; text-transform: capitalize;">${capitalizeEachWord(selectedCategoryName)} - Expense Details</h2>
                 </div>
-                <div style="display: flex; gap: 10px; align-items: center;">
+                <!-- <div style="display: flex; gap: 10px; align-items: center;">
                     <button onclick="handlePrintCategoryDetail()" class="btn-print" title="Print Report">
                         <span style="font-size: 18px;">🖨️</span> Print
                     </button>
@@ -294,7 +299,7 @@ function generateCategoryDetailTableHTML() {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div> -->
              </div>
 
             <div class="table-container" style="overflow-x: auto; padding: 20px;">
@@ -330,11 +335,15 @@ function generateCategoryDetailTableHTML() {
     `;
 }
 
-function viewCategoryDetails(categoryId) {
+function viewGeneralExpanseCategoryDetails(categoryId) {
+
+    let mothYearText = document.getElementById('invMonthSelect');
+    sessionStorage.setItem('selectedMonthYear', mothYearText ? mothYearText.value : '');
+
     return loadCategoryDetails(categoryId, 1).then(() => {
         const mainContent = document.getElementById('mainContent');
         if (mainContent) {
-            mainContent.innerHTML = generateCategoryDetailTableHTML();
+            mainContent.innerHTML = generateGeneralExpenseCategoryDetailTableHTML();
         }
     }).catch(err => {
         console.error('Error loading category details:', err);
@@ -343,6 +352,9 @@ function viewCategoryDetails(categoryId) {
 }
 
 function backToMainReport() {
+
+    sessionStorage.removeItem('selectedMonthYear');
+
     const mainContent = document.getElementById('mainContent');
     if (mainContent) {
         mainContent.innerHTML = initGeneralMothlyReportCard();
@@ -365,7 +377,7 @@ function changeCategoryDetailPage(direction) {
     return loadCategoryDetails(selectedCategoryId, newPage).then(() => {
         const mainContent = document.getElementById('mainContent');
         if (mainContent) {
-            mainContent.innerHTML = generateCategoryDetailTableHTML();
+            mainContent.innerHTML = generateGeneralExpenseCategoryDetailTableHTML();
         }
     });
 }
@@ -429,6 +441,7 @@ function prepareCategoryDetailPrintData() {
 }
 
 async function handlePrintCategoryDetail() {
+
     const printData = prepareCategoryDetailPrintData();
 
     if (!printData || !printData.rows || printData.rows.length === 0) {
@@ -500,25 +513,36 @@ async function handleCategoryExportExcel() {
 // EXPORT FUNCTIONS
 // ============================================
 async function handlePrintGeneralExpense() {
-    const printData = await prepareGeneralExpensePrintData();
 
-    if (!printData || printData.rows.length === 0) {
-        showNotification("No data available to print", "warning");
-        return;
+    let userId = getCUrrenetUser() ? getCUrrenetUser().id : null;
+
+    const { month, year } = getCurrentSelectedMonthYear();
+    console.log(month, year);
+    // Android WebView
+    if (window.Android && Android.printPdf) {
+        let url = `https://gisurat.com/govardhan/sainath_aloopuri/api/reports/general_expense_report.php?user_id=${userId}&month=${month}&year=${year}&page=1&per_page=10&export=pdf`;
+        Android.printPdf(url);
+    } else {
+        const printData = await prepareGeneralExpensePrintData();
+
+        if (!printData || printData.rows.length === 0) {
+            showNotification("No data available to print", "warning");
+            return;
+        }
+
+        await printReport({
+            headers: printData.headers,
+            rows: printData.rows,
+            reportTitle: 'General Expense Report',
+            companyName: 'Sainath Alupuri',
+            companySubtitle: 'Expense Management System',
+            logo: 'SA',
+            additionalInfo: `
+                <p><strong>Report Period:</strong> ${currentDate || new Date().toLocaleDateString('en-IN')}</p>
+                <p><strong>Total Records:</strong> ${itemsData.length}</p>
+            `
+        });
     }
-
-    await printReport({
-        headers: printData.headers,
-        rows: printData.rows,
-        reportTitle: 'General Expense Report',
-        companyName: 'Sainath Alupuri',
-        companySubtitle: 'Expense Management System',
-        logo: 'SA',
-        additionalInfo: `
-            <p><strong>Report Period:</strong> ${currentDate || new Date().toLocaleDateString('en-IN')}</p>
-            <p><strong>Total Records:</strong> ${itemsData.length}</p>
-        `
-    });
 }
 
 async function handleExportPDF() {
@@ -613,27 +637,93 @@ async function prepareGeneralExpensePrintData() {
 
 // =========================================================================================================
 
+function getCurrentSelectedMonthYear() {
+    const monthSelect = document.getElementById('invMonthSelect');
+    let selectedMonth = monthSelect ? monthSelect.value : '';
+
+    let year, month;
+
+    if (selectedMonth && selectedMonth.includes('-')) {
+        [year, month] = selectedMonth.split('-');
+    } else {
+        const today = new Date();
+        year = today.getFullYear();
+        month = today.getMonth() + 1;
+    }
+
+    console.log('Selected Month:', month, 'Selected Year:', year);
+
+    return { month, year };
+}
+
 function handleExportPDFURLFromBackendGeneralExpense() {
-    let url = 'https://gisurat.com/govardhan/sainath_aloopuri/api/reports/general_expense_report.php?user_id=1&month=1&year=2026&page=1&per_page=10&export=pdf';
+    const { month: selectedMonth, year: selectedYear } = getCurrentSelectedMonthYear();
+    let url = `https://gisurat.com/govardhan/sainath_aloopuri/api/reports/general_expense_report.php?user_id=${user_id}&month=${selectedMonth}&year=${selectedYear}&page=1&per_page=10&export=pdf`;
+    console.log(url);
+
     window.open(url, '_blank');
     toggleExportDropdown();
 }
 function handleExportExcelURLFromBackendGeneralExpense() {
-    let url = 'https://gisurat.com/govardhan/sainath_aloopuri/api/reports/general_expense_report.php?user_id=1&month=1&year=2026&page=1&per_page=10&export=excel';
+    const { month: selectedMonth, year: selectedYear } = getCurrentSelectedMonthYear();
+    let url = `https://gisurat.com/govardhan/sainath_aloopuri/api/reports/general_expense_report.php?user_id=${user_id}&month=${selectedMonth}&year=${selectedYear}&page=1&per_page=10&export=excel`;
+    console.log(url);
     window.open(url, '_blank');
     toggleExportDropdown();
 }
 // with category id
 function handleExportPDFURLFromBackendGeneralExpenseWithCategoryId() {
-    let url = `https://gisurat.com/govardhan/sainath_aloopuri/api/reports/general_expense_report.php?user_id=1&month=1&year=2026&page=1&per_page=10&category_id=${selectedCategoryId}&export=pdf`;
+    // const { month: selectedMonth, year: selectedYear } = getCurrentSelectedMonthYear();
+
+
+    let selectedMonth = sessionStorage.getItem('selectedMonthYear') || '';
+
+    let year, month;
+
+    if (selectedMonth && selectedMonth.includes('-')) {
+        [year, month] = selectedMonth.split('-');
+    } else {
+        const today = new Date();
+        year = today.getFullYear();
+        month = today.getMonth() + 1;
+    }
+
+    month = String(month).padStart(2, '0');
+
+    console.log('Selected Month:', month, 'Selected Year:', year);
+
+
+    let url = `https://gisurat.com/govardhan/sainath_aloopuri/api/reports/general_expense_report.php?user_id=${user_id}&month=${month}&year=${year}&page=1&per_page=10&category_id=${selectedCategoryId}&export=pdf`;
+    console.log(url);
     window.open(url, '_blank');
     toggleExportDropdown();
 }
 function handleExportExcelURLFromBackendGeneralExpenseWithCategoryId() {
-    let url = `https://gisurat.com/govardhan/sainath_aloopuri/api/reports/general_expense_report.php?user_id=1&month=1&year=2026&page=1&per_page=10&category_id=${selectedCategoryId}&export=excel`;
+    // const { month: selectedMonth, year: selectedYear } = getCurrentSelectedMonthYear();
+
+    let selectedMonth = sessionStorage.getItem('selectedMonthYear') || '';
+
+    let year, month;
+
+    if (selectedMonth && selectedMonth.includes('-')) {
+        [year, month] = selectedMonth.split('-');
+    } else {
+        const today = new Date();
+        year = today.getFullYear();
+        month = today.getMonth() + 1;
+    }
+
+    month = String(month).padStart(2, '0');
+
+    console.log('Selected Month:', month, 'Selected Year:', year);
+
+    let url = `https://gisurat.com/govardhan/sainath_aloopuri/api/reports/general_expense_report.php?user_id=${user_id}&month=${month}&year=${year}&page=1&per_page=10&category_id=${selectedCategoryId}&export=excel`;
+
+    console.log(url);
     window.open(url, '_blank');
     toggleExportDropdown();
 }
+
 
 window.handleExportPDFURLFromBackendGeneralExpense = handleExportPDFURLFromBackendGeneralExpense;
 window.handleExportExcelURLFromBackendGeneralExpense = handleExportExcelURLFromBackendGeneralExpense;
@@ -657,7 +747,7 @@ window.handleExportPDF = handleExportPDF;
 window.handleExportExcel = handleExportExcel;
 
 // Category Detail Functions
-window.viewCategoryDetails = viewCategoryDetails;
+window.viewGeneralExpanseCategoryDetails = viewGeneralExpanseCategoryDetails;
 window.backToMainReport = backToMainReport;
 window.changeCategoryDetailPage = changeCategoryDetailPage;
 window.toggleCategoryExportDropdown = toggleCategoryExportDropdown;

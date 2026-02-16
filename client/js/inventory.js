@@ -103,17 +103,17 @@ export function initInventoryStaffPage() {
         setDefaultDateToday();
         initMonthDropdown();
         attachEventListeners();
-
+        
         // Check if coming from expense report with selected month
         const selectedMonth = localStorage.getItem("selectedMonth");
         if (selectedMonth) {
             currentDate = selectedMonth;
             month = parseInt(selectedMonth.split("-")[1], 10);
             year = parseInt(selectedMonth.split("-")[0], 10);
-            console.log(`📅 Admin: Month loaded from storage: ${selectedMonth} (${month}/${year})`);
+            console.log(`📅 Month loaded from storage: ${selectedMonth} (${month}/${year})`);
             localStorage.removeItem("selectedMonth"); // Clear after reading
         }
-
+        
         randerStaffAttendanceData();
         // Load all required data
         Promise.all([
@@ -127,7 +127,7 @@ export function initInventoryStaffPage() {
 
             if (staffIdToSelect) {
                 if (staffIdFromStorage) {
-                    console.log(`✅ Admin: Staff loaded from expense report: ${staffNameFromStorage} (ID: ${staffIdToSelect})`);
+                    console.log(`✅ Staff loaded from expense report: ${staffNameFromStorage} (ID: ${staffIdToSelect})`);
                     localStorage.removeItem("selectedStaffId");
                     localStorage.removeItem("selectedStaffName");
                 }
@@ -1910,104 +1910,5 @@ function resetSummaryCards() {
     document.getElementById("presentDayCount").textContent = "0";
 }
 
-// Excel : https://gisurat.com/govardhan/sainath_aloopuri/api/reports/staff_attendance_report.php?user_id=1&month=1&year=2026&page=1&per_page=10&category_id=1&staff_id=4&export = excel
-
-// PDF : https://gisurat.com/govardhan/sainath_aloopuri/api/reports/staff_attendance_report.php?user_id=1&month=1&year=2026&page=1&per_page=10&category_id=1&staff_id=4&export = pdf
-
-function handleExportExcelURLFromBackendStaffAttendance() {
-    // VALIDATION 1: Check if staff is selected
-    if (!invSelectedStaff) {
-        console.warn("❌ Export failed: No staff selected");
-        showNotification("Please select a staff member first.", "error");
-        return;
-    }
-    
-    // VALIDATION 2: Check if staff has valid ID
-    if (!invSelectedStaff.id) {
-        console.warn("❌ Export failed: Selected staff has no ID");
-        showNotification("Invalid staff selection. Please select a valid staff member.", "error");
-        return;
-    }
-
-    const staffId = invSelectedStaff.id;
-    console.log("✓ Staff validation passed. Staff ID:", staffId);
-    
-    // VALIDATION 3: Check if month is selected
-    const monthSelect = document.getElementById("invMonthSelect");
-    const selectedMonth = monthSelect ? monthSelect.value : null;
-    
-    if (!selectedMonth) {
-        console.warn("❌ Export failed: No month selected");
-        showNotification("Please select a month first.", "error");
-        return;
-    }
-    
-    // Parse month and year from selectedMonth (format: YYYY-MM)
-    const [selectedYear, selectedMonthNum] = selectedMonth.split('-');
-    
-    if (!selectedYear || !selectedMonthNum) {
-        console.warn("❌ Export failed: Invalid month format");
-        showNotification("Invalid month selection.", "error");
-        return;
-    }
-    
-    console.log("✓ All validations passed. Downloading Excel...");
-    
-    let url = `https://gisurat.com/govardhan/sainath_aloopuri/api/reports/staff_attendance_report.php?user_id=${user_id}&month=${selectedMonthNum}&year=${selectedYear}&page=1&per_page=10&staff_id=${staffId}&export=excel`;
-    
-    console.log("✓ Excel Export URL:", url);
-    window.open(url, '_blank');
-    toggleExportDropdown();
-}
-
-function handleExportPDFURLFromBackendStaffAttendance() {
-    // VALIDATION 1: Check if staff is selected
-    if (!invSelectedStaff) {
-        console.warn("❌ Export failed: No staff selected");
-        showNotification("Please select a staff member first.", "error");
-        return;
-    }
-    
-    // VALIDATION 2: Check if staff has valid ID
-    if (!invSelectedStaff.id) {
-        console.warn("❌ Export failed: Selected staff has no ID");
-        showNotification("Invalid staff selection. Please select a valid staff member.", "error");
-        return;
-    }
-
-    const staffId = invSelectedStaff.id;
-    console.log("✓ Staff validation passed. Staff ID:", staffId);
-    
-    // VALIDATION 3: Check if month is selected
-    const monthSelect = document.getElementById("invMonthSelect");
-    const selectedMonth = monthSelect ? monthSelect.value : null;
-    
-    if (!selectedMonth) {
-        console.warn("❌ Export failed: No month selected");
-        showNotification("Please select a month first.", "error");
-        return;
-    }
-    
-    // Parse month and year from selectedMonth (format: YYYY-MM)
-    const [selectedYear, selectedMonthNum] = selectedMonth.split('-');
-    
-    if (!selectedYear || !selectedMonthNum) {
-        console.warn("❌ Export failed: Invalid month format");
-        showNotification("Invalid month selection.", "error");
-        return;
-    }
-    
-    console.log("✓ All validations passed. Downloading PDF...");
-    
-    let url = `https://gisurat.com/govardhan/sainath_aloopuri/api/reports/staff_attendance_report.php?user_id=${user_id}&month=${selectedMonthNum}&year=${selectedYear}&page=1&per_page=10&staff_id=${staffId}&export=pdf`;
-    
-    console.log("✓ PDF Export URL:", url);
-    window.open(url, '_blank');
-    toggleExportDropdown();
-}
-window.handleExportExcelURLFromBackendStaffAttendance = handleExportExcelURLFromBackendStaffAttendance;
-window.handleExportPDFURLFromBackendStaffAttendance = handleExportPDFURLFromBackendStaffAttendance; 
-
 // Update summary cards when staff changes
-
 window.updateSummaryCards = updateSummaryCards;

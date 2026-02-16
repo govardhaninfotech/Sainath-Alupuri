@@ -72,7 +72,8 @@
                         console.log("Remembered user found:", userData);
 
                         if (userData.role === 'admin') {
-                            window.location.href = "./admin/dashboard.html?page=home";
+                            // window.location.href = "./admin/dashboard.html?page=home";
+                            window.location.href = "./admin/dashboard.html?page=kitchenSummary";
                         } else {
                             window.location.href = "./client/dashboard.html?page=inventory_orders";
                         }

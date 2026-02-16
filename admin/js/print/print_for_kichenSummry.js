@@ -68,8 +68,6 @@ function loadPDFLibraries() {
     });
 }
 
-
-
 /**
  * Generate HTML for print/PDF - SINGLE DESIGN FOR BOTH
  */
@@ -79,13 +77,13 @@ function generatePrintHTML(config) {
         headers = [],
         rows = [],
         companyName = 'Sainath Alupuri',
-        companySubtitle = 'Management System',
+        companySubtitle = 'Month: 02 | Year: 2026',
         logo = 'SA',
         additionalInfo = '',
         generatedDate = new Date().toLocaleDateString('en-IN', { 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
+            day: '2-digit',
+            month: 'short', 
+            year: 'numeric'
         })
     } = config;
 
@@ -132,7 +130,7 @@ function generatePrintHTML(config) {
             @media print {
                 @page {
                     margin: 15mm;
-                    size: A4;
+                    size: A4 landscape;
                 }
                 body {
                     margin: 0;
@@ -218,22 +216,6 @@ function generatePrintHTML(config) {
                 font-size: 12px;
             }
             
-            /* ADDITIONAL INFO SECTION */
-            .additional-info {
-                background: #f3f4f6;
-                padding: 18px 20px;
-                border-radius: 4px;
-                margin-bottom: 25px;
-                border-left: 4px solid #667eea;
-            }
-            
-            .additional-info p {
-                margin: 6px 0;
-                font-size: 14px;
-                color: #1f2937;
-                font-weight: 700;
-            }
-            
             /* TABLE SECTION */
             .table-container {
                 width: 100%;
@@ -294,8 +276,7 @@ function generatePrintHTML(config) {
     <body>
         <div class="header">
             <div class="logo-section">
-                <img src="${logoPath}" alt="Logo" class="logo-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                <div class="logo" style="display: none;">${logo}</div>
+                <img src="${logoPath}" alt="Logo" class="logo-img" onerror="this.style.display='none';">
                 <div class="company-info">
                     <h1>${companyName}</h1>
                     <p>${companySubtitle}</p>
@@ -367,7 +348,7 @@ export async function printReport(config) {
 }
 
 /**
- * EXPORT TO PDF - DIRECT DOWNLOAD WITHOUT PRINT DIALOG
+ * EXPORT TO PDF - LANDSCAPE FORMAT
  */
 export async function exportToPDF(config) {
     const { reportTitle = 'Report' } = config;
@@ -411,8 +392,7 @@ export async function exportToPDF(config) {
         tempDiv.style.position = 'absolute';
         tempDiv.style.left = '-9999px';
         tempDiv.style.top = '0';
-        tempDiv.style.width = '210mm'; // A4 width
-        // tempDiv.style.minHeight = '297mm'; // A4 height
+        tempDiv.style.width = '297mm'; // A4 landscape width
         tempDiv.style.background = 'white';
         tempDiv.style.padding = '30px';
         tempDiv.style.boxSizing = 'border-box';
@@ -445,16 +425,16 @@ export async function exportToPDF(config) {
         // Clean up temporary div
         document.body.removeChild(tempDiv);
 
-        // Create PDF
+        // Create PDF in LANDSCAPE mode
         const { jsPDF } = window.jspdf;
         const pdf = new jsPDF({
-            orientation: 'portrait',
+            orientation: 'landscape',
             unit: 'mm',
             format: 'a4'
         });
 
-        const imgWidth = 210; // A4 width in mm
-        const pageHeight = 297; // A4 height in mm
+        const imgWidth = 297; // A4 landscape width in mm
+        const pageHeight = 210; // A4 landscape height in mm
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
         let heightLeft = imgHeight;
         let position = 0;

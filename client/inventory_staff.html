@@ -7,9 +7,7 @@
     <title>Staff Expense - Sainath</title>
     <link rel="stylesheet" href="css/inventory.css">
     <!-- For PDF Export -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"
-        integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg=="
-        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <!-- For Excel Export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
@@ -17,8 +15,7 @@
 <body>
     <div class="staff-expense-container">
         <!-- Header with Add Button, Print and Export -->
-        <div class="staff-expense-header"
-            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <div class="staff-expense-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
             <h1 style="font-size: 22px; font-weight: 600; margin: 0; color: #1f2937;">Staff Expense</h1>
             <div class="header-actions" style="display: flex; gap: 10px; align-items: center;">
                 <button onclick="printReport()" class="btn-print" title="Print Report">
@@ -29,10 +26,10 @@
                         <span style="font-size: 18px;">📥</span> Export
                     </button>
                     <div id="exportDropdown" class="export-dropdown-menu">
-                        <button onclick="handleExportPDFURLFromBackendStaffAttendance()" class="export-option">
+                        <button onclick="exportToPDF()" class="export-option">
                             <span>📄</span> PDF
                         </button>
-                        <button onclick="handleExportExcelURLFromBackendStaffAttendance()" class="export-option">
+                        <button onclick="exportToExcel()" class="export-option">
                             <span>📊</span> Excel
                         </button>
                     </div>
@@ -79,77 +76,144 @@
             </div>
         </div>
 
-        <!-- UPDATED Summary Cards Row - 3 Cards in First Row -->
-        <div class="summary-cards-row summary-cards-row-new" style="grid-template-columns: repeat(3, 1fr);">
-            <!-- Cap Card - Shows only days wear -->
-            <div class="summary-card">
-                <div class="summary-card-content" style="text-align: center; padding: 10px; display: flex;">
-                    <div style="font-size: 14px; color: #1f2937; font-weight: 600; line-height: 1.4;">
-                        🧢 Cap
-                    </div>
-                    <div
-                        style="font-size: 18px; font-weight: 700; margin-top: 6px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
-                        <span id="capDaysWear">0</span> days
-                    </div>
-                </div>
+        <!-- Summary Cards Row - 3 Cards in Responsive Layout -->
+        <div class="summary-cards-container">
+            <!-- Cap Card -->
+            <div class="summary-card-small">
+                <div class="summary-card-icon">🧢</div>
+                <div class="summary-card-title">Cap</div>
+                <div class="summary-card-value"><span id="capDaysWear">0</span></div>
             </div>
 
-            <!-- T-Shirt Card - Shows only days wear -->
-            <div class="summary-card">
-                <div class="summary-card-content" style="text-align: center; padding: 10px;">
-                    <div style="font-size: 14px; color: #1f2937; font-weight: 600; line-height: 1.4;">
-                        👕 T-Shirt
-                    </div>
-                    <div
-                        style="font-size: 18px; font-weight: 700; margin-top: 6px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
-                        <span id="tshirtDaysWear">0</span> days
-                    </div>
-                </div>
+            <!-- T-Shirt Card -->
+            <div class="summary-card-small">
+                <div class="summary-card-icon">👕</div>
+                <div class="summary-card-title">T-Shirt</div>
+                <div class="summary-card-value"><span id="tshirtDaysWear">0</span></div>
             </div>
 
-            <!-- Attendance Card - Shows only present days -->
-            <div class="summary-card">
-                <div class="summary-card-content" style="text-align: center; padding: 10px;">
-                    <div style="font-size: 14px; color: #1f2937; font-weight: 600; line-height: 1.4;">
-                        ✅ Attendance
-                    </div>
-                    <div
-                        style="font-size: 18px; font-weight: 700; margin-top: 6px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
-                        Present day <span id="presentDayCount">0</span> days <br>
-                        Half day <span id="halfDayCount">0</span> days
-
-                    </div>
+            <!-- Attendance Card -->
+            <div class="summary-card-small">
+                <div class="summary-card-icon">✅</div>
+                <div class="summary-card-title">Attendance</div>
+                <div class="summary-card-value">
+                    <div><span id="presentDayCount">0</span> days</div>
+                    <div style="font-size: 12px; opacity: 0.8; margin-top: 3px;"><span id="halfDayCount">0</span> half</div>
                 </div>
             </div>
         </div>
 
         <style>
-            /* Responsive styles for new summary cards */
+            /* Summary Cards Container - Responsive One Row Layout */
+            .summary-cards-container {
+                display: flex;
+                gap: 15px;
+                margin: 20px 0;
+                flex-wrap: wrap;
+                justify-content: flex-start;
+            }
+
+            /* Individual Summary Card Styling */
+            .summary-card-small {
+                flex: 1;
+                min-width: 120px;
+                max-width: 160px;
+                background: linear-gradient(135deg, #f5f7fa 0%, #fff 100%);
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
+                padding: 12px 8px;
+                text-align: center;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+                transition: all 0.2s ease;
+            }
+
+            .summary-card-small:hover {
+                border-color: #667eea;
+                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+                transform: translateY(-2px);
+            }
+
+            .summary-card-icon {
+                font-size: 18px;
+                margin-bottom: 4px;
+            }
+
+            .summary-card-title {
+                font-size: 11px;
+                color: #1f2937;
+                font-weight: 600;
+                margin-bottom: 4px;
+                text-transform: capitalize;
+            }
+
+            .summary-card-value {
+                font-size: 14px;
+                font-weight: 700;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+            }
+
+            .summary-card-small:nth-child(3) .summary-card-value {
+                background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+            }
+
+            /* Tablet View - 2 Cards per Row */
             @media (max-width: 768px) {
-                .summary-cards-row-new {
-                    grid-template-columns: repeat(2, 1fr) !important;
+                .summary-cards-container {
+                    gap: 10px;
                 }
 
-                .summary-cards-row-new .summary-card:last-child {
-                    grid-column: 1 / -1;
+                .summary-card-small {
+                    flex: 0 1 calc(50% - 5px);
+                    min-width: 110px;
+                    padding: 10px 7px;
+                }
+
+                .summary-card-icon {
+                    font-size: 16px;
+                    margin-bottom: 3px;
+                }
+
+                .summary-card-title {
+                    font-size: 10px;
+                }
+
+                .summary-card-value {
+                    font-size: 12px;
                 }
             }
 
+            /* Mobile View - Keep 3 Cards in Row but Smaller */
             @media (max-width: 480px) {
-                .summary-cards-row-new {
-                    grid-template-columns: 1fr !important;
+                .summary-cards-container {
+                    flex-direction: row;
+                    gap: 8px;
                 }
 
-                .summary-cards-row-new .summary-card:last-child {
-                    grid-column: auto;
+                .summary-card-small {
+                    flex: 0 1 calc(33.333% - 5px);
+                    max-width: none;
+                    min-width: 80px;
+                    padding: 10px 6px;
                 }
 
-                .summary-cards-row-new .summary-card-content>div:first-child {
-                    font-size: 13px !important;
+                .summary-card-icon {
+                    font-size: 14px;
+                    margin-bottom: 2px;
                 }
 
-                .summary-cards-row-new .summary-card-content>div:last-child {
-                    font-size: 16px !important;
+                .summary-card-title {
+                    font-size: 9px;
+                    margin-bottom: 3px;
+                }
+
+                .summary-card-value {
+                    font-size: 11px;
                 }
             }
         </style>
@@ -158,8 +222,7 @@
         <div class="expense-content" style="grid-template-columns: 1fr;">
             <!-- Display Expenses Table -->
             <div class="expense-section">
-                <h2 style="margin-bottom: 15px; color: #1f2937; font-size: 15px; font-weight: 600;">Display Expense Per
-                    User</h2>
+                <h2 style="margin-bottom: 15px; color: #1f2937; font-size: 15px; font-weight: 600;">Display Expense Per User</h2>
                 <div id="staffExpensesList" style="max-height: 500px; overflow-y: auto;">
                     <div style="padding: 20px; text-align: center; color: #999;">
                         <p style="font-size: 16px; margin-bottom: 10px;">No expenses recorded</p>
@@ -206,8 +269,7 @@
                         <div class="expense-form-row">
                             <div class="expense-form-group">
                                 <label for="expensePaymentMode">Payment Mode</label>
-                                <select id="expensePaymentMode" required class="expense-form-input"
-                                    onchange="handleInventoryPaymentMode(this.value)">
+                                <select id="expensePaymentMode" required class="expense-form-input" onchange="handleInventoryPaymentMode(this.value)">
                                     <option value="cash" selected>Cash</option>
                                     <option value="upi">UPI</option>
                                     <option value="bank">Bank</option>
@@ -225,8 +287,8 @@
                         <!-- Row 3: Notes (Full Width) -->
                         <div class="expense-form-group expense-form-group-full">
                             <label for="invExpenseNote">Notes</label>
-                            <textarea id="invExpenseNote" placeholder="Enter notes..." rows="5"
-                                class="expense-form-input expense-form-textarea"></textarea>
+                            <textarea id="invExpenseNote"
+                                placeholder="Enter notes..." rows="5" class="expense-form-input expense-form-textarea"></textarea>
                         </div>
                     </div>
 

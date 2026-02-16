@@ -2,7 +2,7 @@
    STAFF INVENTORY - CLEAN & RESPONSIVE CSS
    ============================================ */
 
-   * {
+* {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
@@ -328,6 +328,7 @@ textarea.form-input {
     justify-content: flex-end;
     margin-top: 8px;
     padding-top: 16px;
+    padding-left: 10px; 
     border-top: 1px solid #e5e7eb;
 }
 
@@ -864,9 +865,7 @@ button {
         padding: 20px;
     } */
 
-    /* .form-actions {
-        flex-direction: column-reverse;
-    } */
+
 
     .btn-cancel,
     .btn-submit {

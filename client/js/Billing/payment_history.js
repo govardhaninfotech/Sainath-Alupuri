@@ -120,7 +120,8 @@ function generateItemsTableHTML() {
                 <td>${item.shop_code}</td>
                 <td>${item.amount}</td>
                 <!-- <td>${item.payment_mode == "Cash" ? "Cash" : item.account_name}</td> -->
-                <td>${item.account_name} ${item.payment_mode}</td>
+                <!-- <td>${item.account_name} ${item.payment_mode}</td> -->
+                <td>${item.account_name}</td>
                 <td>${item.reference_no}</td>
                 <td>${item.payment_date}</td>
                 <!-- <td>${item.payment_mode}</td> -->
@@ -138,7 +139,6 @@ export function initPaymentHistoryCard() {
             <div class="items-header">
                 <h2>Payment History Report</h2>
                 <div class="inv-filter-group">
-                        <label for="invClientSelect">Client Selection</label>
                         <select id="invClientSelect" onchange="handlePaymentHistoryChange(event)"></select>
                     </div>
                 <button class="btn-add">Print</button>

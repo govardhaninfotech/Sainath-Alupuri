@@ -939,6 +939,7 @@ button {
 
     .expense-section {
         padding: 10px;
+        min-width: 100%;
     }
 
     .expense-section h2 {

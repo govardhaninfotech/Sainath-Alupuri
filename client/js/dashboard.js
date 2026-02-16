@@ -20,7 +20,7 @@ import { renderStaffAttendanceReportsTable, initMonthDropdown } from "./staffAtt
 import { initStaffExpMothlyReportCard, initStaffExpMonthDropdown } from "./staffExpancesReport.js";
 import { initGeneralMothlyReportCard, initGeneralMonthDropdown } from "./General_Expenses_Report.js";
 import { renderInventoryOrdersPage, openorderform, calculateOrderTotal, calculateItemTotal } from "./inventory_orders.js";
-// import { initPaymentHistoryCard, initClientDropdown } from "./Billing/payment_history.js";
+import { initPaymentHistoryCard, initClientDropdown } from "./Billing/payment_history.js";
 import { renderPaymentDetailsPage } from "./payment_details.js";
 import { renderNotificationsPage } from "./notifications_page.js";
 import { renderCompanyInfoPage } from "./company_info.js";
@@ -345,11 +345,11 @@ async function navigateTo(page) {
             mainContent.innerHTML = getPaymentHistoryContent();
             break;
 
-        // case "paymentHistory":
-        //     mainContent.innerHTML = await initPaymentHistoryCard();
-        //     document.querySelector('.submenu-item[onclick*="stockMovement"]')?.classList.add("active");
-        //     initClientDropdown();
-        //     break;
+        case "paymentHistory":
+            mainContent.innerHTML = await initPaymentHistoryCard();
+            document.querySelector('.submenu-item[onclick*="paymentHistory"]')?.classList.add("active");
+            initClientDropdown();
+            break;
 
         case "paymentDetails":
             mainContent.innerHTML = renderPaymentDetailsPage();

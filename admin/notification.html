@@ -6,37 +6,37 @@
     <title>Notifications - SAINATH</title>
     <style>
         /* Notification Page Styles */
-        .notification-container_ntf {
+        .notification-container {
             padding: 20px;
             max-width: 1200px;
             margin: 0 auto;
         }
 
-        .notification-header_ntf {
+        .notification-header {
             margin-bottom: 30px;
         }
 
-        .notification-header_ntf h1 {
+        .notification-header h1 {
             font-size: 28px;
             font-weight: 700;
             color: #1f2937;
             margin-bottom: 5px;
         }
 
-        .notification-header_ntf p {
+        .notification-header p {
             font-size: 14px;
             color: #6b7280;
             margin: 0;
         }
 
-        .notification-actions_ntf {
+        .notification-actions {
             display: flex;
             gap: 10px;
             margin-bottom: 30px;
             flex-wrap: wrap;
         }
 
-        .btn-add-notification_ntf {
+        .btn-add-notification {
             background: linear-gradient(135deg, #4f46e5, #6366f1);
             color: white;
             border: none;
@@ -48,42 +48,37 @@
             transition: all 0.3s ease;
         }
 
-        .btn-add-notification_ntf:hover {
+        .btn-add-notification:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 20px rgba(79, 70, 229, 0.2);
         }
 
         /* Modal Styles */
-        .modal-overlay_ntf {
+        .modal-overlay {
             display: none;
             position: fixed;
             inset: 0;
             background: rgba(0, 0, 0, 0.5);
-            z-index: 9999;
+            z-index: 1000;
             align-items: center;
             justify-content: center;
-            pointer-events: all;
-            overflow: auto;
         }
 
-        .modal-overlay_ntf.active_ntf {
+        .modal-overlay.active {
             display: flex;
         }
 
-        .modal-content_ntf {
+        .modal-content {
             background: white;
             border-radius: 12px;
             padding: 30px;
             max-width: 500px;
             width: 90%;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
-            animation: slideUp_ntf 0.3s ease;
-            position: relative;
-            z-index: 10000;
-            pointer-events: all;
+            animation: slideUp 0.3s ease;
         }
 
-        @keyframes slideUp_ntf {
+        @keyframes slideUp {
             from {
                 opacity: 0;
                 transform: translateY(30px);
@@ -94,21 +89,21 @@
             }
         }
 
-        .modal-header_ntf {
+        .modal-header {
             margin-bottom: 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
-        .modal-header_ntf h2 {
+        .modal-header h2 {
             font-size: 20px;
             font-weight: 700;
             color: #1f2937;
             margin: 0;
         }
 
-        .modal-close_ntf {
+        .modal-close {
             background: none;
             border: none;
             font-size: 24px;
@@ -120,20 +115,17 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            position: relative;
-            z-index: 10001;
-            pointer-events: all;
         }
 
-        .modal-close_ntf:hover {
+        .modal-close:hover {
             color: #1f2937;
         }
 
-        .form-group_ntf {
+        .form-group {
             margin-bottom: 20px;
         }
 
-        .form-group_ntf label {
+        .form-group label {
             display: block;
             font-size: 14px;
             font-weight: 600;
@@ -141,8 +133,8 @@
             margin-bottom: 8px;
         }
 
-        .form-group_ntf input,
-        .form-group_ntf textarea {
+        .form-group input,
+        .form-group textarea {
             width: 100%;
             padding: 10px 12px;
             border: 1px solid #d1d5db;
@@ -150,29 +142,28 @@
             font-size: 14px;
             font-family: inherit;
             transition: border-color 0.3s ease;
-            box-sizing: border-box;
         }
 
-        .form-group_ntf input:focus,
-        .form-group_ntf textarea:focus {
+        .form-group input:focus,
+        .form-group textarea:focus {
             outline: none;
             border-color: #4f46e5;
             box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
         }
 
-        .form-group_ntf textarea {
+        .form-group textarea {
             resize: vertical;
             min-height: 100px;
         }
 
-        .modal-buttons_ntf {
+        .modal-buttons {
             display: flex;
             gap: 10px;
             margin-top: 25px;
         }
 
-        .btn-reset_ntf,
-        .btn-send_ntf {
+        .btn-reset,
+        .btn-send {
             flex: 1;
             padding: 12px;
             border: none;
@@ -181,50 +172,47 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
-            pointer-events: all;
-            position: relative;
-            z-index: 10001;
         }
 
-        .btn-reset_ntf {
+        .btn-reset {
             background: #f3f4f6;
             color: #374151;
             border: 1px solid #d1d5db;
         }
 
-        .btn-reset_ntf:hover {
+        .btn-reset:hover {
             background: #e5e7eb;
         }
 
-        .btn-send_ntf {
+        .btn-send {
             background: linear-gradient(135deg, #4f46e5, #6366f1);
             color: white;
         }
 
-        .btn-send_ntf:hover {
+        .btn-send:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 20px rgba(79, 70, 229, 0.2);
         }
 
         /* Table Styles */
-        .table-container_ntf {
+        .table-container {
             background: white;
             border-radius: 12px;
             overflow: hidden;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
 
-        .table-container_ntf table {
+        table {
             width: 100%;
             border-collapse: collapse;
         }
 
-        .table-container_ntf thead {
+        thead {
             background: #f9fafb;
             border-bottom: 1px solid #e5e7eb;
         }
 
-        .table-container_ntf th {
+        th {
             padding: 15px;
             text-align: left;
             font-size: 13px;
@@ -234,62 +222,59 @@
             letter-spacing: 0.5px;
         }
 
-        .table-container_ntf td {
+        td {
             padding: 15px;
             border-bottom: 1px solid #e5e7eb;
             font-size: 14px;
             color: #374151;
         }
 
-        .table-container_ntf tbody tr:hover {
+        tbody tr:hover {
             background: #f9fafb;
         }
 
-        .no-data_ntf {
+        .no-data {
             text-align: center;
             padding: 40px;
             color: #9ca3af;
             font-size: 14px;
         }
 
-        .action-buttons_ntf {
+        .action-buttons {
             display: flex;
             gap: 8px;
-            justify-content: center;
         }
 
-        .btn-icon_ntf {
+        .btn-icon {
             background: none;
             border: none;
             padding: 6px 10px;
-            font-size: 16px;
+            font-size: 14px;
             cursor: pointer;
             border-radius: 6px;
             transition: all 0.3s ease;
         }
 
-        .btn-edit_ntf {
+        .btn-edit {
             color: #2563eb;
             background: rgba(37, 99, 235, 0.1);
         }
 
-        .btn-edit_ntf:hover {
+        .btn-edit:hover {
             background: rgba(37, 99, 235, 0.2);
-            transform: scale(1.1);
         }
 
-        .btn-delete_ntf {
+        .btn-delete {
             color: #dc2626;
             background: rgba(220, 38, 38, 0.1);
         }
 
-        .btn-delete_ntf:hover {
+        .btn-delete:hover {
             background: rgba(220, 38, 38, 0.2);
-            transform: scale(1.1);
         }
 
         /* Success message */
-        .success-message_ntf {
+        .success-message {
             display: none;
             background: #d1fae5;
             border: 1px solid #6ee7b7;
@@ -297,14 +282,14 @@
             padding: 15px;
             border-radius: 8px;
             margin-bottom: 20px;
-            animation: slideIn_ntf 0.3s ease;
+            animation: slideIn 0.3s ease;
         }
 
-        .success-message_ntf.show_ntf {
+        .success-message.show {
             display: block;
         }
 
-        @keyframes slideIn_ntf {
+        @keyframes slideIn {
             from {
                 opacity: 0;
                 transform: translateX(-20px);
@@ -315,54 +300,29 @@
             }
         }
 
-        /* View Notification Modal Styles */
-        .view-content_ntf {
-            margin: 20px 0;
-        }
-
-        .view-field_ntf {
-            background: #f3f4f6;
-            padding: 12px 15px;
-            border-radius: 8px;
-            border: 1px solid #e5e7eb;
-            font-size: 14px;
-            color: #374151;
-            line-height: 1.6;
-            word-wrap: break-word;
-            white-space: pre-wrap;
-            min-height: 40px;
-        }
-
-        .view-field_ntf:empty::before {
-            content: "No content";
-            color: #9ca3af;
-            font-style: italic;
-        }
-
         /* Responsive */
         @media (max-width: 768px) {
-            .notification-container_ntf {
+            .notification-container {
                 padding: 15px;
             }
 
-            .notification-header_ntf h1 {
+            .notification-header h1 {
                 font-size: 22px;
             }
 
-            .modal-content_ntf {
+            .modal-content {
                 padding: 20px;
             }
 
-            .modal-buttons_ntf {
+            .modal-buttons {
                 flex-direction: column;
             }
 
-            .table-container_ntf table {
+            table {
                 font-size: 12px;
             }
 
-            .table-container_ntf th, 
-            .table-container_ntf td {
+            th, td {
                 padding: 10px;
             }
         }

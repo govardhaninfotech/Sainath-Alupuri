@@ -445,7 +445,7 @@ function generateTableHTML() {
                             <label for="endDate">To Date:</label>
                             <input type="date" id="endDate" value="${currentEndDate}" max="" required/>
                         </div>
-                        <button class="btn-filter" onclick="validateAndRefreshOrders()">Apply Filter</button>
+                        <button class="btn-filter" style="min-width: 85px !important;" onclick="validateAndRefreshOrders()">Apply Filter</button>
                         <button class="btn-add" onclick="openorderform()">+ Add Order</button>
                     </div>
                 </div>
@@ -520,7 +520,7 @@ function generateTableHTML() {
 
                         <div class="form-actions" id="formActions">
                             <button type="button" class="btn-cancel" id="cancelBtn" onclick="closeOrderForm()">Cancel</button>
-                            <button type="submit" class="btn-submit" id="submitBtn">Place Order</button>
+                            <button type="submit" class="btn-submit" style="width: 100px;" id="submitBtn">Place Order</button>
                         </div>
                     </form>
                 </div>

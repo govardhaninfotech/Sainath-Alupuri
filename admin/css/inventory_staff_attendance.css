@@ -417,7 +417,7 @@ body {
     border-top: 1px solid var(--border-color);
     background-color: #f9fafb;
     border-radius: 0 0 12px 12px;
-    /* flex-wrap: wrap; */
+    flex-wrap: wrap;
 }
 
 .form-footer {
@@ -661,13 +661,13 @@ body {
     color: white;
     border: none;
     padding: 9px 18px;
-    max-width: 85px !important;
+    width: 20px !important;
     border-radius: 6px;
     font-weight: 600;
     cursor: pointer;
     font-size: 13px;
     transition: all 0.3s ease;
-    min-width: 85px;
+    max-width: 110px;
     min-height: 38px;
 }
 
@@ -897,7 +897,6 @@ body {
     .edit-btn-submit,
     .edit-btn-cancel {
         flex: 1;
-        min-width: 50%;
         /* min-width: auto; */
         padding: 10px 12px;
     }
