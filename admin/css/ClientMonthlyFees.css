@@ -8,11 +8,16 @@ body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     /* background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); */
     min-height: 100vh;
-    padding: 20px;
+    /* padding: 20px; */
+}
+
+body.modal-open {
+    overflow: hidden;
 }
 
 .container {
-    max-width: 1200px;
+    /* max-width: 1200px; */
+    width: 100%;
     margin: 0 auto;
     background: white;
     border-radius: 12px;
@@ -103,7 +108,60 @@ body {
 
 .action-buttons {
     display: flex;
-    gap: 10px;
+    gap: 8px;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Tooltip on hover for icon buttons */
+.btn-icon[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    bottom: calc(100% + 5px);
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 6px 10px;
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+    border-radius: 6px;
+    pointer-events: none;
+    opacity: 0;
+    animation: tooltipFadeIn 0.2s ease 0.3s forwards;
+    z-index: 1000;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.btn-icon[title]:hover::before {
+    content: '';
+    position: absolute;
+    bottom: calc(100% - 1px);
+    left: 50%;
+    transform: translateX(-50%);
+    border: 4px solid transparent;
+    border-top-color: rgba(0, 0, 0, 0.9);
+    pointer-events: none;
+    opacity: 0;
+    animation: tooltipFadeIn 0.2s ease 0.3s forwards;
+    z-index: 999;
+}
+
+@keyframes tooltipFadeIn {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(2px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+.btn-icon {
+    position: relative;
 }
 
 .btn {
@@ -117,15 +175,47 @@ body {
     text-transform: uppercase;
 }
 
+/* Icon-only button styles */
+.btn-icon {
+    padding: 0;
+    min-width: 40px;
+    max-width: 40px;
+    min-height: 40px;
+    max-height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    text-transform: none;
+    border-radius: 18%;
+    line-height: 1;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn-icon:hover:not(:disabled):not(.btn-disabled) {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
 .btn-pay {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #667eea;
     color: white;
 }
 
-.btn-pay:hover {
-    background: linear-gradient(135deg, #5a67d8 0%, #6a42a0 100%);
+.btn-pay:hover:not(:disabled) {
+    background: #5a67d8;
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-pay.btn-icon {
+    background: #667eea;
+}
+
+.btn-pay.btn-icon:hover:not(:disabled) {
+    background: #5a67d8;
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5);
 }
 
 .btn-edit {
@@ -133,10 +223,44 @@ body {
     color: white;
 }
 
-.btn-edit:hover {
+.btn-edit:hover:not(:disabled):not(.btn-disabled) {
     background: #059669;
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
+.btn-edit.btn-icon {
+    background: #10b981;
+}
+
+.btn-edit.btn-icon:hover:not(:disabled):not(.btn-disabled) {
+    background: #059669;
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.5);
+}
+
+/* Disabled button styles */
+.btn-disabled,
+.btn:disabled {
+    background: #d1d5db !important;
+    color: #6b7280 !important;
+    cursor: not-allowed !important;
+    opacity: 0.7;
+    transform: none !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+}
+
+.btn-disabled:hover,
+.btn:disabled:hover {
+    transform: none !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+}
+
+.btn-icon.btn-disabled,
+.btn-icon:disabled {
+    opacity: 0.6;
+    background: #e5e7eb !important;
+    filter: grayscale(50%);
 }
 
 .btn-cancel {
@@ -161,11 +285,17 @@ body {
     box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
 }
 
+/* Required field indicator */
+.required {
+    color: #ef4444;
+    font-weight: bold;
+}
+
 /* Modal Styles */
 .modal {
     display: none;
     position: fixed;
-    z-index: 1000;
+    z-index: 9999;
     left: 0;
     top: 0;
     width: 100%;
@@ -173,6 +303,10 @@ body {
     overflow: auto;
     background-color: rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(4px);
+}
+
+.modal.show {
+    display: block !important;
     animation: fadeIn 0.3s ease;
 }
 
@@ -192,9 +326,13 @@ body {
     padding: 0;
     border-radius: 12px;
     width: 90%;
-    max-width: 500px;
+    max-width: 600px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
     animation: slideDown 0.3s ease;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    z-index: 10000;
 }
 
 @keyframes slideDown {
@@ -217,6 +355,9 @@ body {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
     border-radius: 12px 12px 0 0;
+    position: sticky;
+    top: 0;
+    z-index: 10;
 }
 
 .modal-header h2 {
@@ -254,7 +395,8 @@ form {
 }
 
 .form-group input,
-.form-group select {
+.form-group select,
+.form-group textarea {
     width: 100%;
     padding: 12px 15px;
     border: 2px solid #e0e0e0;
@@ -262,10 +404,17 @@ form {
     font-size: 14px;
     transition: all 0.3s ease;
     background: white;
+    font-family: inherit;
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 80px;
 }
 
 .form-group input:focus,
-.form-group select:focus {
+.form-group select:focus,
+.form-group textarea:focus {
     outline: none;
     border-color: #667eea;
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
@@ -274,6 +423,12 @@ form {
 .form-group input[readonly] {
     background-color: #f3f4f6;
     cursor: not-allowed;
+}
+
+.form-group select:disabled {
+    background-color: #f3f4f6;
+    cursor: not-allowed;
+    opacity: 0.6;
 }
 
 .form-actions {

@@ -11,7 +11,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>Monthly clients fees</h1>
+            <h1>Monthly Clients Fees</h1>
             <div class="date-selection">
                 <label for="dateFilter">Date selection</label>
                 <input type="month" id="dateFilter" class="date-input">
@@ -43,46 +43,47 @@
                 <h2>Payment Details</h2>
                 <span class="close">&times;</span>
             </div>
-            <form id="paymentForm">
+            <form id="paymentForm" novalidate>
                 <div class="form-group">
                     <label for="clientName">Client Name</label>
                     <input type="text" id="clientName" name="clientName" readonly>
                 </div>
 
                 <div class="form-group">
-                    <label for="paymentDate">Date</label>
+                    <label for="paymentDate">Date <span class="required">*</span></label>
                     <input type="date" id="paymentDate" name="paymentDate" required>
                 </div>
 
                 <div class="form-group">
-                    <label for="amount">Amount</label>
-                    <input type="number" id="amount" name="amount" step="0.01" required>
+                    <label for="amount">Amount <span class="required">*</span></label>
+                    <input type="number" id="amount" name="amount" step="0.01" min="0" required>
                 </div>
 
                 <div class="form-group">
-                    <label for="paymentMode">Payment Mode</label>
+                    <label for="paymentMode">Payment Mode <span class="required">*</span></label>
                     <select id="paymentMode" name="paymentMode" required>
                         <option value="">Select Payment Mode</option>
-                        <option value="cash">Cash</option>
+                        <option value="cash" selected>Cash</option>
                         <option value="upi">UPI</option>
-                        <option value="card">Card</option>
-                        <option value="bank_transfer">Bank Transfer</option>
-                        <option value="cheque">Cheque</option>
+                        <option value="bank">Bank Transfer</option>
                     </select>
                 </div>
 
                 <div class="form-group">
-                    <label for="bankSelection">Bank Selection</label>
+                    <label for="bankSelection">Bank Account</label>
                     <select id="bankSelection" name="bankSelection">
-                        <option value="">Select Bank</option>
-                        <option value="sbi">State Bank of India</option>
-                        <option value="hdfc">HDFC Bank</option>
-                        <option value="icici">ICICI Bank</option>
-                        <option value="axis">Axis Bank</option>
-                        <option value="pnb">Punjab National Bank</option>
-                        <option value="kotak">Kotak Mahindra Bank</option>
-                        <option value="other">Other</option>
+                        <option value="">Select Bank Account</option>
                     </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="paymentReferenceNo">Reference Number</label>
+                    <input type="text" id="paymentReferenceNo" name="paymentReferenceNo" placeholder="Enter reference number">
+                </div>
+
+                <div class="form-group">
+                    <label for="paymentNotes">Notes</label>
+                    <textarea id="paymentNotes" name="paymentNotes" rows="3" placeholder="Enter payment notes"></textarea>
                 </div>
 
                 <div class="form-actions">
@@ -97,25 +98,47 @@
     <div id="editModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>Edit Client Details</h2>
+                <h2>Edit Payment Details</h2>
                 <span class="close">&times;</span>
             </div>
-            <form id="editForm">
-                <input type="hidden" id="editClientId">
+            <form id="editForm" novalidate>
+                <input type="hidden" id="editPaymentId">
 
                 <div class="form-group">
                     <label for="editClientName">Client Name</label>
-                    <input type="text" id="editClientName" name="editClientName" required>
+                    <input type="text" id="editClientName" name="editClientName" readonly>
                 </div>
 
                 <div class="form-group">
-                    <label for="editAmount">Amount</label>
-                    <input type="number" id="editAmount" name="editAmount" step="0.01" required>
+                    <label for="editAmount">Amount <span class="required">*</span></label>
+                    <input type="number" id="editAmount" name="editAmount" step="0.01" min="0" required>
                 </div>
 
                 <div class="form-group">
-                    <label for="editDate">Date</label>
-                    <input type="date" id="editDate" name="editDate" required>
+                    <label for="editPaymentMode">Payment Mode <span class="required">*</span></label>
+                    <select id="editPaymentMode" name="editPaymentMode" required>
+                        <option value="">Select Payment Mode</option>
+                        <option value="cash">Cash</option>
+                        <option value="upi">UPI</option>
+                        <option value="bank">Bank Transfer</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="editBankSelection">Bank Account</label>
+                    <select id="editBankSelection" name="editBankSelection">
+                        <option value="">Select Bank Account</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="editReferenceNo">Reference Number</label>
+                    <input type="text" id="editReferenceNo" name="editReferenceNo" placeholder="Enter reference number">
+                </div>
+
+                <div class="form-group">
+                    <label for="editNotes">Notes</label>
+                    <textarea id="editNotes" name="editNotes" rows="3" placeholder="Enter payment notes"></textarea>
                 </div>
 
                 <div class="form-actions">
